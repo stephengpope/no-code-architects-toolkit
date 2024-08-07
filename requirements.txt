@@ -8,4 +8,8 @@ APScheduler==3.9.1
 srt==3.5.2
 numpy==1.24.3
 torch==1.13.1
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+google-api-python-client
 

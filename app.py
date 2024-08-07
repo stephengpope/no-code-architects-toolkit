@@ -11,6 +11,12 @@ import whisper
 import srt
 from datetime import datetime, timedelta
 
+import base64
+import json
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
 app = Flask(__name__)
 
 API_KEY = os.environ.get('API_KEY')
@@ -387,6 +393,87 @@ def get_file():
         return jsonify({"message": "File not found"}), 404
 
     return send_file(file_path, as_attachment=True)
+
+# Add these to the existing imports at the top of the file
+
+# Add these new environment variables
+GCP_SA_CREDENTIALS = os.environ.get('GCP_SA_CREDENTIALS', '')
+GDRIVE_USER = os.environ.get('GDRIVE_USER', '')
+
+#if not GCP_SA_CREDENTIALS or not GDRIVE_USER:
+#    raise ValueError("GCP_SA_CREDENTIALS and GDRIVE_USER environment variables must be set")
+
+# Add this function to set up the Google Drive service
+def get_gdrive_service():
+    credentials_json = json.loads(base64.b64decode(GCP_SA_CREDENTIALS))
+    credentials = service_account.Credentials.from_service_account_info(
+        credentials_json,
+        scopes=['https://www.googleapis.com/auth/drive']
+    )
+    delegated_credentials = credentials.with_subject(GDRIVE_USER)
+    return build('drive', 'v3', credentials=delegated_credentials)
+
+# Add this new endpoint
+@app.route('/gdrive-upload', methods=['POST'])
+@authenticate
+def gdrive_upload():
+    data = request.json
+    file_url = data.get('file_url')
+    filename = data.get('filename')
+    folder_id = data.get('folder_id')
+    webhook_url = data.get('webhook_url')
+
+    if not file_url or not filename or not folder_id:
+        raise BadRequest("Missing file_url, filename, or folder_id parameter")
+
+    job_id = str(uuid.uuid4())
+    unique_filename = f"{job_id}_{filename}"
+
+    if webhook_url:
+        threading.Thread(target=process_gdrive_upload, args=(file_url, unique_filename, filename, folder_id, webhook_url, job_id)).start()
+        return jsonify({"job_id": job_id, "filename": filename}), 202
+    else:
+        try:
+            file_id = process_gdrive_upload(file_url, unique_filename, filename, folder_id, webhook_url, job_id)
+            return jsonify({"job_id": job_id, "filename": unique_filename, "file_id": file_id}), 200
+        except Exception as e:
+            return jsonify({"message": str(e)}), 500
+
+def process_gdrive_upload(file_url, unique_filename, filename, folder_id, webhook_url, job_id):
+    try:
+        local_file_path = download_file(file_url, os.path.join(STORAGE_PATH, unique_filename))
+        
+        drive_service = get_gdrive_service()
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id]
+        }
+        media = MediaFileUpload(local_file_path, resumable=True)
+        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        file_id = file.get('id')
+
+        os.remove(local_file_path)
+
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/gdrive-upload",
+                "job_id": job_id,
+                "response": file_id,
+                "code": 200,
+                "message": "success"
+            })
+        
+        return file_id
+    except Exception as e:
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/gdrive-upload",
+                "job_id": job_id,
+                "response": None,
+                "code": 500,
+                "message": str(e)
+            })
+        raise
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8080)

@@ -45,7 +45,7 @@ def test_combine_videos(client, mocker):
 def test_audio_mixing(client, mocker):
     data = {
         "video_url": "https://drive.google.com/uc?id=1b7POZjewqM6HWPt27r0NShO1pDXDDfq9",
-        "audio_url": "http://example.com/audio.mp3",
+        "audio_url": "https://file-examples.com/storage/fe28b3ef8666c4c399639b9/2017/11/file_example_MP3_5MG.mp3",
         "video_vol": 100,
         "audio_vol": 100,
         "output_length": "video",

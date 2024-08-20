@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
+import uuid
+from services.transcription import process_transcription
 from services.authentication import authenticate
-from services.whisper_transcription import process_transcription
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
@@ -8,12 +9,12 @@ transcribe_bp = Blueprint('transcribe', __name__)
 @authenticate
 def transcribe_media():
     data = request.json
-    media_url = data.get('media_url')
-    output_type = data.get('output')
-    webhook_url = data.get('webhook_url')
+    job_id = str(uuid.uuid4())  # Generate a job ID for tracking (optional)
+    print(f"Processing Job ID: {job_id}")
 
-    if not media_url or not output_type:
-        return jsonify({"error": "Missing media_url or output parameter"}), 400
-
-    job_id = process_transcription(media_url, output_type, webhook_url)
-    return jsonify({"job_id": job_id}), 202
+    try:
+        # Call the transcription process directly
+        result = process_transcription(data['media_url'], data['output'])
+        return jsonify({"job_id": job_id, "result": result}), 200
+    except Exception as e:
+        return jsonify({"job_id": job_id, "error": str(e)}), 500

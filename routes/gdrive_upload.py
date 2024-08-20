@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from services.authentication import authenticate
+import uuid
 from services.gdrive_service import process_gdrive_upload
+from services.authentication import authenticate
 
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 
@@ -8,13 +9,14 @@ gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 @authenticate
 def gdrive_upload():
     data = request.json
-    file_url = data.get('file_url')
-    filename = data.get('filename')
-    folder_id = data.get('folder_id')
-    webhook_url = data.get('webhook_url')
+    job_id = str(uuid.uuid4())  # Generate a job ID for tracking (optional)
+    print(f"Processing Job ID: {job_id}")
 
-    if not file_url or not filename or not folder_id:
-        return jsonify({"error": "Missing file_url, filename, or folder_id parameter"}), 400
-
-    job_id = process_gdrive_upload(file_url, filename, folder_id, webhook_url)
-    return jsonify({"job_id": job_id}), 202
+    try:
+        # Call the Google Drive upload process directly
+        file_id = process_gdrive_upload(
+            data['file_url'], f"{job_id}_{data['filename']}", data['filename'], data['folder_id'], data.get('webhook_url'), job_id
+        )
+        return jsonify({"job_id": job_id, "file_id": file_id}), 200
+    except Exception as e:
+        return jsonify({"job_id": job_id, "error": str(e)}), 500

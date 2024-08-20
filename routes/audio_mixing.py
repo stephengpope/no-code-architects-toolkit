@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
-from services.authentication import authenticate
+import uuid
 from services.ffmpeg_processing import process_audio_mixing
+from services.authentication import authenticate
 
 audio_mixing_bp = Blueprint('audio_mixing', __name__)
 
@@ -8,15 +9,15 @@ audio_mixing_bp = Blueprint('audio_mixing', __name__)
 @authenticate
 def audio_mixing():
     data = request.json
-    video_url = data.get('video_url')
-    audio_url = data.get('audio_url')
-    video_vol = data.get('video_vol', 100)
-    audio_vol = data.get('audio_vol', 100)
-    output_length = data.get('output_length', 'video')
-    webhook_url = data.get('webhook_url')
+    job_id = str(uuid.uuid4())  # Generate a job ID for tracking (optional)
+    print(f"Processing Job ID: {job_id}")
 
-    if not video_url or not audio_url:
-        return jsonify({"error": "Missing video_url or audio_url parameter"}), 400
-
-    job_id = process_audio_mixing(video_url, audio_url, video_vol, audio_vol, output_length, webhook_url)
-    return jsonify({"job_id": job_id}), 202
+    try:
+        # Call the audio mixing process directly
+        output_filename = process_audio_mixing(
+            data['video_url'], data['audio_url'], data.get('video_vol', 100),
+            data.get('audio_vol', 100), data.get('output_length', 'video'), job_id
+        )
+        return jsonify({"job_id": job_id, "output_filename": output_filename}), 200
+    except Exception as e:
+        return jsonify({"job_id": job_id, "error": str(e)}), 500

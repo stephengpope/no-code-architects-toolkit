@@ -1,90 +1,81 @@
 import os
-import uuid
 import base64
 import json
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from services.webhook import send_webhook
 from services.file_management import download_file, STORAGE_PATH
-from config import GCP_SA_CREDENTIALS, GDRIVE_USER
 
-def get_gdrive_service():
-    """
-    Authenticate and return a Google Drive service object.
-    """
-    # Decode the base64-encoded service account credentials
-    credentials_json = json.loads(base64.b64decode(GCP_SA_CREDENTIALS))
-    
-    # Create credentials object
-    credentials = service_account.Credentials.from_service_account_info(
-        credentials_json,
-        scopes=['https://www.googleapis.com/auth/drive']
-    )
-    
-    # Delegate the credentials to the specified user
-    delegated_credentials = credentials.with_subject(GDRIVE_USER)
-    
-    # Build and return the Google Drive service object
-    return build('drive', 'v3', credentials=delegated_credentials)
+# Environment variables for Google Cloud authentication
+GCP_SA_CREDENTIALS = os.environ.get('GCP_SA_CREDENTIALS', '')
+GDRIVE_USER = os.environ.get('GDRIVE_USER', '')
 
-def process_gdrive_upload(file_url, filename, folder_id, webhook_url):
-    """
-    Download a file from a URL and upload it to a specified Google Drive folder.
+USE_GDRIVE = GCP_SA_CREDENTIALS and GDRIVE_USER
 
-    :param file_url: URL of the file to download
-    :param filename: Name of the file to be saved on Google Drive
-    :param folder_id: Google Drive folder ID where the file will be uploaded
-    :param webhook_url: Optional URL to send a webhook notification upon completion
-    :return: The Google Drive file ID of the uploaded file
-    """
+if USE_GDRIVE:
+    def get_gdrive_service():
+        """Authenticate and return a Google Drive service client."""
+        credentials_json = json.loads(base64.b64decode(GCP_SA_CREDENTIALS))
+        credentials = service_account.Credentials.from_service_account_info(
+            credentials_json,
+            scopes=['https://www.googleapis.com/auth/drive']
+        )
+        delegated_credentials = credentials.with_subject(GDRIVE_USER)
+        return build('drive', 'v3', credentials=delegated_credentials)
+else:
+    def get_gdrive_service():
+        raise RuntimeError("Google Drive service is not configured. Set GCP_SA_CREDENTIALS and GDRIVE_USER to enable it.")
+
+def process_gdrive_upload(file_url, unique_filename, filename, folder_id, webhook_url=None, job_id=None):
+    """Upload a file to Google Drive and optionally send a webhook notification."""
     try:
-        # Generate a unique job ID
-        job_id = str(uuid.uuid4())
-        
-        # Download the file from the given URL
-        local_file_path = download_file(file_url, os.path.join(STORAGE_PATH, f"{job_id}_{filename}"))
-        
-        # Get the Google Drive service object
-        drive_service = get_gdrive_service()
-        
-        # Define the metadata for the file upload
-        file_metadata = {
-            'name': filename,
-            'parents': [folder_id]
-        }
-        
-        # Create a MediaFileUpload object for the file to be uploaded
-        media = MediaFileUpload(local_file_path, resumable=True)
-        
-        # Upload the file to Google Drive and get the file ID
-        file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        file_id = file.get('id')
+        local_file_path = download_file(file_url, os.path.join(STORAGE_PATH, unique_filename))
 
-        # Clean up the local file after upload
-        os.remove(local_file_path)
+        if USE_GDRIVE:
+            drive_service = get_gdrive_service()
+            file_metadata = {
+                'name': filename,
+                'parents': [folder_id]
+            }
+            media = MediaFileUpload(local_file_path, resumable=True)
+            file = drive_service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+            file_id = file.get('id')
 
-        # Send a webhook notification if a webhook URL is provided
+            os.remove(local_file_path)
+            print(f"File uploaded to Google Drive: {filename}, File ID: {file_id}")
+
+            if webhook_url:
+                send_webhook(webhook_url, {
+                    "endpoint": "/gdrive-upload",
+                    "job_id": job_id,
+                    "response": file_id,
+                    "code": 200,
+                    "message": "success"
+                })
+
+            return file_id
+        else:
+            print(f"File stored locally: {local_file_path} (Google Drive not configured)")
+            return None
+
+    except Exception as e:
+        print(f"Error during file processing: {e}")
         if webhook_url:
             send_webhook(webhook_url, {
                 "endpoint": "/gdrive-upload",
                 "job_id": job_id,
-                "response": file_id,
-                "code": 200,
-                "message": "success"
-            })
-
-        # Return the Google Drive file ID
-        return file_id
-    except Exception as e:
-        # Send a failure webhook notification if an error occurs
-        if webhook_url:
-            send_webhook(webhook_url, {
-                "endpoint": "/gdrive-upload",
-                "job_id": None,
                 "response": None,
                 "code": 500,
                 "message": str(e)
             })
-        # Raise the exception to propagate the error
         raise
+
+def send_webhook(webhook_url, data):
+    """Send a POST request to a webhook URL with the provided data."""
+    import requests
+    try:
+        response = requests.post(webhook_url, json=data)
+        response.raise_for_status()
+        print(f"Webhook sent: {data}")
+    except requests.RequestException as e:
+        print(f"Webhook failed: {e}")

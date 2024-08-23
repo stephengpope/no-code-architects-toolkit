@@ -30,7 +30,7 @@ def process_transcription(media_url, output_type, webhook_url):
 
         if webhook_url:
             send_webhook(webhook_url, {
-                "endpoint": "/transcribe-media",
+                "endpoint": "/transcribe",
                 "job_id": job_id,
                 "response": output,
                 "code": 200,
@@ -41,7 +41,7 @@ def process_transcription(media_url, output_type, webhook_url):
     except Exception as e:
         if webhook_url:
             send_webhook(webhook_url, {
-                "endpoint": "/transcribe-media",
+                "endpoint": "/transcribe",
                 "job_id": None,
                 "response": None,
                 "code": 500,

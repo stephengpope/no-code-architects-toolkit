@@ -5,7 +5,7 @@ from services.authentication import authenticate
 
 transcribe_bp = Blueprint('transcribe', __name__)
 
-@transcribe_bp.route('/transcribe-media', methods=['POST'])
+@transcribe_bp.route('/transcribe', methods=['POST'])
 @authenticate
 def transcribe_media():
     data = request.json

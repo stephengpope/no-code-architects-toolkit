@@ -17,7 +17,7 @@ def test_convert_media_to_mp3(client, mocker):
         "webhook_url": None
     }
     mocker.patch('services.convert_media_to_mp3.process_conversion', return_value="test.mp3")
-    response = client.post('/convert-media-to-mp3', json=data, headers={'X-API-Key': os.environ.get('API_KEY')})
+    response = client.post('/media-to-mp3', json=data, headers={'X-API-Key': os.environ.get('API_KEY')})
     assert response.status_code == 200
     assert response.json['filename'].endswith('.mp3')
 
@@ -28,7 +28,7 @@ def test_transcribe_media(client, mocker):
         "webhook_url": None
     }
     mocker.patch('services.transcribe_media.process_transcription', return_value="test transcription")
-    response = client.post('/transcribe-media', json=data, headers={'X-API-Key': os.environ.get('API_KEY')})
+    response = client.post('/transcribe', json=data, headers={'X-API-Key': os.environ.get('API_KEY')})
     assert response.status_code == 200
     assert "response" in response.json
 

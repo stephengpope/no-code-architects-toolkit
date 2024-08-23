@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 import uuid
-from services.gdrive_service import process_gdrive_upload
+from services.gdrive_service import upload_to_gdrive
 from services.authentication import authenticate
 
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)

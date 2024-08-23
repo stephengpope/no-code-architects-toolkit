@@ -46,15 +46,12 @@ def convert_media_to_mp3():
 
             # Handle different storage methods
             if STORAGE_PATH == 'gcp':
-                if GCP_BUCKET_NAME:
-                    logger.info(f"Job {job_id}: Uploading to Google Cloud Storage bucket '{GCP_BUCKET_NAME}'...")
-                    uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME, output_filename)
-                else:
-                    raise Exception("GCP_BUCKET_NAME is not set while STORAGE_PATH is set to GCP")
+                logger.info(f"Job {job_id}: STORAGE_PATH is set to GCP. File already in Google Cloud Storage.")
+                uploaded_file_url = output_path
             elif STORAGE_PATH == 'drive':
                 if GDRIVE_USER:
-                    logger.info(f"Job {job_id}: STORAGE_PATH is set to Drive. File already in Google Drive.")
-                    uploaded_file_url = output_path  # No need to upload again
+                    logger.info(f"Job {job_id}: Uploading to Google Drive for user '{GDRIVE_USER}'...")
+                    uploaded_file_url = upload_to_gdrive(output_path, output_filename)
                 else:
                     raise Exception("GDRIVE_USER is not set while STORAGE_PATH is set to Drive")
             elif STORAGE_PATH == 'local':

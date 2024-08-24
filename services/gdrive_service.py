@@ -10,14 +10,15 @@ from google.cloud import storage
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load optional credentials from the environment variable
+# Load credentials from environment variable
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 STORAGE_PATH = os.getenv('STORAGE_PATH', '/tmp/')
 GCP_BUCKET_NAME = os.getenv('GCP_BUCKET_NAME')
+GDRIVE_FOLDER_ID = os.getenv('GDRIVE_FOLDER_ID')
 
 drive_service = None
-gcs_client = None
+gcs_client = None  # Ensure gcs_client is defined globally
 
 if GCP_SA_CREDENTIALS:
     try:
@@ -33,7 +34,7 @@ if GCP_SA_CREDENTIALS:
 
         if GCP_BUCKET_NAME:
             logger.info("Initializing Google Cloud Storage client...")
-            gcs_client = storage.Client(credentials=credentials)
+            gcs_client = storage.Client(credentials=credentials)  # Correctly initialize gcs_client
             logger.info("Google Cloud Storage client initialized successfully.")
 
     except Exception as e:
@@ -46,8 +47,9 @@ def upload_to_gdrive(file_path, file_name):
         try:
             logger.info(f"Uploading {file_name} to Google Drive...")
 
-            # If you want to upload to a specific folder, replace [] with the folder ID
-            file_metadata = {'name': file_name, 'parents': []}
+            file_metadata = {'name': file_name}
+            if GDRIVE_FOLDER_ID:
+                file_metadata['parents'] = [GDRIVE_FOLDER_ID]
 
             media = MediaFileUpload(file_path, mimetype='application/octet-stream')
 
@@ -81,22 +83,12 @@ def upload_to_gdrive(file_path, file_name):
         return None
 
 
-def upload_to_gcs(file_path, bucket_name, blob_name):
+def upload_to_gcs(file_path, bucket_name, blob_name=None):
     if gcs_client:
         try:
-            # Correctly check if the file path exists only if it's a local path
-            if not os.path.isfile(file_path):
-                logger.error(f"Local file {file_path} does not exist before upload.")
-                return None
-
-            # Ensure the blob_name does not include any unintended directory structures like /tmp
-            blob_name = os.path.basename(file_path)
-
-            # Handle the case where the file might have an extra .mp3
-            if blob_name.endswith('.mp3.mp3'):
-                blob_name = blob_name.replace('.mp3.mp3', '.mp3')
-            elif not blob_name.endswith('.mp3'):
-                blob_name += '.mp3'
+            # Preserve the original file extension or allow specifying blob_name
+            if blob_name is None:
+                blob_name = os.path.basename(file_path) 
 
             bucket = gcs_client.bucket(bucket_name)
             blob = bucket.blob(blob_name)

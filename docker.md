@@ -114,6 +114,10 @@ This guide will walk you through setting up and deploying the project using the 
         -e GCP_SA_CREDENTIALS=<contents-of-json-file-downloaded> \
         no-code-architects-toolkit
      ```
+    - Using Google Drive, you have to prepare the shared folder for the Service Account to use. When configuring the Service Account, it produces an email address. Use it to share your Google Drive folder. ![](/images/service-account-email-address.png)
+    ![](/images/shared-goodle-drive-image.png)
+    - The GDRIVE_FOLDER_ID is the trailing subfolder in the shared folder URL.
+        ![](/images/sahred-google-drive-url.png)
 
 ## Step 7: Testing the Application
 

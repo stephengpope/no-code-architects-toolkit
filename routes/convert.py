@@ -42,6 +42,10 @@ def convert_media_to_mp3():
             output_path = process_conversion(media_url, job_id)
             logger.info(f"Job {job_id}: Conversion completed. Output file: {output_path}")
 
+            # Check if the output file exists after conversion
+            if not os.path.exists(output_path):
+                raise Exception(f"Output file not found after conversion: {output_path}")
+
             uploaded_file_url = None
 
             # Handle different storage methods
@@ -51,6 +55,8 @@ def convert_media_to_mp3():
             elif STORAGE_PATH == 'drive':
                 if GDRIVE_USER:
                     logger.info(f"Job {job_id}: Uploading to Google Drive for user '{GDRIVE_USER}'...")
+                    # Log the file path before uploading
+                    logger.info(f"Job {job_id}: Uploading file from path: {output_path}")
                     uploaded_file_url = upload_to_gdrive(output_path, output_filename)
                 else:
                     raise Exception("GDRIVE_USER is not set while STORAGE_PATH is set to Drive")
@@ -64,6 +70,10 @@ def convert_media_to_mp3():
                 raise Exception(f"Failed to upload/move the output file {output_path}")
 
             logger.info(f"Job {job_id}: File uploaded/moved successfully. URL/Path: {uploaded_file_url}")
+
+            # Now it's safe to remove the local file
+            os.remove(output_path)
+            logger.info(f"Job {job_id}: Removed local file {output_path}")
 
             # Send success webhook
             if webhook_url:

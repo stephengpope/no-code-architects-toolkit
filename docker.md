@@ -153,3 +153,76 @@ This guide will walk you through setting up and deploying the project using the 
      - Delete the service account key file.
      - Delete the GCS bucket if not required.
      - Remove the Docker container and image when no longer needed.
+
+
+### Step 9: Deploy the Docker Image to Google Cloud Run
+
+1. **Log in to Google Cloud Console**:
+   - Open [Google Cloud Console](https://console.cloud.google.com/).
+
+2. **Navigate to Cloud Run**:
+   - In the left-hand menu, click on **Cloud Run** under the **Serverless** section.
+
+3. **Create a New Service**:
+   - Click on the **Create Service** button.
+   - Select the project you created earlier (e.g., `MediaConverterProject`).
+
+4. **Configure the Service**:
+   - **Service Name**: Enter a name for your service (e.g., `no-code-architects-toolkit`).
+   - **Region**: Choose the region where you want your service to run (e.g., `us-central1`).
+
+5. **Deploy the Docker Image**:
+   - **Container Image URL**: Enter the following Docker Hub image URL: `stephengpope/no-code-architects-toolkit:v1.0.1`.
+   - Click on **Show advanced settings** to configure additional settings.
+
+6. **Set Environment Variables**:
+   - Scroll down to the **Environment variables** section.
+   - Add the following environment variables:
+     - `API_KEY`: Set this to your desired API key.
+     - `STORAGE_PATH`: Set this to either `GCP` or `DRIVE` depending on your setup.
+     - `GCP_BUCKET_NAME`: If using Google Cloud Storage, set this to the name of your GCS bucket.
+     - `GDRIVE_USER`: If using Google Drive, set this to the email address associated with your Google Drive account.
+     - `GDRIVE_FOLDER_ID`: If using Google Drive, set this to the folder ID of your Google Drive folder.
+     - `GCP_SA_CREDENTIALS`: Paste the contents of your service account JSON key file.
+
+7. **Set Port Configuration**:
+   - Under the **Container** section, ensure that the **Port** is set to `8080`, as this is the port on which the Gunicorn server is listening.
+
+8. **Set Resources and Concurrency**:
+   - Adjust the memory and CPU limits as needed. By default, you can start with 256 MiB of memory and 1 vCPU.
+   - Set the **Maximum requests per container** (concurrency) based on your application's expected load.
+
+9. **Authentication**:
+   - Under the **Authentication** section, you can choose whether the service requires authentication. For public access, choose **Allow unauthenticated invocations**.
+
+10. **Deploy the Service**:
+    - Review your configurations and click **Create** or **Deploy**.
+    - Wait for the deployment to complete. Once it's done, Google Cloud Run will provide you with a URL to access your service.
+
+### Step 10: Access and Test the Service
+
+1. **Access the Service**:
+   - Once the service is deployed, you’ll see a URL in the Google Cloud Console under your service’s details. This URL is where your service is running.
+
+2. **Test the Endpoints**:
+   - Use the provided URL to make requests to your endpoints. For example, to test the `/authenticate` endpoint, use the following command:
+     ```bash
+     curl -X POST https://your-service-url/authenticate \
+     -H "X-API-Key: your-api-key"
+     ```
+
+3. **Monitor Logs and Performance**:
+   - Use the Google Cloud Console to monitor logs and view the performance of your deployed service. Navigate to **Cloud Run > Logs** to view real-time logs.
+
+### Step 11: Cleanup Resources
+
+1. **Delete the Service**:
+   - If you no longer need the service, you can delete it by going to **Cloud Run**, selecting the service, and clicking **Delete**.
+
+2. **Remove Unnecessary Resources**:
+   - Delete the GCS bucket or Google Drive folder if no longer required.
+   - Remove any remaining Docker images or containers on your local machine.
+
+### Summary
+
+These steps will help you extend the provided instructions to deploy and run the Docker Hub container `stephengpope/no-code-architects-toolkit:v1.0.1` on Google Cloud Run using the GCP Website console. Make sure to test your deployment thoroughly and monitor the service using the tools provided by Google Cloud.

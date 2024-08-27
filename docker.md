@@ -93,7 +93,7 @@ This guide will walk you through setting up and deploying the project using the 
      docker run -p 8080:8080 \
         -e STORAGE_PATH=GCP \
         -e API_KEY=<set-to-any-value> \
-        -e GCP_BUCKET_NAME='<name-of-gcp-storage></name-of-gcp-storage> \
+        -e GCP_BUCKET_NAME='<name-of-gcp-storage>' \
         -e GCP_SA_CREDENTIALS=<contents-of-json-file-downloaded> \
         no-code-architects-toolkit
      ```
@@ -109,8 +109,8 @@ This guide will walk you through setting up and deploying the project using the 
      docker run -p 8080:8080 \
         -e STORAGE_PATH=DRIVE \
         -e GDRIVE_USER='<email address>' \
-        -e GDRIVE_FOLDER_ID=<Folder-ID>
-        -e API_KEY=<set-to-any-value> \
+        -e GDRIVE_FOLDER_ID='<Folder-ID>'
+        -e API_KEY='<set-to-any-value>' \
         -e GCP_SA_CREDENTIALS=<contents-of-json-file-downloaded> \
         no-code-architects-toolkit
      ```

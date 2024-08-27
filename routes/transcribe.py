@@ -25,10 +25,13 @@ def transcribe():
         logger.error("Missing media_url parameter in request")
         return jsonify({"error": "Missing media_url parameter"}), 400
 
-    # Check if either webhook_url or id is provided without the other
-    if (webhook_url and not id) or (id and not webhook_url):
-        logger.warning("Either webhook_url or id is missing in the request")
-        return jsonify({"message": "Either webhook_url or id is missing in the request"}), 500
+    # Check if either webhook_url or id is missing and return the appropriate message
+    if webhook_url and not id:
+        logger.warning("id is missing when webhook_url is provided")
+        return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 500
+    elif id and not webhook_url:
+        logger.warning("webhook_url is missing when id is provided")
+        return jsonify({"message": "It appears that the webhook_url is missing. Please review your API call and try again."}), 500
 
     job_id = str(uuid.uuid4())
     logger.info(f"Generated job_id: {job_id}")

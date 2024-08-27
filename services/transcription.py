@@ -25,7 +25,7 @@ def process_transcription(media_url, output_type):
         else:
             raise ValueError("Invalid output type. Must be 'transcript' or 'srt'.")
 
-        # os.remove(input_filename)
+        os.remove(input_filename)
         print(f"Transcription successful, output type: {output_type}")
         return output
     except Exception as e:

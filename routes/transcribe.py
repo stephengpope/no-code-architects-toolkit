@@ -28,7 +28,7 @@ def transcribe():
     # Check if either webhook_url or id is provided without the other
     if (webhook_url and not id) or (id and not webhook_url):
         logger.warning("Either webhook_url or id is missing in the request")
-        return jsonify({"response": "transcript or srt text is missing"}), 200
+        return jsonify({"message": "Either webhook_url or id is missing in the request"}), 500
 
     job_id = str(uuid.uuid4())
     logger.info(f"Generated job_id: {job_id}")

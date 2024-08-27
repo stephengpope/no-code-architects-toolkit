@@ -17,7 +17,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Pre-download the Whisper model and store it in the cache
-RUN python -c "import whisper; model = whisper.load_model('base')"
+RUN python -c "import whisper; whisper.load_model('base')"
 
 # Copy the rest of the application code
 COPY . .

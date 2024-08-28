@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, after_this_request
 import uuid
 import threading
 import logging
+import queue
 from services.transcription import process_transcription
 from services.authentication import authenticate
 from services.webhook import send_webhook
@@ -9,6 +10,56 @@ from services.webhook import send_webhook
 transcribe_bp = Blueprint('transcribe', __name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Create a queue for transcription jobs
+transcription_queue = queue.Queue()
+
+def transcription_worker():
+    while True:
+        job = transcription_queue.get()
+        try:
+            process_and_notify(**job)
+        except Exception as e:
+            logger.error(f"Error processing job: {e}")
+        finally:
+            transcription_queue.task_done()
+
+# Start the worker thread
+worker_thread = threading.Thread(target=transcription_worker, daemon=True)
+worker_thread.start()
+
+def process_and_notify(**kwargs):
+    media_url = kwargs['media_url']
+    output = kwargs['output']
+    webhook_url = kwargs['webhook_url']
+    id = kwargs['id']
+    job_id = kwargs['job_id']
+    
+    try:
+        logger.info(f"Job {job_id}: Starting transcription process for {media_url}")
+        result = process_transcription(media_url, output)
+        logger.info(f"Job {job_id}: Transcription process completed successfully")
+
+        if webhook_url:
+            logger.info(f"Job {job_id}: Sending success webhook to {webhook_url}")
+            send_webhook(webhook_url, {
+                "endpoint": "/transcribe",
+                "id": id,
+                "response": result,
+                "code": 200,
+                "message": "success"
+            })
+    except Exception as e:
+        logger.error(f"Job {job_id}: Error during transcription - {e}")
+        if webhook_url:
+            logger.info(f"Job {job_id}: Sending failure webhook to {webhook_url}")
+            send_webhook(webhook_url, {
+                "endpoint": "/transcribe",
+                "id": id,
+                "response": None,
+                "code": 500,
+                "message": str(e)
+            })
 
 @transcribe_bp.route('/transcribe', methods=['POST'])
 @authenticate
@@ -36,43 +87,16 @@ def transcribe():
     job_id = str(uuid.uuid4())
     logger.info(f"Generated job_id: {job_id}")
 
-    def process_and_notify(media_url, output, webhook_url, id, job_id):
-        try:
-            logger.info(f"Job {job_id}: Starting transcription process for {media_url}")
-            result = process_transcription(media_url, output)
-            logger.info(f"Job {job_id}: Transcription process completed successfully")
-
-            if webhook_url:
-                logger.info(f"Job {job_id}: Sending success webhook to {webhook_url}")
-                send_webhook(webhook_url, {
-                    "endpoint": "/transcribe",
-                    "id": id,
-                    "response": result,
-                    "code": 200,
-                    "message": "success"
-                })
-        except Exception as e:
-            logger.error(f"Job {job_id}: Error during transcription - {e}")
-            if webhook_url:
-                logger.info(f"Job {job_id}: Sending failure webhook to {webhook_url}")
-                send_webhook(webhook_url, {
-                    "endpoint": "/transcribe",
-                    "id": id,
-                    "response": None,
-                    "code": 500,
-                    "message": str(e)
-                })
-
-    @after_this_request
-    def start_background_processing(response):
-        logger.info(f"Job {job_id}: Starting background processing thread")
-        thread = threading.Thread(target=process_and_notify, args=(media_url, output, webhook_url, id, job_id))
-        thread.start()
-        return response
-
-    # If webhook_url and id are provided, return 202 Accepted
+    # If webhook_url and id are provided, add the job to the queue
     if webhook_url and id:
-        logger.info(f"Job {job_id}: Returning 202 Accepted response and processing in background")
+        transcription_queue.put({
+            'media_url': media_url,
+            'output': output,
+            'webhook_url': webhook_url,
+            'id': id,
+            'job_id': job_id
+        })
+        logger.info(f"Job {job_id}: Added to queue for background processing")
         return jsonify({"message": "processing"}), 202
     else:
         try:

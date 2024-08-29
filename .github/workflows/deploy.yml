@@ -1,0 +1,49 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        version: 'latest'
+        service_account_key: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+    - name: Increment version and tag release
+      id: tag_version
+      uses: anothrnick/github-tag-action@v1.41.0
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        default_bump: patch
+        tag_prefix: ''
+
+    - name: Get the version
+      run: echo "Release version: ${{ steps.tag_version.outputs.new_tag }}"
+
+    - name: Authenticate Docker with Google Cloud
+      run: gcloud auth configure-docker
+
+    - name: Build Docker Image
+      run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/my-app-image:${{ steps.tag_version.outputs.new_tag }} .
+
+    - name: Push Docker Image to Google Container Registry
+      run: docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/my-app-image:${{ steps.tag_version.outputs.new_tag }}
+
+    - name: Deploy to Google Cloud Run
+      run: |
+        gcloud run deploy my-app-service \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/my-app-image:${{ steps.tag_version.outputs.new_tag }} \
+          --region ${{ secrets.GCP_REGION }} \
+          --platform managed \
+          --allow-unauthenticated

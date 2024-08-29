@@ -95,3 +95,4 @@ dmypy.json
 # Temporary files
 /tmp/*
 !/tmp/.gitkeep
+.DS_Store

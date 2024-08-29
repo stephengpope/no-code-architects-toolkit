@@ -1,44 +1,49 @@
+
 # No-Code Architects Toolkit
 
-This Docker build let's you reduce/eliminate monthly subscription costs for various APIs you may use in your automations. 
+This Docker build helps you reduce or eliminate monthly subscription costs for various APIs used in your automations.
 
-It's built with Flask and uses FFmpeg for media conversion and the Whisper model for transcription.
+It's built with Flask, utilizes FFmpeg for media conversion, and leverages the Whisper model for transcription.
 
-In the current v1.0 build:
+### Features in the v1.0 Build:
 
-- Transcribe video/audio (without the 25 MB Whisper limit)
+- Convert media files to MP3 format.
+- Transcribe video/audio files without the 25 MB Whisper limit.
 
-Next up:
+### Upcoming Features:
 
-- Merge videos and add audio for faceless video automations
-- Automate podcast editing, intros, outros, music, etc
-- Translate text to other languages
-- Automatically add video subtitles
-- Upload large videos to GDrive
-
+- Merge videos and add audio for faceless video automations.
+- Automate podcast editing, intros, outros, music, etc.
+- Translate text to other languages.
+- Automatically add video subtitles.
+- Upload large videos to Google Drive.
 
 ## Installation with Docker
 
 1. Clone this repository:
-   ```
+   ```bash
    git clone git@github.com:stephengpope/no-code-architects-toolkit.git
    cd <repository-directory>
    ```
 
-2. Create a `.env` file in the root directory and add your API key:
-   ```
-   API_KEY=your_secret_api_key_here
-   ```
-
-3. Build the Docker image:
-   ```
+2. Build the Docker image:
+   ```bash
    docker build -t no-code-architects-toolkit .
    ```
 
-4. Run the Docker container:
+3. Run the Docker container with the necessary environment variables:
+
+   ```bash
+   docker run -p 8080:8080 \
+   -e API_KEY=your_secret_api_key_here \
+   -e STORAGE_PATH=local \ # Can be 'local', 'gcp', or 'drive'
+   -e GCP_SA_CREDENTIALS='{"type": "service_account", ...}' \ # Required if using GCP
+   -e GCP_BUCKET_NAME=your_gcp_bucket_name \ # Required if using GCP
+   -e GDRIVE_USER=your_google_drive_user_id \ # Required if using Google Drive
+   no-code-architects-toolkit
    ```
-   docker run -p 8080:8080 --env-file .env no-code-architects-toolkit
-   ```
+
+   Replace the environment variables with your actual values.
 
 The API will now be accessible at `http://localhost:8080`.
 
@@ -60,7 +65,7 @@ curl -X POST http://localhost:8080/authenticate \
 Convert a media file to MP3 format.
 
 ```bash
-curl -X POST http://localhost:8080/convert-media-to-mp3 \
+curl -X POST http://localhost:8080/media-to-mp3 \
   -H "X-API-Key: your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -69,12 +74,18 @@ curl -X POST http://localhost:8080/convert-media-to-mp3 \
   }'
 ```
 
+This endpoint supports different storage methods for the converted MP3 file:
+
+- **Local Storage** (`STORAGE_PATH=local`): The file is saved locally.
+- **Google Cloud Storage** (`STORAGE_PATH=gcp`): The file is uploaded to a Google Cloud Storage bucket.
+- **Google Drive** (`STORAGE_PATH=drive`): The file is uploaded to Google Drive.
+
 ### Transcribe Media
 
 Transcribe a media file to text or SRT format.
 
 ```bash
-curl -X POST http://localhost:8080/transcribe-media \
+curl -X POST http://localhost:8080/transcribe \
   -H "X-API-Key: your_api_key_here" \
   -H "Content-Type: application/json" \
   -d '{
@@ -84,26 +95,25 @@ curl -X POST http://localhost:8080/transcribe-media \
   }'
 ```
 
-Note: For `output`, you can use either `"transcript"` or `"srt"`.
+- **Output Options**:
+  - `"transcript"`: Transcribes the media file to plain text.
+  - `"srt"`: Generates a subtitle file in SRT format.
 
-### Get Processed File
+### Environment Variables
 
-Retrieve a processed file by filename.
+- **`API_KEY`**: The secret API key required for authenticating API requests.
+- **`STORAGE_PATH`**: Specifies where to store processed files. Can be one of the following:
+  - `"local"`: Stores files locally.
+  - `"gcp"`: Uploads files to Google Cloud Storage (requires `GCP_SA_CREDENTIALS` and `GCP_BUCKET_NAME`).
+  - `"drive"`: Uploads files to Google Drive (requires `GDRIVE_USER` and `GCP_SA_CREDENTIALS`).
+- **`GCP_SA_CREDENTIALS`**: Google Cloud service account credentials in JSON format (required for `gcp` or `drive` storage).
+- **`GCP_BUCKET_NAME`**: The name of the Google Cloud Storage bucket (required for `gcp` storage).
+- **`GDRIVE_USER`**: The Google Drive user ID or email to specify the target drive (required for `drive` storage).
 
-```bash
-curl -X POST http://localhost:8080/get-file \
-  -H "X-API-Key: your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "filename": "processed_file.mp3"
-  }' \
-  --output downloaded_file.mp3
-```
+### Notes
 
-## Notes
-
-- The API uses webhooks for asynchronous processing. Provide a `webhook_url` in your requests to receive the results.
-- Processed files are temporarily stored and automatically deleted after 1 hour.
+- The API uses webhooks for asynchronous processing. Provide a `webhook_url` in your requests to receive results upon completion.
+- Processed files are stored temporarily according to the selected storage method.
 - The transcription feature uses the Whisper AI model for accurate results.
 
 For more details on the API implementation, please refer to the source code.

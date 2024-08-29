@@ -149,7 +149,7 @@ def convert_media_to_mp3():
             # Process the conversion synchronously and return the URL
             uploaded_file_url = process_and_notify(media_url=media_url, job_id=job_id, id=id, webhook_url=None)
             if uploaded_file_url:
-                return jsonify({"response": uploaded_file_url}), 200
+                return jsonify({"response": uploaded_file_url, "message": "success"}), 200
             else:
                 return jsonify({"error": "File processing failed, no URL returned"}), 500
         except Exception as e:

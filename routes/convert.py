@@ -43,11 +43,13 @@ def process_and_notify(media_url, job_id, id, webhook_url):
         output_path = process_conversion(media_url, job_id)
         logger.info(f"Job {job_id}: Conversion completed. Output file: {output_path}")
 
-        uploaded_file_url = None
-        if output_path.startswith('https://storage.cloud.google.com/'):
+        # If the output path is a URL, it means the file is already uploaded
+        if output_path.startswith('https://storage.googleapis.com/'):
             logger.info(f"Job {job_id}: File is already in Google Cloud Storage: {output_path}")
             uploaded_file_url = output_path
         else:
+            # Proceed with upload/move based on STORAGE_PATH
+            uploaded_file_url = None
             if STORAGE_PATH == 'gcp':
                 if GCP_BUCKET_NAME:
                     logger.info(f"Job {job_id}: Uploading to Google Cloud Storage bucket '{GCP_BUCKET_NAME}'...")
@@ -69,12 +71,13 @@ def process_and_notify(media_url, job_id, id, webhook_url):
                 logger.error(f"Job {job_id}: Invalid STORAGE_PATH: {STORAGE_PATH}")
                 raise Exception(f"Invalid STORAGE_PATH: {STORAGE_PATH}")
 
-        if not uploaded_file_url:
-            logger.error(f"Job {job_id}: Failed to upload/move the output file {output_path}.")
-            raise Exception(f"Failed to upload/move the output file {output_path}")
+            if not uploaded_file_url:
+                logger.error(f"Job {job_id}: Failed to upload/move the output file {output_path}.")
+                raise Exception(f"Failed to upload/move the output file {output_path}")
 
-        logger.info(f"Job {job_id}: File uploaded/moved successfully. URL/Path: {uploaded_file_url}")
+            logger.info(f"Job {job_id}: File uploaded/moved successfully. URL/Path: {uploaded_file_url}")
 
+        # Send success webhook if applicable
         if webhook_url:
             send_webhook(webhook_url, {
                 "endpoint": "/media-to-mp3",
@@ -98,17 +101,6 @@ def process_and_notify(media_url, job_id, id, webhook_url):
             })
         return None
 
-
-    except Exception as e:
-        logger.error(f"Job {job_id}: Error during processing - {e}")
-        if webhook_url:
-            send_webhook(webhook_url, {
-                "endpoint": "/media-to-mp3",
-                "id": id,
-                "error": str(e),
-                "code": 500,
-                "message": "failed"
-            })
     finally:
         logger.info(f"Job {job_id}: Exiting process_and_notify function.")
 

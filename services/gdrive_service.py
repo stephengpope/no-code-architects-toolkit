@@ -96,10 +96,8 @@ def upload_to_gcs(file_path, bucket_name, blob_name=None):
             logger.info(f"Uploading {file_path} to Google Cloud Storage bucket {bucket_name} at root level...")
             blob.upload_from_filename(file_path)
             
-            # Generate the correct public URL
-        feature/GCP_Run
             public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-        main
+            
             logger.info(f"File {blob_name} uploaded to Google Cloud Storage with public URL: {public_url}")
             return public_url
         except Exception as e:

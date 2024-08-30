@@ -103,9 +103,7 @@ def transcribe():
             logger.info(f"Job {job_id}: No webhook provided, processing synchronously")
             result = process_transcription(media_url, output)
             logger.info(f"Job {job_id}: Returning transcription result")
-        feature/GCP_Run
             return jsonify({"response": result, "message": "success"}), 200
-        main
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous transcription - {e}")
             return jsonify({"message": str(e)}), 500

@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 import uuid
-from services.ffmpeg_processing import process_audio_mixing
+from services.audio_mixing import process_audio_mixing  # Correct import
 from services.authentication import authenticate
 
 audio_mixing_bp = Blueprint('audio_mixing', __name__)

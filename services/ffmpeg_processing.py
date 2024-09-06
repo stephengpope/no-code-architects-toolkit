@@ -141,7 +141,6 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
             })
         raise
 
-
 def reprocess_input_files(input_files):
     reprocessed_files = []
     for i, input_file in enumerate(input_files):

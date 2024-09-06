@@ -76,27 +76,33 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
             input_files.append(input_filename)
 
-        # Reprocess input files to ensure proper formatting
+        # Reprocess input files to ensure they are all in the same format
         reprocessed_files = reprocess_input_files(input_files)
 
-        # Combine the videos
-        inputs = [ffmpeg.input(f) for f in reprocessed_files]
-        concat = ffmpeg.concat(*inputs, v=1, a=1).node
-        v = concat[0]
-        a = concat[1]
-        output = ffmpeg.output(v, a, output_path,
-            vcodec='libx264', acodec='aac',
-            video_bitrate='3000k', audio_bitrate='192k')
+        # Generate an absolute path concat list file for FFmpeg
+        concat_file_path = os.path.join(STORAGE_PATH, f"{job_id}_concat_list.txt")
+        with open(concat_file_path, 'w') as concat_file:
+            for reprocessed_file in reprocessed_files:
+                # Write absolute paths to the concat list
+                concat_file.write(f"file '{os.path.abspath(reprocessed_file)}'\n")
 
-        ffmpeg.run(output, overwrite_output=True)
-        
-        # Remove input files after combination
+        # Use the concat demuxer to concatenate the videos
+        (
+            ffmpeg
+            .input(concat_file_path, format='concat', safe=0)
+            .output(output_path, vcodec='libx264', acodec='aac', video_bitrate='3000k', audio_bitrate='192k')
+            .run(overwrite_output=True)
+        )
+
+        # Clean up reprocessed files and input files
         for f in input_files:
             os.remove(f)
         for f in reprocessed_files:
             os.remove(f)
+        os.remove(concat_file_path)  # Remove the concat list file after the operation
+
         print(f"Video combination successful: {output_path}")
-        
+
         # Check if the output file exists locally before upload
         if not os.path.exists(output_path):
             raise FileNotFoundError(f"Output file {output_path} does not exist after combination.")
@@ -120,7 +126,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
                 "code": 200,
                 "message": "success"
             })
-        
+
         return uploaded_file_url or output_path
     except Exception as e:
         print(f"Video combination failed: {str(e)}")
@@ -134,6 +140,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
                 "message": str(e)
             })
         raise
+
 
 def reprocess_input_files(input_files):
     reprocessed_files = []

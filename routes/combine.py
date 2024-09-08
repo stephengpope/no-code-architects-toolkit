@@ -27,7 +27,7 @@ def process_and_notify(media_urls, webhook_url, id, job_id):
             send_webhook(webhook_url, {
                 "endpoint": "/combine-videos",
                 "id": id,
-                "error": str(e),
+                "message": str(e),
                 "code": 500,
                 "message": "failed"
             })
@@ -45,7 +45,7 @@ def combine_videos():
 
     if not media_urls or not isinstance(media_urls, list):
         logger.error("Invalid or missing media_urls parameter in request")
-        return jsonify({"error": "Invalid or missing media_urls parameter"}), 400
+        return jsonify({"message": "Invalid or missing media_urls parameter"}), 400
 
     if webhook_url and not id:
         logger.warning("id is missing when webhook_url is provided")

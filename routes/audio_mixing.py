@@ -24,15 +24,15 @@ def audio_mixing():
 
     # Input validation
     if not video_url or not audio_url:
-        return jsonify({"error": "Missing video_url or audio_url parameter"}), 400
+        return jsonify({"message": "Missing video_url or audio_url parameter"}), 400
     if not (0 <= video_vol <= 100):
-        return jsonify({"error": "video_vol must be between 0 and 100"}), 400
+        return jsonify({"message": "video_vol must be between 0 and 100"}), 400
     if not (0 <= audio_vol <= 100):
-        return jsonify({"error": "audio_vol must be between 0 and 100"}), 400
+        return jsonify({"message": "audio_vol must be between 0 and 100"}), 400
     if output_length not in ['video', 'audio']:
-        return jsonify({"error": "output_length must be either 'video' or 'audio'"}), 400
+        return jsonify({"message": "output_length must be either 'video' or 'audio'"}), 400
     if webhook_url and not id:
-        return jsonify({"error": "Missing id parameter for webhook"}), 400
+        return jsonify({"message": "Missing id parameter for webhook"}), 400
 
     job_id = str(uuid.uuid4())
     logger.info(f"Job {job_id}: Received audio mixing request for {video_url} and {audio_url}")

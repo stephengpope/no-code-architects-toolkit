@@ -7,7 +7,7 @@ import os
 from services.ffmpeg_processing import process_conversion
 from services.authentication import authenticate
 from services.webhook import send_webhook
-from services.gdrive_service import upload_to_gdrive, upload_to_gcs, move_to_local_storage
+from services.gdrive_service import process_gdrive_upload, upload_to_gdrive, upload_to_gcs, move_to_local_storage
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -95,7 +95,7 @@ def process_and_notify(media_url, job_id, id, webhook_url):
             send_webhook(webhook_url, {
                 "endpoint": "/media-to-mp3",
                 "id": id,
-                "error": str(e),
+                "message": str(e),
                 "code": 500,
                 "message": "failed"
             })
@@ -103,7 +103,6 @@ def process_and_notify(media_url, job_id, id, webhook_url):
 
     finally:
         logger.info(f"Job {job_id}: Exiting process_and_notify function.")
-
 
 @convert_bp.route('/media-to-mp3', methods=['POST'])
 @authenticate
@@ -116,12 +115,12 @@ def convert_media_to_mp3():
     # Ensure media_url is present
     if not media_url:
         logger.error("Received API call with missing media_url parameter.")
-        return jsonify({"error": "Missing media_url parameter"}), 400
+        return jsonify({"message": "Missing media_url parameter"}), 400
 
     # Only check for id if webhook_url is provided
     if webhook_url and not id:
         logger.error("Received API call with webhook_url but missing id parameter.")
-        return jsonify({"error": "Missing id parameter for webhook"}), 400
+        return jsonify({"message": "Missing id parameter for webhook"}), 400
 
     job_id = str(uuid.uuid4())
     logger.info(f"Job {job_id}: Received conversion request for {media_url}")
@@ -143,7 +142,8 @@ def convert_media_to_mp3():
             if uploaded_file_url:
                 return jsonify({"response": uploaded_file_url, "message": "success"}), 200
             else:
-                return jsonify({"error": "File processing failed, no URL returned"}), 500
+                return jsonify({"message": "File processing failed, no URL returned"}), 500
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
             return jsonify({"message": str(e)}), 500
+        

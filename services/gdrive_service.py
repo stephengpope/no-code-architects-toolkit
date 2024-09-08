@@ -156,3 +156,43 @@ def move_to_local_storage(file_url, local_path):
     except Exception as e:
         logger.error(f"Error moving file to local storage: {e}")
         raise
+
+def process_gdrive_upload(file_url, filename, folder_id, webhook_url, job_id):
+    try:
+        # Download the file from the provided URL
+        file_path = download_file(file_url, STORAGE_PATH)
+        
+        # Upload the file to Google Drive
+        file_id = upload_to_gdrive(file_path, filename, folder_id)
+        
+        # Get the public URL of the uploaded file
+        service = build('drive', 'v3', credentials=drive_credentials)
+        set_file_public(service, file_id)
+        uploaded_file_url = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
+        
+        # Send success webhook if applicable
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/media-to-mp3",
+                "id": job_id,
+                "response": uploaded_file_url,
+                "code": 200,
+                "message": "success"
+            })
+        
+        return uploaded_file_url
+
+    except Exception as e:
+        logger.error(f"Job {job_id}: Error during processing - {e}")
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/media-to-mp3",
+                "id": job_id,
+                "message": str(e),
+                "code": 500,
+                "message": "failed"
+            })
+        return None
+
+    finally:
+        logger.info(f"Job {job_id}: Exiting process_gdrive_upload function.")

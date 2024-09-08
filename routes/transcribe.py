@@ -74,7 +74,7 @@ def transcribe():
 
     if not media_url:
         logger.error("Missing media_url parameter in request")
-        return jsonify({"error": "Missing media_url parameter"}), 400
+        return jsonify({"message": "Missing media_url parameter"}), 400
 
     # Check if either webhook_url or id is missing and return the appropriate message
     if webhook_url and not id:

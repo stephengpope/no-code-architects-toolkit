@@ -17,19 +17,25 @@ GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 GCP_BUCKET_NAME = os.getenv('GCP_BUCKET_NAME')
 
-# Define the required scope
-SCOPES = ['https://www.googleapis.com/auth/drive']
+# Define the required scopes
+DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
+GCS_SCOPES = ['https://www.googleapis.com/auth/devstorage.full_control']
 
 # Initialize Google Cloud Storage client with explicit credentials if provided
 if GCP_SA_CREDENTIALS:
     credentials_info = json.loads(GCP_SA_CREDENTIALS)
-    credentials = service_account.Credentials.from_service_account_info(
+    drive_credentials = service_account.Credentials.from_service_account_info(
         credentials_info,
-        scopes=SCOPES,
+        scopes=DRIVE_SCOPES,
         subject=GDRIVE_USER  # Impersonate the user
     )
-    gcs_client = storage.Client(credentials=credentials)
+    gcs_credentials = service_account.Credentials.from_service_account_info(
+        credentials_info,
+        scopes=GCS_SCOPES
+    )
+    gcs_client = storage.Client(credentials=gcs_credentials)
 else:
+    drive_credentials = None
     gcs_client = storage.Client()
 
 def download_file(file_url, storage_path):
@@ -49,7 +55,7 @@ def download_file(file_url, storage_path):
 def upload_to_gdrive(file_path, filename, folder_id):
     try:
         logger.info(f"Uploading file to Google Drive: {file_path}")
-        service = build('drive', 'v3', credentials=credentials)
+        service = build('drive', 'v3', credentials=drive_credentials)
         
         # File metadata, with the folder ID where the file should be stored
         file_metadata = {
@@ -69,7 +75,6 @@ def upload_to_gdrive(file_path, filename, folder_id):
     except Exception as e:
         logger.error(f"Error uploading file to Google Drive: {e}")
         raise
-
 
 def set_file_public(service, file_id):
     try:

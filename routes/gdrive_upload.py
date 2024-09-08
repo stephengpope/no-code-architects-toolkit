@@ -26,7 +26,7 @@ def download_file(file_url, storage_path):
         logger.info(f"Downloading file from URL: {file_url}")
         response = requests.get(file_url)
         response.raise_for_status()  # Raise an HTTPError for bad responses
-        file_path = f"{storage_path}/{file_url.split('/')[-1]}"
+        file_path = os.path.join(storage_path, file_url.split('/')[-1])
         with open(file_path, 'wb') as file:
             file.write(response.content)
         logger.info(f"File downloaded successfully to: {file_path}")
@@ -65,15 +65,12 @@ def get_or_create_folder(service, folder_name):
         logger.error(f"Error getting or creating folder: {e}")
         raise
 
-def upload_to_gdrive(file_path, filename, folder_name):
+def upload_to_gdrive(file_path, filename, folder_id):
     try:
         logger.info(f"Uploading file to Google Drive: {file_path}")
         credentials_info = json.loads(GCP_SA_CREDENTIALS)
         credentials = Credentials.from_service_account_info(credentials_info)
         service = build('drive', 'v3', credentials=credentials)
-        
-        # Get or create the folder
-        folder_id = get_or_create_folder(service, folder_name)
         
         file_metadata = {
             'name': filename,

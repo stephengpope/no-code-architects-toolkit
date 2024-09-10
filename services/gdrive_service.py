@@ -38,6 +38,20 @@ else:
     drive_credentials = None
     gcs_client = storage.Client()
 
+# Check if the service account can impersonate the GDRIVE_USER
+def check_impersonation_access():
+    try:
+        service = build('drive', 'v3', credentials=drive_credentials)
+        # Attempt to list files in the user's Google Drive
+        results = service.files().list(pageSize=1, fields="files(id, name)").execute()
+        logger.info(f"Impersonation check successful. Found {len(results.get('files', []))} files.")
+    except Exception as e:
+        logger.error(f"Impersonation check failed: {e}")
+        raise Exception("Service account does not have access to impersonate the GDRIVE_USER.")
+
+# Perform the impersonation access check
+check_impersonation_access()
+
 def download_file(file_url, storage_path):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
@@ -168,19 +182,18 @@ def process_gdrive_upload(file_url, filename, folder_id, webhook_url, job_id):
         # Get the public URL of the uploaded file
         service = build('drive', 'v3', credentials=drive_credentials)
         set_file_public(service, file_id)
-        uploaded_file_url = f"https://drive.google.com/file/d/{file_id}/view?usp=sharing"
         
         # Send success webhook if applicable
         if webhook_url:
             send_webhook(webhook_url, {
                 "endpoint": "/media-to-mp3",
                 "id": job_id,
-                "response": uploaded_file_url,
+                "response": file_id,  # Return file_id instead of URL
                 "code": 200,
                 "message": "success"
             })
         
-        return uploaded_file_url
+        return file_id
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error during processing - {e}")

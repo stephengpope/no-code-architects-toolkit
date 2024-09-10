@@ -36,7 +36,6 @@ It's built with Flask, utilizes FFmpeg for media conversion, and leverages the W
    ```bash
    docker run -p 8080:8080 \
    -e API_KEY=your_secret_api_key_here \
-   -e STORAGE_PATH=local \ # Can be 'local', 'gcp', or 'drive'
    -e GCP_SA_CREDENTIALS='{"type": "service_account", ...}' \ # Required if using GCP
    -e GCP_BUCKET_NAME=your_gcp_bucket_name \ # Required if using GCP
    -e GDRIVE_USER=your_google_drive_user_id \ # Required if using Google Drive
@@ -74,12 +73,6 @@ curl -X POST http://localhost:8080/media-to-mp3 \
   }'
 ```
 
-This endpoint supports different storage methods for the converted MP3 file:
-
-- **Local Storage** (`STORAGE_PATH=local`): The file is saved locally.
-- **Google Cloud Storage** (`STORAGE_PATH=gcp`): The file is uploaded to a Google Cloud Storage bucket.
-- **Google Drive** (`STORAGE_PATH=drive`): The file is uploaded to Google Drive.
-
 ### Transcribe Media
 
 Transcribe a media file to text or SRT format.
@@ -102,10 +95,6 @@ curl -X POST http://localhost:8080/transcribe \
 ### Environment Variables
 
 - **`API_KEY`**: The secret API key required for authenticating API requests.
-- **`STORAGE_PATH`**: Specifies where to store processed files. Can be one of the following:
-  - `"local"`: Stores files locally.
-  - `"gcp"`: Uploads files to Google Cloud Storage (requires `GCP_SA_CREDENTIALS` and `GCP_BUCKET_NAME`).
-  - `"drive"`: Uploads files to Google Drive (requires `GDRIVE_USER` and `GCP_SA_CREDENTIALS`).
 - **`GCP_SA_CREDENTIALS`**: Google Cloud service account credentials in JSON format (required for `gcp` or `drive` storage).
 - **`GCP_BUCKET_NAME`**: The name of the Google Cloud Storage bucket (required for `gcp` storage).
 - **`GDRIVE_USER`**: The Google Drive user ID or email to specify the target drive (required for `drive` storage).

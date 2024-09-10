@@ -1,15 +1,17 @@
 import os
-import uuid
 import whisper
 import srt
 from datetime import timedelta
-from services.webhook import send_webhook
-from services.file_management import download_file, STORAGE_PATH
+from services.file_management import download_file
+
+# Set the default local storage directory
+STORAGE_PATH = "/tmp/"
 
 def process_transcription(media_url, output_type):
-    try:
-        input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
+    """Transcribe media and return the transcript or SRT file."""
+    input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
 
+    try:
         model = whisper.load_model("base")
         result = model.transcribe(input_filename)
 
@@ -27,6 +29,7 @@ def process_transcription(media_url, output_type):
             raise ValueError("Invalid output type. Must be 'transcript' or 'srt'.")
 
         os.remove(input_filename)
+        print(f"Transcription successful, output type: {output_type}")
         return output
     except Exception as e:
         print(f"Transcription failed: {str(e)}")

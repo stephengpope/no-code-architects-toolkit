@@ -1,8 +1,11 @@
 import os
 import ffmpeg
 import requests
-from services.file_management import download_file, STORAGE_PATH
+from services.file_management import download_file
 from services.gdrive_service import upload_to_gdrive, upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # Import gcs_client
+
+# Set the default local storage directory
+STORAGE_PATH = "/tmp/"
 
 def process_conversion(media_url, job_id, webhook_url=None):
     """Convert media to MP3 format."""
@@ -21,53 +24,21 @@ def process_conversion(media_url, job_id, webhook_url=None):
         )
         os.remove(input_filename)
         print(f"Conversion successful: {output_path}")
-        
+
         # Ensure the output file exists locally before attempting upload
         if not os.path.exists(output_path):
             raise FileNotFoundError(f"Output file {output_path} does not exist after conversion.")
 
-        # Upload to the correct storage based on STORAGE_PATH
-        uploaded_file_url = None
-        if STORAGE_PATH.lower() == 'drive':
-            uploaded_file_url = upload_to_gdrive(output_path, output_filename)
-        elif STORAGE_PATH.lower() == 'gcp':
-            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME, output_filename)
-        else:
-            raise Exception(f"Invalid STORAGE_PATH: {STORAGE_PATH}")
-
-        # If the upload was successful, delete the local file and return
-        if uploaded_file_url:
-            print(f"File successfully uploaded to {uploaded_file_url}")
-            os.remove(output_path)  # Remove the local file after uploading
-            
-            # Trigger webhook if provided and exit the function
-            if webhook_url:
-                send_webhook(webhook_url, {
-                    "endpoint": "/convert-media-to-mp3",
-                    "job_id": job_id,
-                    "response": uploaded_file_url,
-                    "code": 200,
-                    "message": "success"
-                })
-            return uploaded_file_url
+        return output_path
 
     except Exception as e:
         print(f"Conversion failed: {str(e)}")
-        # Trigger failure webhook if provided
-        if webhook_url:
-            send_webhook(webhook_url, {
-                "endpoint": "/convert-media-to-mp3",
-                "job_id": job_id,
-                "response": None,
-                "code": 500,
-                "message": str(e)
-            })
         raise
-
+    
 def process_video_combination(media_urls, job_id, webhook_url=None):
     """Combine multiple videos into one."""
     input_files = []
-    output_filename = f"{job_id}_combined.mp4"
+    output_filename = f"{job_id}"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
@@ -109,7 +80,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
 
         # Upload to Google Drive or GCP Storage
         if GCP_BUCKET_NAME:
-            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME, output_filename)
+            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME)
         else:
             uploaded_file_url = upload_to_gdrive(output_path, output_filename)
 

@@ -1,8 +1,10 @@
 import os
 import whisper
 import srt
-from datetime import timedelta
-from services.file_management import download_file, STORAGE_PATH
+from services.file_management import download_file
+
+# Set the default local storage directory
+STORAGE_PATH = "/tmp/"
 
 def process_transcription(media_url, output_type):
     """Transcribe media and return the transcript or SRT file."""

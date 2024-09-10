@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 
 # Import settings from environment variables
-STORAGE_PATH = os.getenv('STORAGE_PATH')
+STORAGE_PATH ="/tmp/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 
@@ -129,7 +129,7 @@ def process_request(data, job_id):
             webhook_payload = {
                 'endpoint': '/gdrive-upload',
                 'id': data['id'],
-                'response': file_url,
+                'response': file_id,
                 'code': 200,
                 'message': 'success'
             }

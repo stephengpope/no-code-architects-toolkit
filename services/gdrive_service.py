@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Import settings from environment variables
-STORAGE_PATH = os.getenv('STORAGE_PATH')
+STORAGE_PATH =  "/tmp/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 GCP_BUCKET_NAME = os.getenv('GCP_BUCKET_NAME')

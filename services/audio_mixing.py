@@ -1,7 +1,9 @@
 import os
 import ffmpeg
-from services.file_management import download_file, STORAGE_PATH
-from services.gdrive_service import upload_to_gcs, GCP_BUCKET_NAME
+from services.file_management import download_file
+
+# Set the default local storage directory
+STORAGE_PATH = "/tmp/"
 
 def process_audio_mixing(video_url, audio_url, video_vol, audio_vol, output_length, job_id, webhook_url=None):
     video_path = download_file(video_url, STORAGE_PATH)

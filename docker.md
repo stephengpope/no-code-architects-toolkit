@@ -91,7 +91,6 @@ This guide will walk you through setting up and deploying the project using the 
    - Run the Docker container:
      ```bash
      docker run -p 8080:8080 \
-        -e STORAGE_PATH=GCP \
         -e API_KEY=<set-to-any-value> \
         -e GCP_BUCKET_NAME='<name-of-gcp-storage>' \
         -e GCP_SA_CREDENTIALS=<contents-of-json-file-downloaded> \
@@ -107,7 +106,6 @@ This guide will walk you through setting up and deploying the project using the 
    - Run the Docker container:
      ```bash
      docker run -p 8080:8080 \
-        -e STORAGE_PATH=DRIVE \
         -e GDRIVE_USER='<email address>' \
         -e GDRIVE_FOLDER_ID='<Folder-ID>'
         -e API_KEY='<set-to-any-value>' \
@@ -179,7 +177,6 @@ This guide will walk you through setting up and deploying the project using the 
    - Scroll down to the **Environment variables** section.
    - Add the following environment variables:
      - `API_KEY`: Set this to your desired API key.
-     - `STORAGE_PATH`: Set this to either `GCP` or `DRIVE` depending on your setup.
      - `GCP_BUCKET_NAME`: If using Google Cloud Storage, set this to the name of your GCS bucket.
      - `GDRIVE_USER`: If using Google Drive, set this to the email address associated with your Google Drive account.
      - `GDRIVE_FOLDER_ID`: If using Google Drive, set this to the folder ID of your Google Drive folder.

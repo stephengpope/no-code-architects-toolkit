@@ -21,6 +21,17 @@ STORAGE_PATH = os.getenv('STORAGE_PATH')
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 
+def get_gdrive_service():
+    # Decode the service account credentials
+    credentials_info = json.loads(GCP_SA_CREDENTIALS)
+    credentials = Credentials.from_service_account_info(credentials_info, scopes=['https://www.googleapis.com/auth/drive'])
+
+    # Impersonate the GDRIVE_USER
+    delegated_credentials = credentials.with_subject(GDRIVE_USER)
+
+    # Build and return the Google Drive API service
+    return build('drive', 'v3', credentials=delegated_credentials)
+
 def download_file(file_url, storage_path):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
@@ -41,7 +52,7 @@ def get_or_create_folder(service, folder_name):
         query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
         results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
         items = results.get('files', [])
-        
+
         if items:
             # Folder found, return the first match
             folder_id = items[0]['id']
@@ -55,11 +66,7 @@ def get_or_create_folder(service, folder_name):
             folder = service.files().create(body=file_metadata, fields='id').execute()
             folder_id = folder.get('id')
             logger.info(f"Folder '{folder_name}' created with ID: {folder_id}")
-        
-        # Set folder permissions to be publicly accessible and to the specific user
-        set_file_public(service, folder_id)
-        set_file_permissions(service, folder_id, GDRIVE_USER)
-        
+
         return folder_id
     except Exception as e:
         logger.error(f"Error getting or creating folder: {e}")
@@ -68,10 +75,10 @@ def get_or_create_folder(service, folder_name):
 def upload_to_gdrive(file_path, filename, folder_id):
     try:
         logger.info(f"Uploading file to Google Drive: {file_path}")
-        credentials_info = json.loads(GCP_SA_CREDENTIALS)
-        credentials = Credentials.from_service_account_info(credentials_info)
-        service = build('drive', 'v3', credentials=credentials)
-        
+
+        # Get the Google Drive service with impersonation
+        service = get_gdrive_service()
+
         file_metadata = {
             'name': filename,
             'parents': [folder_id]
@@ -80,11 +87,7 @@ def upload_to_gdrive(file_path, filename, folder_id):
         file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
         file_id = file.get('id')
         logger.info(f"File uploaded successfully with ID: {file_id}")
-        
-        # Set file permissions to be publicly accessible and to the specific user
-        set_file_public(service, file_id)
-        set_file_permissions(service, file_id, GDRIVE_USER)
-        
+
         return file_id
     except Exception as e:
         logger.error(f"Error uploading file to Google Drive: {e}")
@@ -121,7 +124,7 @@ def process_request(data, job_id):
         file_path = download_file(data['file_url'], STORAGE_PATH)
         file_id = upload_to_gdrive(file_path, data['filename'], data['folder_id'])
         file_url = f"https://drive.google.com/file/d/{file_id}/view"
-        
+
         if 'webhook_url' in data:
             webhook_payload = {
                 'endpoint': '/gdrive-upload',

@@ -9,7 +9,7 @@ def test_authenticate_endpoint(client):
 def test_authenticate_fail(client):
     response = client.post('/authenticate', headers={'X-API-Key': 'wrong-key'})
     assert response.status_code == 401
-    assert response.json == {"error": "Unauthorized"}
+    assert response.json == {"message": "Unauthorized"}
 
 def test_convert_media_to_mp3(client, mocker):
     data = {

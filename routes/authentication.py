@@ -11,7 +11,7 @@ def authenticate(func):
     def wrapper(*args, **kwargs):
         api_key = request.headers.get('X-API-Key')
         if api_key != API_KEY:
-            return jsonify({"error": "Unauthorized"}), 401
+            return jsonify({"message": "Unauthorized"}), 401
         return func(*args, **kwargs)
     return wrapper
 

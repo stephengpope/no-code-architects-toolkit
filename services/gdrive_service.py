@@ -1,122 +1,211 @@
 import os
+import requests
 import json
-import logging
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from google.cloud import storage
+import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load credentials from environment variable
+# Import settings from environment variables
+STORAGE_PATH =  "/tmp/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
-STORAGE_PATH = os.getenv('STORAGE_PATH', '/tmp/')
 GCP_BUCKET_NAME = os.getenv('GCP_BUCKET_NAME')
-GDRIVE_FOLDER_ID = os.getenv('GDRIVE_FOLDER_ID')
 
-drive_service = None
-gcs_client = None  # Ensure gcs_client is defined globally
+# Define the required scopes
+DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
+GCS_SCOPES = ['https://www.googleapis.com/auth/devstorage.full_control']
 
+# Initialize Google Cloud Storage client with explicit credentials if provided
 if GCP_SA_CREDENTIALS:
-    try:
-        credentials = service_account.Credentials.from_service_account_info(
-            json.loads(GCP_SA_CREDENTIALS),
-            scopes=['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/devstorage.full_control']
-        )
-
-        if GDRIVE_USER:
-            logger.info("Initializing Google Drive service...")
-            drive_service = build('drive', 'v3', credentials=credentials)
-            logger.info("Google Drive service initialized successfully.")
-
-        if GCP_BUCKET_NAME:
-            logger.info("Initializing Google Cloud Storage client...")
-            gcs_client = storage.Client(credentials=credentials)  # Correctly initialize gcs_client
-            logger.info("Google Cloud Storage client initialized successfully.")
-
-    except Exception as e:
-        logger.error(f"Failed to initialize cloud services: {e}")
+    credentials_info = json.loads(GCP_SA_CREDENTIALS)
+    drive_credentials = service_account.Credentials.from_service_account_info(
+        credentials_info,
+        scopes=DRIVE_SCOPES,
+        subject=GDRIVE_USER  # Impersonate the user
+    )
+    gcs_credentials = service_account.Credentials.from_service_account_info(
+        credentials_info,
+        scopes=GCS_SCOPES
+    )
+    gcs_client = storage.Client(credentials=gcs_credentials)
 else:
-    logger.warning("No cloud credentials provided. Using local storage only.")
+    drive_credentials = None
+    gcs_client = storage.Client()
 
-def upload_to_gdrive(file_path, file_name):
-    if drive_service:
-        try:
-            logger.info(f"Uploading {file_name} to Google Drive...")
-
-            file_metadata = {'name': file_name}
-            if GDRIVE_FOLDER_ID:
-                file_metadata['parents'] = [GDRIVE_FOLDER_ID]
-
-            media = MediaFileUpload(file_path, mimetype='application/octet-stream')
-
-            uploaded_file = drive_service.files().create(
-                body=file_metadata,
-                media_body=media,
-                fields='id'
-            ).execute()
-
-            # Get the file ID
-            file_id = uploaded_file.get('id')
-
-            # Set permissions to allow anyone with the link to view
-            permission = {
-                'type': 'anyone',
-                'role': 'reader'
-            }
-            drive_service.permissions().create(
-                fileId=file_id,
-                body=permission
-            ).execute()
-
-            logger.info(f"File {file_name} uploaded to Google Drive with ID: {file_id}")
-            return f"https://drive.google.com/file/d/{file_id}/view"
-
-        except Exception as e:
-            logger.error(f"Failed to upload {file_name} to Google Drive: {e}")
-            return None
-    else:
-        logger.warning("Google Drive service is not initialized. Skipping upload.")
-        return None
-
-
-def upload_to_gcs(file_path, bucket_name, blob_name=None):
-    if gcs_client:
-        try:
-            # Preserve the original file extension or allow specifying blob_name
-            if blob_name is None:
-                blob_name = os.path.basename(file_path) 
-
-            bucket = gcs_client.bucket(bucket_name)
-            blob = bucket.blob(blob_name)
-
-            logger.info(f"Uploading {file_path} to Google Cloud Storage bucket {bucket_name} at root level...")
-            blob.upload_from_filename(file_path)
-            
-            public_url = f"https://storage.googleapis.com/{bucket_name}/{blob_name}"
-            
-            logger.info(f"File {blob_name} uploaded to Google Cloud Storage with public URL: {public_url}")
-            return public_url
-        except Exception as e:
-            logger.error(f"Failed to upload {file_path} to Google Cloud Storage: {e}")
-            return None
-    else:
-        logger.warning("Google Cloud Storage client is not initialized. Skipping upload.")
-        return None
-
-def move_to_local_storage(file_path, file_name):
+# Check if the service account can impersonate the GDRIVE_USER
+def check_impersonation_access():
     try:
-        local_file_path = os.path.join(STORAGE_PATH, file_name)
-        if not os.path.exists(file_path):
-            logger.error(f"File {file_path} does not exist.")
-            return None
-        
-        os.rename(file_path, local_file_path)
-        logger.info(f"File {file_name} moved to local storage at {local_file_path}")
-        return local_file_path
+        service = build('drive', 'v3', credentials=drive_credentials)
+        # Attempt to list files in the user's Google Drive
+        results = service.files().list(pageSize=1, fields="files(id, name)").execute()
+        logger.info(f"Impersonation check successful. Found {len(results.get('files', []))} files.")
     except Exception as e:
-        logger.error(f"Failed to move {file_name} to local storage: {e}")
+        logger.error(f"Impersonation check failed: {e}")
+        raise Exception("Service account does not have access to impersonate the GDRIVE_USER.")
+
+# Perform the impersonation access check
+check_impersonation_access()
+
+def download_file(file_url, storage_path):
+    try:
+        logger.info(f"Downloading file from URL: {file_url}")
+        response = requests.get(file_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        file_path = os.path.join(storage_path, file_url.split('/')[-1])
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+        logger.info(f"File downloaded successfully to: {file_path}")
+        return file_path
+    except Exception as e:
+        logger.error(f"Error downloading file: {e}")
+        raise
+
+def upload_to_gdrive(file_path, filename, folder_id):
+    try:
+        logger.info(f"Uploading file to Google Drive: {file_path}")
+        service = build('drive', 'v3', credentials=drive_credentials)
+        
+        # File metadata, with the folder ID where the file should be stored
+        file_metadata = {
+            'name': filename,
+            'parents': [folder_id]
+        }
+        media = MediaFileUpload(file_path, resumable=True)
+        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+        file_id = file.get('id')
+        logger.info(f"File uploaded successfully with ID: {file_id}")
+
+        # Change ownership to the GDRIVE_USER after upload
+        logger.info(f"Transferring ownership of the file to {GDRIVE_USER}")
+        change_file_owner(service, file_id, GDRIVE_USER)  # Transfer ownership
+
+        return file_id
+    except Exception as e:
+        logger.error(f"Error uploading file to Google Drive: {e}")
+        raise
+
+def set_file_public(service, file_id):
+    try:
+        permission = {
+            'type': 'anyone',
+            'role': 'reader'
+        }
+        service.permissions().create(fileId=file_id, body=permission).execute()
+        logger.info(f"Permissions set to public for file/folder ID: {file_id}")
+    except Exception as e:
+        logger.error(f"Error setting permissions: {e}")
+        raise
+
+def set_file_permissions(service, file_id, email):
+    try:
+        permission = {
+            'type': 'user',
+            'role': 'writer',
+            'emailAddress': email
+        }
+        service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
+        logger.info(f"Full permissions granted to {email} for file/folder ID: {file_id}")
+    except Exception as e:
+        logger.error(f"Error setting permissions for {email}: {e}")
+        raise
+
+def change_file_owner(service, file_id, new_owner_email):
+    try:
+        logger.info(f"Changing owner of file ID: {file_id} to {new_owner_email}")
+        permission = {
+            'type': 'user',
+            'role': 'owner',
+            'emailAddress': new_owner_email
+        }
+        service.permissions().create(
+            fileId=file_id,
+            body=permission,
+            transferOwnership=True
+        ).execute()
+        logger.info(f"Ownership transferred to {new_owner_email} for file ID: {file_id}")
+    except Exception as e:
+        logger.error(f"Error changing owner to {new_owner_email}: {e}")
+        raise
+
+def change_folder_files_owner(service, folder_id, new_owner_email):
+    try:
+        logger.info(f"Changing owner of all files in folder ID: {folder_id} to {new_owner_email}")
+        query = f"'{folder_id}' in parents and trashed=false"
+        results = service.files().list(q=query, fields="files(id, name)").execute()
+        files = results.get('files', [])
+        for file in files:
+            change_file_owner(service, file['id'], new_owner_email)
+        logger.info(f"Ownership transferred to {new_owner_email} for all files in folder ID: {folder_id}")
+    except Exception as e:
+        logger.error(f"Error changing owner for files in folder {folder_id}: {e}")
+        raise
+
+def upload_to_gcs(file_path, bucket_name=GCP_BUCKET_NAME):
+    try:
+        logger.info(f"Uploading file to Google Cloud Storage: {file_path}")
+        bucket = gcs_client.bucket(bucket_name)
+        blob = bucket.blob(os.path.basename(file_path))
+        blob.upload_from_filename(file_path)
+        logger.info(f"File uploaded successfully to GCS: {blob.public_url}")
+        return blob.public_url
+    except Exception as e:
+        logger.error(f"Error uploading file to GCS: {e}")
+        raise
+
+def move_to_local_storage(file_url, local_path):
+    try:
+        logger.info(f"Moving file from URL: {file_url} to local storage: {local_path}")
+        response = requests.get(file_url)
+        response.raise_for_status()  # Raise an HTTPError for bad responses
+        with open(local_path, 'wb') as file:
+            file.write(response.content)
+        logger.info(f"File moved successfully to: {local_path}")
+        return local_path
+    except Exception as e:
+        logger.error(f"Error moving file to local storage: {e}")
+        raise
+
+def process_gdrive_upload(file_url, filename, folder_id, webhook_url, job_id):
+    try:
+        # Download the file from the provided URL
+        file_path = download_file(file_url, STORAGE_PATH)
+        
+        # Upload the file to Google Drive
+        file_id = upload_to_gdrive(file_path, filename, folder_id)
+        
+        # Get the public URL of the uploaded file
+        service = build('drive', 'v3', credentials=drive_credentials)
+        set_file_public(service, file_id)
+        
+        # Send success webhook if applicable
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/media-to-mp3",
+                "id": job_id,
+                "response": file_id,  # Return file_id instead of URL
+                "code": 200,
+                "message": "success"
+            })
+        
+        return file_id
+
+    except Exception as e:
+        logger.error(f"Job {job_id}: Error during processing - {e}")
+        if webhook_url:
+            send_webhook(webhook_url, {
+                "endpoint": "/media-to-mp3",
+                "id": job_id,
+                "message": str(e),
+                "code": 500,
+                "message": "failed"
+            })
         return None
+
+    finally:
+        logger.info(f"Job {job_id}: Exiting process_gdrive_upload function.")

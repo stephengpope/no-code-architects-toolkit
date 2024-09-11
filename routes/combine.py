@@ -1,13 +1,31 @@
 from flask import Blueprint, request, jsonify
 import uuid
+import threading
+import logging
+import queue
 from services.ffmpeg_processing import process_video_combination
 from services.authentication import authenticate
 from services.webhook import send_webhook
-import threading
-import logging
 
 combine_bp = Blueprint('combine', __name__)
 logger = logging.getLogger(__name__)
+
+# Create a queue for combine jobs
+combine_queue = queue.Queue()
+
+def combine_worker():
+    while True:
+        job = combine_queue.get()
+        try:
+            process_and_notify(**job)
+        except Exception as e:
+            logger.error(f"Error processing job: {e}")
+        finally:
+            combine_queue.task_done()
+
+# Start the worker thread
+worker_thread = threading.Thread(target=combine_worker, daemon=True)
+worker_thread.start()
 
 def process_and_notify(media_urls, webhook_url, id, job_id):
     try:
@@ -51,17 +69,12 @@ def combine_videos():
         logger.warning("id is missing when webhook_url is provided")
         return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 400
 
-    if webhook_url:
-        # Asynchronous processing
-        threading.Thread(target=process_and_notify, args=(media_urls, webhook_url, id, job_id)).start()
-        logger.info(f"Job {job_id}: Started asynchronous processing")
-        return jsonify({"message": "processing"}), 202
-    else:
-        # Synchronous processing
-        try:
-            output_filename = process_video_combination(media_urls, job_id)
-            logger.info(f"Job {job_id}: Combine-videos completed successfully")
-            return jsonify({"response": output_filename, "message": "success"}), 200
-        except Exception as e:
-            logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
-            return jsonify({"message": str(e)}), 500
+    # Add job to the queue
+    combine_queue.put({
+        'media_urls': media_urls,
+        'webhook_url': webhook_url,
+        'id': id,
+        'job_id': job_id
+    })
+    logger.info(f"Job {job_id}: Added to queue for asynchronous processing")
+    return jsonify({"message": "processing"}), 202

@@ -9,9 +9,9 @@ STORAGE_PATH = "/tmp/"
 
 def process_conversion(media_url, job_id, webhook_url=None):
     """Convert media to MP3 format."""
-    input_filename = download_file(media_url, os.path.join(STORAGE_PATH, f"{job_id}_input"))
+    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_DIR, f"{job_id}_input"))
     output_filename = f"{job_id}.mp3"
-    output_path = os.path.join(STORAGE_PATH, output_filename)
+    output_path = os.path.join(LOCAL_STORAGE_DIR, output_filename)
 
     try:
         # Convert media file to MP3
@@ -38,7 +38,7 @@ def process_conversion(media_url, job_id, webhook_url=None):
 def process_video_combination(media_urls, job_id, webhook_url=None):
     """Combine multiple videos into one."""
     input_files = []
-    output_filename = f"{job_id}"
+    output_filename = f"{job_id}.mp4"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
@@ -80,7 +80,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
 
         # Upload to Google Drive or GCP Storage
         if GCP_BUCKET_NAME:
-            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME)
+            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME) 
         else:
             uploaded_file_url = upload_to_gdrive(output_path, output_filename)
 

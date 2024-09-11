@@ -6,9 +6,6 @@ from services.webhook import send_webhook
 import threading
 import logging
 
-# Set the storage path to /tmp/
-STORAGE_PATH = "/tmp/"
-
 combine_bp = Blueprint('combine', __name__)
 logger = logging.getLogger(__name__)
 

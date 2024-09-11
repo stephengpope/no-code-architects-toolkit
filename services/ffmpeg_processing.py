@@ -9,9 +9,9 @@ STORAGE_PATH = "/tmp/"
 
 def process_conversion(media_url, job_id, webhook_url=None):
     """Convert media to MP3 format."""
-    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_DIR, f"{job_id}_input"))
+    input_filename = download_file(media_url, os.path.join(STORAGE_PATH, f"{job_id}_input"))
     output_filename = f"{job_id}.mp3"
-    output_path = os.path.join(LOCAL_STORAGE_DIR, output_filename)
+    output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
         # Convert media file to MP3
@@ -34,7 +34,7 @@ def process_conversion(media_url, job_id, webhook_url=None):
     except Exception as e:
         print(f"Conversion failed: {str(e)}")
         raise
-    
+
 def process_video_combination(media_urls, job_id, webhook_url=None):
     """Combine multiple videos into one."""
     input_files = []
@@ -47,15 +47,12 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
             input_files.append(input_filename)
 
-        # Reprocess input files to ensure they are all in the same format
-        reprocessed_files = reprocess_input_files(input_files)
-
         # Generate an absolute path concat list file for FFmpeg
         concat_file_path = os.path.join(STORAGE_PATH, f"{job_id}_concat_list.txt")
         with open(concat_file_path, 'w') as concat_file:
-            for reprocessed_file in reprocessed_files:
+            for input_file in input_files:
                 # Write absolute paths to the concat list
-                concat_file.write(f"file '{os.path.abspath(reprocessed_file)}'\n")
+                concat_file.write(f"file '{os.path.abspath(input_file)}'\n")
 
         # Use the concat demuxer to concatenate the videos
         (
@@ -65,10 +62,8 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
             .run(overwrite_output=True)
         )
 
-        # Clean up reprocessed files and input files
+        # Clean up input files
         for f in input_files:
-            os.remove(f)
-        for f in reprocessed_files:
             os.remove(f)
         os.remove(concat_file_path)  # Remove the concat list file after the operation
 
@@ -111,11 +106,4 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
                 "message": str(e)
             })
         raise
-
-def reprocess_input_files(input_files):
-    reprocessed_files = []
-    for i, input_file in enumerate(input_files):
-        reprocessed_file = os.path.join(STORAGE_PATH, f"reprocessed_{i}.mp4")
-        ffmpeg.input(input_file).output(reprocessed_file, vcodec='libx264', acodec='aac').run(overwrite_output=True)
-        reprocessed_files.append(reprocessed_file)
-    return reprocessed_files
+    

@@ -43,7 +43,8 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
 
     try:
         # Download all media files
-        for i, url in enumerate(media_urls):
+        for i, media_item in enumerate(media_urls):
+            url = media_item['media_url']
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
             input_files.append(input_filename)
 

@@ -48,11 +48,8 @@ def process_and_notify(media_url, job_id, id, webhook_url):
         if GCP_BUCKET_NAME:
             logger.info(f"Job {job_id}: Uploading to Google Cloud Storage bucket '{GCP_BUCKET_NAME}'...")
             uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME)
-        elif GDRIVE_USER:
-            logger.info(f"Job {job_id}: Uploading to Google Drive...")
-            uploaded_file_url = upload_to_gdrive(output_path, f"{job_id}.mp3")
         else:
-            logger.error(f"Job {job_id}: GCP_BUCKET_NAME or GDRIVE_USER is not set.")
+            logger.error(f"Job {job_id}: GCP_BUCKET_NAME is not set.")
             raise Exception("No valid storage destination is set (GCS or Google Drive).")
 
         if not uploaded_file_url:
@@ -66,6 +63,7 @@ def process_and_notify(media_url, job_id, id, webhook_url):
             send_webhook(webhook_url, {
                 "endpoint": "/media-to-mp3",
                 "id": id,
+                "job_id": job_id,
                 "response": uploaded_file_url,
                 "code": 200,
                 "message": "success"
@@ -79,11 +77,12 @@ def process_and_notify(media_url, job_id, id, webhook_url):
             send_webhook(webhook_url, {
                 "endpoint": "/media-to-mp3",
                 "id": id,
+                "job_id": job_id,
+                "response": None,
                 "message": str(e),
-                "code": 500,
-                "message": "failed"
+                "code": 500
             })
-        return None
+        raise
 
     finally:
         logger.info(f"Job {job_id}: Exiting process_and_notify function.")
@@ -118,15 +117,28 @@ def convert_media_to_mp3():
             'webhook_url': webhook_url
         })
         logger.info(f"Job {job_id}: Added to queue for background processing")
-        return jsonify({"message": "processing"}), 202
+        return jsonify(
+            {
+                "code": 202,
+                "id": id,
+                "job_id": job_id,
+                "message": "processing"
+            }
+        ), 202
     else:
         try:
             # Process the conversion synchronously and return the URL
             uploaded_file_url = process_and_notify(media_url=media_url, job_id=job_id, id=id, webhook_url=None)
-            if uploaded_file_url:
-                return jsonify({"response": uploaded_file_url, "message": "success"}), 200
-            else:
-                return jsonify({"message": "File processing failed, no URL returned"}), 500
+
+            return jsonify({
+                "code": 200,
+                "response": uploaded_file_url,
+                "message": "success"
+            }), 200
+            
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
-            return jsonify({"message": str(e)}), 500
+            return jsonify({
+                "code": 500,
+                "message": str(e)
+            }), 500

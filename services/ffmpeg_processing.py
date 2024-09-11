@@ -77,34 +77,13 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         # Upload to Google Drive or GCP Storage
         if GCP_BUCKET_NAME:
             uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME) 
-        else:
-            uploaded_file_url = upload_to_gdrive(output_path, output_filename)
 
         # If upload fails, log the failure
         if not uploaded_file_url:
             raise FileNotFoundError(f"Failed to upload the output file {output_path}")
 
-        # Trigger webhook if provided
-        if webhook_url:
-            send_webhook(webhook_url, {
-                "endpoint": "/combine-videos",
-                "job_id": job_id,
-                "response": uploaded_file_url or output_path,
-                "code": 200,
-                "message": "success"
-            })
-
-        return uploaded_file_url or output_path
+        return uploaded_file_url
     except Exception as e:
         print(f"Video combination failed: {str(e)}")
-        # Trigger failure webhook if provided
-        if webhook_url:
-            send_webhook(webhook_url, {
-                "endpoint": "/combine-videos",
-                "job_id": job_id,
-                "response": None,
-                "code": 500,
-                "message": str(e)
-            })
-        raise
+        raise 
     

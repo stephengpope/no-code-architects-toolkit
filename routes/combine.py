@@ -34,21 +34,27 @@ def process_and_notify(media_urls, webhook_url, id, job_id):
         if webhook_url:
             send_webhook(webhook_url, {
                 "endpoint": "/combine-videos",
-                "id": id,
-                "response": output_filename,
                 "code": 200,
+                "id": id,
+                "job_id": job_id,
+                "response": output_filename,
                 "message": "success"
             })
+
+        return output_filename;
+
     except Exception as e:
         logger.error(f"Job {job_id}: Error during processing - {e}")
         if webhook_url:
             send_webhook(webhook_url, {
                 "endpoint": "/combine-videos",
-                "id": id,
-                "message": str(e),
                 "code": 500,
-                "message": "failed"
+                "id": id,
+                "job_id": job_id,
+                "response": None,
+                "message": str(e),         
             })
+        raise
 
 @combine_bp.route('/combine-videos', methods=['POST'])
 @authenticate
@@ -61,20 +67,48 @@ def combine_videos():
 
     logger.info(f"Received combine-videos request: media_urls={media_urls}, webhook_url={webhook_url}, id={id}")
 
-    if not media_urls or not isinstance(media_urls, list):
+    if not (isinstance(media_urls, list) and 
+            all(isinstance(item, dict) and 
+                isinstance(item.get('media_url'), str) 
+                for item in media_urls)):
         logger.error("Invalid or missing media_urls parameter in request")
         return jsonify({"message": "Invalid or missing media_urls parameter"}), 400
 
-    if webhook_url and not id:
-        logger.warning("id is missing when webhook_url is provided")
-        return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 400
+    #if webhook_url and not id:
+    #    logger.warning("id is missing when webhook_url is provided")
+    #    return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 400
+    if webhook_url:
 
-    # Add job to the queue
-    combine_queue.put({
-        'media_urls': media_urls,
-        'webhook_url': webhook_url,
-        'id': id,
-        'job_id': job_id
-    })
-    logger.info(f"Job {job_id}: Added to queue for asynchronous processing")
-    return jsonify({"message": "processing"}), 202
+        # Add the job to the queue for background processing
+        combine_queue.put({
+            'media_urls': media_urls,
+            'webhook_url': webhook_url,
+            'id': id,
+            'job_id': job_id
+        })
+        logger.info(f"Job {job_id}: Added to queue for asynchronous processing")
+        return jsonify(
+            {
+                "code": 202,
+                "id": id,
+                "job_id": job_id,
+                "message": "processing"
+            }
+        ), 202
+    else:
+        try:
+            # Process the conversion synchronously and return the URL
+            uploaded_file_url = process_and_notify(media_urls=media_urls, job_id=job_id, id=id, webhook_url=None)
+            
+            return jsonify({
+                    "code": 200,
+                    "response": uploaded_file_url,
+                    "message": "success"
+            }), 200
+
+        except Exception as e:
+            logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
+            return jsonify({
+                "code": 500,
+                "message": str(e)
+            }), 500

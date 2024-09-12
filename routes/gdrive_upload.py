@@ -35,7 +35,7 @@ def get_gdrive_service():
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
 
-def download_file(file_url, storage_path, chunk_size=1024*1024):
+def download_file(file_url, storage_path, chunk_size=8192):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
         

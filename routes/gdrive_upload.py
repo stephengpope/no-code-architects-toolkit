@@ -8,9 +8,6 @@ from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaFileUpload
 import json
-import time
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
 from datetime import datetime
 
 # Configure logging
@@ -21,9 +18,12 @@ logger = logging.getLogger(__name__)
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 
 # Import settings from environment variables
-STORAGE_PATH ="/tmp/"
+STORAGE_PATH = "/tmp/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
+
+# Create STORAGE_PATH if it doesn't exist
+os.makedirs(STORAGE_PATH, exist_ok=True)
 
 def get_gdrive_service():
     # Decode the service account credentials
@@ -61,10 +61,11 @@ def download_file(file_url, storage_path, chunk_size=8192):
                     if chunk:  # filter out keep-alive new chunks
                         f.write(chunk)
                         downloaded_size += len(chunk)
-                        percentage = int((downloaded_size / total_size) * 100)
-                        if percentage // 10 > last_logged_percentage // 10:
-                            logger.info(f"Downloaded {percentage}% of the file from {file_url}")
-                            last_logged_percentage = percentage
+                        if total_size > 0:
+                            percentage = int((downloaded_size / total_size) * 100)
+                            if percentage // 10 > last_logged_percentage // 10: 
+                                logger.info(f"Downloaded {percentage}% of the file from {file_url}")
+                                last_logged_percentage = percentage
 
         logger.info(f"File downloaded successfully to: {temp_file_path} from {file_url}")
         return temp_file_path
@@ -83,15 +84,36 @@ def upload_to_gdrive(file_path, filename, folder_id):
             'name': filename,
             'parents': [folder_id]
         }
-        media = MediaFileUpload(file_path, resumable=True)
-        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        file_id = file.get('id')
+
+        # Set chunksize to 10MB for efficient memory usage
+        chunksize = 10 * 1024 * 1024  # 10MB
+
+        media = MediaFileUpload(file_path, chunksize=chunksize, resumable=True)
+
+        request = service.files().create(body=file_metadata, media_body=media, fields='id')
+
+        response = None
+        last_logged_percentage = 0
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                percentage = int(status.progress() * 100)
+                if percentage // 20 > last_logged_percentage // 20:  # Log every 20% instead of 10%
+                    logger.info(f"Uploaded {percentage}% of file {filename}")
+                    last_logged_percentage = percentage
+
+        file_id = response.get('id')
         logger.info(f"File uploaded successfully with ID: {file_id}")
 
         return file_id
     except Exception as e:
         logger.error(f"Error uploading file to Google Drive: {e}")
         raise
+    finally:
+        # Ensure the temporary file is deleted after upload
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info(f"Temporary file {file_path} deleted.")
 
 def process_job(data, job_id):
     try:
@@ -115,7 +137,6 @@ def process_job(data, job_id):
             return file_id
 
     except Exception as e:
-
         logger.error(f"Error processing request: {e}")
         if 'webhook_url' in data:
             webhook_payload = {
@@ -162,16 +183,13 @@ def gdrive_upload():
             }
         ), 202
     else:
-        
         try:
             file_id = process_job(data, job_id)
-
             return jsonify({
                 "code": 200,
                 "response": file_id,
                 "message": "success"
             }), 200
-            
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
             return jsonify({

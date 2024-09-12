@@ -57,10 +57,9 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
 
         # Use the concat demuxer to concatenate the videos
         (
-            ffmpeg
-            .input(concat_file_path, format='concat', safe=0)
-            .output(output_path, vcodec='libx264', acodec='aac', video_bitrate='3000k', audio_bitrate='192k')
-            .run(overwrite_output=True)
+            ffmpeg.input(concat_file_path, format='concat', safe=0).
+                output(output_path, c='copy').
+                run(overwrite_output=True)
         )
 
         # Clean up input files

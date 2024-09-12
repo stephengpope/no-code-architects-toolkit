@@ -92,7 +92,7 @@ def transcribe():
     logger.info(f"Generated job_id: {job_id}")
 
     # If webhook_url and id are provided, add the job to the queue
-    if webhook_url and id:
+    if webhook_url:
         transcription_queue.put({
             'media_url': media_url,
             'output': output,

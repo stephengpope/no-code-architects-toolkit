@@ -3,7 +3,7 @@ import uuid
 import threading
 import logging
 import queue
-from services.ffmpeg_processing import process_video_combination
+from services.ffmpeg_tools import process_video_combination
 from services.authentication import authenticate
 from services.webhook import send_webhook
 
@@ -79,7 +79,6 @@ def combine_videos():
     #    logger.warning("id is missing when webhook_url is provided")
     #    return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 400
     if webhook_url:
-
         # Add the job to the queue for background processing
         combine_queue.put({
             'media_urls': media_urls,

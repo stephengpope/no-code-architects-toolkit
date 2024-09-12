@@ -1,7 +1,7 @@
 from flask import Flask
-from routes.convert import convert_bp
+from routes.media_to_mp3 import convert_bp
 from routes.transcribe import transcribe_bp
-from routes.combine import combine_bp
+from routes.combine_videos import combine_bp
 from routes.audio_mixing import audio_mixing_bp
 from routes.gdrive_upload import gdrive_upload_bp
 from routes.authentication import auth_bp  # Import the auth_bp blueprint

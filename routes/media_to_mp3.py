@@ -4,7 +4,7 @@ import threading
 import logging
 import queue
 import os
-from services.ffmpeg_processing import process_conversion
+from services.ffmpeg_tools import process_conversion
 from services.authentication import authenticate
 from services.webhook import send_webhook
 from services.gdrive_service import process_gdrive_upload, upload_to_gdrive, upload_to_gcs

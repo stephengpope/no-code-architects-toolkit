@@ -44,9 +44,10 @@ def process_and_notify(**kwargs):
             logger.info(f"Job {job_id}: Sending success webhook to {webhook_url}")
             send_webhook(webhook_url, {
                 "endpoint": "/transcribe",
-                "id": id,
-                "response": result,
                 "code": 200,
+                "id": id,
+                "job_id": job_id,
+                "response": result,
                 "message": "success"
             })
     except Exception as e:
@@ -55,11 +56,14 @@ def process_and_notify(**kwargs):
             logger.info(f"Job {job_id}: Sending failure webhook to {webhook_url}")
             send_webhook(webhook_url, {
                 "endpoint": "/transcribe",
-                "id": id,
-                "response": None,
                 "code": 500,
+                "id": id,
+                "job_id": job_id,
+                "response": None,
                 "message": str(e)
             })
+        else:
+            raise
 
 @transcribe_bp.route('/transcribe', methods=['POST'])
 @authenticate
@@ -97,13 +101,28 @@ def transcribe():
             'job_id': job_id
         })
         logger.info(f"Job {job_id}: Added to queue for background processing")
-        return jsonify({"message": "processing"}), 202
+        return jsonify(
+            {
+                "code": 202,
+                "id": data.get("id"),
+                "job_id": job_id,
+                "message": "processing"
+            }
+        ), 202
     else:
         try:
             logger.info(f"Job {job_id}: No webhook provided, processing synchronously")
             result = process_transcription(media_url, output)
             logger.info(f"Job {job_id}: Returning transcription result")
-            return jsonify({"response": result, "message": "success"}), 200
+            return jsonify({
+                    "code": 200,
+                    "response": result,
+                    "message": "success"
+            }), 200
+        
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous transcription - {e}")
-            return jsonify({"message": str(e)}), 500
+            return jsonify({
+                "code": 500,
+                "message": str(e)
+            }), 500

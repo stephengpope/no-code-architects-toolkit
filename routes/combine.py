@@ -54,7 +54,8 @@ def process_and_notify(media_urls, webhook_url, id, job_id):
                 "response": None,
                 "message": str(e),         
             })
-        raise
+        else:
+            raise
 
 @combine_bp.route('/combine-videos', methods=['POST'])
 @authenticate

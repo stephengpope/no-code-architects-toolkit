@@ -46,32 +46,6 @@ def download_file(file_url, storage_path):
         logger.error(f"Error downloading file: {e}")
         raise
 
-def get_or_create_folder(service, folder_name):
-    try:
-        # Search for the folder by name
-        query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder' and trashed=false"
-        results = service.files().list(q=query, spaces='drive', fields='files(id, name)').execute()
-        items = results.get('files', [])
-
-        if items:
-            # Folder found, return the first match
-            folder_id = items[0]['id']
-            logger.info(f"Folder '{folder_name}' found with ID: {folder_id}")
-        else:
-            # Folder not found, create it
-            file_metadata = {
-                'name': folder_name,
-                'mimeType': 'application/vnd.google-apps.folder'
-            }
-            folder = service.files().create(body=file_metadata, fields='id').execute()
-            folder_id = folder.get('id')
-            logger.info(f"Folder '{folder_name}' created with ID: {folder_id}")
-
-        return folder_id
-    except Exception as e:
-        logger.error(f"Error getting or creating folder: {e}")
-        raise
-
 def upload_to_gdrive(file_path, filename, folder_id):
     try:
         logger.info(f"Uploading file to Google Drive: {file_path}")
@@ -93,31 +67,6 @@ def upload_to_gdrive(file_path, filename, folder_id):
         logger.error(f"Error uploading file to Google Drive: {e}")
         raise
 
-def set_file_public(service, file_id):
-    try:
-        permission = {
-            'type': 'anyone',
-            'role': 'reader'
-        }
-        service.permissions().create(fileId=file_id, body=permission).execute()
-        logger.info(f"Permissions set to public for file/folder ID: {file_id}")
-    except Exception as e:
-        logger.error(f"Error setting permissions: {e}")
-        raise
-
-def set_file_permissions(service, file_id, email):
-    try:
-        permission = {
-            'type': 'user',
-            'role': 'writer',
-            'emailAddress': email
-        }
-        service.permissions().create(fileId=file_id, body=permission, sendNotificationEmail=False).execute()
-        logger.info(f"Full permissions granted to {email} for file/folder ID: {file_id}")
-    except Exception as e:
-        logger.error(f"Error setting permissions for {email}: {e}")
-        raise
-
 def process_request(data, job_id):
     try:
         logger.info(f"Processing request with Job ID: {job_id}")
@@ -128,32 +77,38 @@ def process_request(data, job_id):
         if 'webhook_url' in data:
             webhook_payload = {
                 'endpoint': '/gdrive-upload',
-                'id': data['id'],
-                'response': file_id,
                 'code': 200,
+                'id': data.get("id"),
+                'job_id': job_id,
+                'response': file_id,
                 'message': 'success'
             }
             logger.info(f"Sending success webhook to: {data['webhook_url']}")
             requests.post(data['webhook_url'], json=webhook_payload)
         else:
-            return jsonify({"response": file_url, "message": "success"}), 200
+            return file_id
+
     except Exception as e:
+
         logger.error(f"Error processing request: {e}")
         if 'webhook_url' in data:
             webhook_payload = {
                 'endpoint': '/gdrive-upload',
-                'id': data['id'],
-                'response': None,
                 'code': 500,
+                'id': data['id'],
+                'job_id': job_id,
+                'response': None,
                 'message': str(e)
             }
             logger.info(f"Sending failure webhook to: {data['webhook_url']}")
             requests.post(data['webhook_url'], json=webhook_payload)
         else:
-            return jsonify({"message": str(e)}), 500
+            raise
 
 @gdrive_upload_bp.route('/gdrive-upload', methods=['POST'])
 def gdrive_upload():
+    data = request.json
+
     if 'X-API-Key' not in request.headers:
         logger.error("Missing X-API-Key header")
         return jsonify({"message": "Missing X-API-Key header"}), 400
@@ -172,6 +127,28 @@ def gdrive_upload():
 
     if 'webhook_url' in data:
         threading.Thread(target=process_request, args=(data, job_id)).start()
-        return jsonify({"message": "processing"}), 202
+        return jsonify(
+            {
+                "code": 202,
+                "id": data.get("id"),
+                "job_id": job_id,
+                "message": "processing"
+            }
+        ), 202
     else:
-        return process_request(data, job_id)
+        
+        try:
+            file_id = process_request(data, job_id)
+
+            return jsonify({
+                "code": 200,
+                "response": file_id,
+                "message": "success"
+            }), 200
+            
+        except Exception as e:
+            logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
+            return jsonify({
+                "code": 500,
+                "message": str(e)
+            }), 500

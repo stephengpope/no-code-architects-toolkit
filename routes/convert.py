@@ -82,7 +82,8 @@ def process_and_notify(media_url, job_id, id, webhook_url):
                 "message": str(e),
                 "code": 500
             })
-        raise
+        else:
+            raise
 
     finally:
         logger.info(f"Job {job_id}: Exiting process_and_notify function.")

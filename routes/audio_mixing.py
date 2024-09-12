@@ -6,7 +6,7 @@ import logging
 from services.audio_mixing import process_audio_mixing
 from services.authentication import authenticate
 from services.webhook import send_webhook
-from services.gdrive_service import upload_to_gcs  # Ensure this import is present
+from services.gcp_toolkit import upload_to_gcs  # Ensure this import is present
 
 audio_mixing_bp = Blueprint('audio_mixing', __name__)
 logger = logging.getLogger(__name__)

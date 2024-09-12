@@ -7,7 +7,7 @@ import os
 from services.ffmpeg_toolkit import process_conversion
 from services.authentication import authenticate
 from services.webhook import send_webhook
-from services.gdrive_service import process_gdrive_upload, upload_to_gdrive, upload_to_gcs
+from services.gcp_toolkit import upload_to_gcs
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

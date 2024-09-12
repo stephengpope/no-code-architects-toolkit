@@ -2,7 +2,7 @@ import os
 import ffmpeg
 import requests
 from services.file_management import download_file
-from services.gdrive_service import upload_to_gdrive, upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # Import gcs_client
+from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # Import gcs_client
 
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"

@@ -11,6 +11,7 @@ import json
 import time
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -35,30 +36,38 @@ def get_gdrive_service():
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
 
+def generate_unique_filename(original_filename):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    random_string = uuid.uuid4().hex[:6]
+    file_extension = os.path.splitext(original_filename)[1]
+    return f"{timestamp}_{random_string}{file_extension}"
+
 def download_file(file_url, storage_path, chunk_size=8192):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
         
-        response = requests.get(file_url, stream=True)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
+        unique_filename = generate_unique_filename(file_url.split('/')[-1])
+        temp_file_path = os.path.join(storage_path, unique_filename)
 
-        total_size = int(response.headers.get('content-length', 0))
-        file_path = os.path.join(storage_path, file_url.split('/')[-1])
-        downloaded_size = 0
-        last_logged_percentage = 0
+        # Download file
+        with requests.get(file_url, stream=True) as r:
+            r.raise_for_status()
+            total_size = int(r.headers.get('content-length', 0))
+            downloaded_size = 0
+            last_logged_percentage = 0
 
-        with open(file_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                if chunk:  # filter out keep-alive new chunks
-                    file.write(chunk)
-                    downloaded_size += len(chunk)
-                    percentage = int((downloaded_size / total_size) * 100)
-                    if percentage // 10 > last_logged_percentage // 10:
-                        logger.info(f"Downloaded {percentage}% of the file from {file_url}")
-                        last_logged_percentage = percentage
+            with open(temp_file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=chunk_size):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        percentage = int((downloaded_size / total_size) * 100)
+                        if percentage // 10 > last_logged_percentage // 10:
+                            logger.info(f"Downloaded {percentage}% of the file from {file_url}")
+                            last_logged_percentage = percentage
 
-        logger.info(f"File downloaded successfully to: {file_path} from {file_url}")
-        return file_path
+        logger.info(f"File downloaded successfully to: {temp_file_path} from {file_url}")
+        return temp_file_path
     except Exception as e:
         logger.error(f"Error downloading file from {file_url}: {e}")
         raise

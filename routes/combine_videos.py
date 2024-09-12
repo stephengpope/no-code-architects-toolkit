@@ -3,7 +3,7 @@ import uuid
 import threading
 import logging
 import queue
-from services.ffmpeg_tools import process_video_combination
+from services.ffmpeg_toolkit import process_video_combination
 from services.authentication import authenticate
 from services.webhook import send_webhook
 
@@ -17,7 +17,7 @@ def combine_worker():
     while True:
         job = combine_queue.get()
         try:
-            process_and_notify(**job)
+            process_job(**job)
         except Exception as e:
             logger.error(f"Error processing job: {e}")
         finally:
@@ -27,7 +27,7 @@ def combine_worker():
 worker_thread = threading.Thread(target=combine_worker, daemon=True)
 worker_thread.start()
 
-def process_and_notify(media_urls, webhook_url, id, job_id):
+def process_job(media_urls, webhook_url, id, job_id):
     try:
         output_filename = process_video_combination(media_urls, job_id)
         
@@ -98,7 +98,7 @@ def combine_videos():
     else:
         try:
             # Process the conversion synchronously and return the URL
-            uploaded_file_url = process_and_notify(media_urls=media_urls, job_id=job_id, id=id, webhook_url=None)
+            uploaded_file_url = process_job(media_urls=media_urls, job_id=job_id, id=id, webhook_url=None)
             
             return jsonify({
                     "code": 200,

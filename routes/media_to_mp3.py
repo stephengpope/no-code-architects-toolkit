@@ -4,7 +4,7 @@ import threading
 import logging
 import queue
 import os
-from services.ffmpeg_tools import process_conversion
+from services.ffmpeg_toolkit import process_conversion
 from services.authentication import authenticate
 from services.webhook import send_webhook
 from services.gdrive_service import process_gdrive_upload, upload_to_gdrive, upload_to_gcs
@@ -27,7 +27,7 @@ def conversion_worker():
     while True:
         job = conversion_queue.get()
         try:
-            process_and_notify(**job)
+            process_job(**job)
         except Exception as e:
             logger.error(f"Error processing job: {e}")
         finally:
@@ -37,7 +37,7 @@ def conversion_worker():
 worker_thread = threading.Thread(target=conversion_worker, daemon=True)
 worker_thread.start()
 
-def process_and_notify(media_url, job_id, id, webhook_url):
+def process_job(media_url, job_id, id, webhook_url):
     try:
         logger.info(f"Job {job_id}: Initiating media conversion...")
         output_path = process_conversion(media_url, job_id)
@@ -129,7 +129,7 @@ def convert_media_to_mp3():
     else:
         try:
             # Process the conversion synchronously and return the URL
-            uploaded_file_url = process_and_notify(media_url=media_url, job_id=job_id, id=id, webhook_url=None)
+            uploaded_file_url = process_job(media_url=media_url, job_id=job_id, id=id, webhook_url=None)
 
             return jsonify({
                 "code": 200,

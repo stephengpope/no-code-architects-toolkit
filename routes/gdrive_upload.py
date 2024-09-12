@@ -67,7 +67,7 @@ def upload_to_gdrive(file_path, filename, folder_id):
         logger.error(f"Error uploading file to Google Drive: {e}")
         raise
 
-def process_request(data, job_id):
+def process_job(data, job_id):
     try:
         logger.info(f"Processing request with Job ID: {job_id}")
         file_path = download_file(data['file_url'], STORAGE_PATH)
@@ -126,7 +126,7 @@ def gdrive_upload():
     logger.info(f"Processing Job ID: {job_id}")
 
     if 'webhook_url' in data:
-        threading.Thread(target=process_request, args=(data, job_id)).start()
+        threading.Thread(target=process_job, args=(data, job_id)).start()
         return jsonify(
             {
                 "code": 202,
@@ -138,7 +138,7 @@ def gdrive_upload():
     else:
         
         try:
-            file_id = process_request(data, job_id)
+            file_id = process_job(data, job_id)
 
             return jsonify({
                 "code": 200,

@@ -18,7 +18,7 @@ def process_conversion(media_url, job_id, webhook_url=None):
         (
             ffmpeg
             .input(input_filename)
-            .output(output_path, acodec='libmp3lame', audio_bitrate='64k')
+            .output(output_path, acodec='libmp3lame', audio_bitrate='128k')
             .overwrite_output()
             .run(capture_stdout=True, capture_stderr=True)
         )

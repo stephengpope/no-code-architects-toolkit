@@ -18,7 +18,7 @@ def transcription_worker():
     while True:
         job = transcription_queue.get()
         try:
-            process_and_notify(**job)
+            process_job(**job)
         except Exception as e:
             logger.error(f"Error processing job: {e}")
         finally:
@@ -28,7 +28,7 @@ def transcription_worker():
 worker_thread = threading.Thread(target=transcription_worker, daemon=True)
 worker_thread.start()
 
-def process_and_notify(**kwargs):
+def process_job(**kwargs):
     media_url = kwargs['media_url']
     output = kwargs['output']
     webhook_url = kwargs['webhook_url']

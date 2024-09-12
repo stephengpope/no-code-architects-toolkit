@@ -102,9 +102,9 @@ def convert_media_to_mp3():
         return jsonify({"message": "Missing media_url parameter"}), 400
 
     # Only check for id if webhook_url is provided
-    if webhook_url and not id:
-        logger.error("Received API call with webhook_url but missing id parameter.")
-        return jsonify({"message": "Missing id parameter for webhook"}), 400
+    #if webhook_url and not id:
+    #    logger.error("Received API call with webhook_url but missing id parameter.")
+    #    return jsonify({"message": "Missing id parameter for webhook"}), 400
 
     job_id = str(uuid.uuid4())
     logger.info(f"Job {job_id}: Received conversion request for {media_url}")

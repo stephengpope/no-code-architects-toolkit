@@ -8,6 +8,9 @@ from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaFileUpload
 import json
+import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,18 +35,32 @@ def get_gdrive_service():
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
 
-def download_file(file_url, storage_path):
+def download_file(file_url, storage_path, chunk_size=1024*1024):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
-        response = requests.get(file_url)
+        
+        response = requests.get(file_url, stream=True)
         response.raise_for_status()  # Raise an HTTPError for bad responses
+
+        total_size = int(response.headers.get('content-length', 0))
         file_path = os.path.join(storage_path, file_url.split('/')[-1])
+        downloaded_size = 0
+        last_logged_percentage = 0
+
         with open(file_path, 'wb') as file:
-            file.write(response.content)
-        logger.info(f"File downloaded successfully to: {file_path}")
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                if chunk:  # filter out keep-alive new chunks
+                    file.write(chunk)
+                    downloaded_size += len(chunk)
+                    percentage = int((downloaded_size / total_size) * 100)
+                    if percentage // 10 > last_logged_percentage // 10:
+                        logger.info(f"Downloaded {percentage}% of the file from {file_url}")
+                        last_logged_percentage = percentage
+
+        logger.info(f"File downloaded successfully to: {file_path} from {file_url}")
         return file_path
     except Exception as e:
-        logger.error(f"Error downloading file: {e}")
+        logger.error(f"Error downloading file from {file_url}: {e}")
         raise
 
 def upload_to_gdrive(file_path, filename, folder_id):

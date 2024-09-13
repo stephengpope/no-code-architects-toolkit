@@ -1,4 +1,5 @@
 import os
+import uuid
 import requests
 from urllib.parse import urlparse, parse_qs
 
@@ -8,10 +9,10 @@ def download_file(url, storage_path="/tmp/"):
     query_params = parse_qs(parsed_url.query)
     
     # Use the 'id' parameter as the filename if it exists
-    file_id = query_params.get('id', [None])[0]
-    
-    if not file_id:
-        raise ValueError("Invalid URL: 'id' parameter not found in the URL")
+    #file_id = query_params.get('id', [None])[0]
+    file_id = uuid.uuid4().hex[:6];
+    #if not file_id:
+    #    raise ValueError("Invalid URL: 'id' parameter not found in the URL")
     
     # Ensure the storage directory exists
     if not os.path.exists(storage_path):
@@ -29,7 +30,6 @@ def download_file(url, storage_path="/tmp/"):
             f.write(chunk)
     
     return local_filename
-
 
 def delete_old_files():
     now = time.time()

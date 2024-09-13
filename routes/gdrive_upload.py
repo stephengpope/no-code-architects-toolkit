@@ -6,6 +6,7 @@ import requests
 import uuid
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
+from services.file_management import download_file
 from googleapiclient.http import MediaFileUpload
 import json
 
@@ -31,20 +32,6 @@ def get_gdrive_service():
 
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
-
-def download_file(file_url, storage_path):
-    try:
-        logger.info(f"Downloading file from URL: {file_url}")
-        response = requests.get(file_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        file_path = os.path.join(storage_path, file_url.split('/')[-1])
-        with open(file_path, 'wb') as file:
-            file.write(response.content)
-        logger.info(f"File downloaded successfully to: {file_path}")
-        return file_path
-    except Exception as e:
-        logger.error(f"Error downloading file: {e}")
-        raise
 
 def upload_to_gdrive(file_path, filename, folder_id):
     try:

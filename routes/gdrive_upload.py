@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 
 # Import settings from environment variables
-STORAGE_PATH ="/tmp/"
+STORAGE_PATH ="/app/files/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
 

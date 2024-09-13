@@ -42,9 +42,10 @@ def audio_mixing():
                 if webhook_url:
                     send_webhook(webhook_url, {
                         "endpoint": "/audio-mixing",
-                        "id": id,
-                        "response": gcs_url,
                         "code": 200,
+                        "id": id,
+                        "job_id": job_id,
+                        "response": gcs_url,
                         "message": "success"
                     })
             except Exception as e:
@@ -52,12 +53,20 @@ def audio_mixing():
                 if webhook_url:
                     send_webhook(webhook_url, {
                         "endpoint": "/audio-mixing",
-                        "id": id,
-                        "response": None,
                         "code": 500,
+                        "id": id,
+                        "job_id": job_id,
+                        "response": None,
                         "message": str(e)
                     })
 
     # Start the thread with the app context passed
     threading.Thread(target=process_job, daemon=True).start()
-    return jsonify({"message": "processing"}), 202
+    return jsonify(
+            {
+                "code": 202,
+                "id": data.get("id"),
+                "job_id": job_id,
+                "message": "processing"
+            }
+        ), 202

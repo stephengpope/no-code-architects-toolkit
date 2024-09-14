@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaFileUpload
 import json
+from datetime import datetime
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -17,9 +18,12 @@ logger = logging.getLogger(__name__)
 gdrive_upload_bp = Blueprint('gdrive_upload', __name__)
 
 # Import settings from environment variables
-STORAGE_PATH ="/tmp/"
+STORAGE_PATH = "/tmp/"
 GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 GDRIVE_USER = os.getenv('GDRIVE_USER')
+
+# Create STORAGE_PATH if it doesn't exist
+os.makedirs(STORAGE_PATH, exist_ok=True)
 
 def get_gdrive_service():
     # Decode the service account credentials
@@ -32,18 +36,41 @@ def get_gdrive_service():
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
 
-def download_file(file_url, storage_path):
+def generate_unique_filename(original_filename):
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    random_string = uuid.uuid4().hex[:6]
+    file_extension = os.path.splitext(original_filename)[1]
+    return f"{timestamp}_{random_string}{file_extension}"
+
+def download_file(file_url, storage_path, chunk_size=8192):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
-        response = requests.get(file_url)
-        response.raise_for_status()  # Raise an HTTPError for bad responses
-        file_path = os.path.join(storage_path, file_url.split('/')[-1])
-        with open(file_path, 'wb') as file:
-            file.write(response.content)
-        logger.info(f"File downloaded successfully to: {file_path}")
-        return file_path
+        
+        unique_filename = generate_unique_filename(file_url.split('/')[-1])
+        temp_file_path = os.path.join(storage_path, unique_filename)
+
+        # Download file
+        with requests.get(file_url, stream=True) as r:
+            r.raise_for_status()
+            total_size = int(r.headers.get('content-length', 0))
+            downloaded_size = 0
+            last_logged_percentage = 0
+
+            with open(temp_file_path, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=chunk_size):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+                        downloaded_size += len(chunk)
+                        if total_size > 0:
+                            percentage = int((downloaded_size / total_size) * 100)
+                            if percentage // 10 > last_logged_percentage // 10: 
+                                logger.info(f"Downloaded {percentage}% of the file from {file_url}")
+                                last_logged_percentage = percentage
+
+        logger.info(f"File downloaded successfully to: {temp_file_path} from {file_url}")
+        return temp_file_path
     except Exception as e:
-        logger.error(f"Error downloading file: {e}")
+        logger.error(f"Error downloading file from {file_url}: {e}")
         raise
 
 def upload_to_gdrive(file_path, filename, folder_id):
@@ -57,15 +84,36 @@ def upload_to_gdrive(file_path, filename, folder_id):
             'name': filename,
             'parents': [folder_id]
         }
-        media = MediaFileUpload(file_path, resumable=True)
-        file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
-        file_id = file.get('id')
+
+        # Set chunksize to 10MB for efficient memory usage
+        chunksize = 10 * 1024 * 1024  # 10MB
+
+        media = MediaFileUpload(file_path, chunksize=chunksize, resumable=True)
+
+        request = service.files().create(body=file_metadata, media_body=media, fields='id')
+
+        response = None
+        last_logged_percentage = 0
+        while response is None:
+            status, response = request.next_chunk()
+            if status:
+                percentage = int(status.progress() * 100)
+                if percentage // 20 > last_logged_percentage // 20:  # Log every 20% instead of 10%
+                    logger.info(f"Uploaded {percentage}% of file {filename}")
+                    last_logged_percentage = percentage
+
+        file_id = response.get('id')
         logger.info(f"File uploaded successfully with ID: {file_id}")
 
         return file_id
     except Exception as e:
         logger.error(f"Error uploading file to Google Drive: {e}")
         raise
+    finally:
+        # Ensure the temporary file is deleted after upload
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            logger.info(f"Temporary file {file_path} deleted.")
 
 def process_job(data, job_id):
     try:
@@ -89,7 +137,6 @@ def process_job(data, job_id):
             return file_id
 
     except Exception as e:
-
         logger.error(f"Error processing request: {e}")
         if 'webhook_url' in data:
             webhook_payload = {
@@ -136,16 +183,13 @@ def gdrive_upload():
             }
         ), 202
     else:
-        
         try:
             file_id = process_job(data, job_id)
-
             return jsonify({
                 "code": 200,
                 "response": file_id,
                 "message": "success"
             }), 200
-            
         except Exception as e:
             logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
             return jsonify({

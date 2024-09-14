@@ -36,17 +36,11 @@ def get_gdrive_service():
     # Build and return the Google Drive API service
     return build('drive', 'v3', credentials=delegated_credentials)
 
-def generate_unique_filename(original_filename):
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    random_string = uuid.uuid4().hex[:6]
-    file_extension = os.path.splitext(original_filename)[1]
-    return f"{timestamp}_{random_string}{file_extension}"
-
 def download_file(file_url, storage_path, chunk_size=8192):
     try:
         logger.info(f"Downloading file from URL: {file_url}")
         
-        unique_filename = generate_unique_filename(file_url.split('/')[-1])
+        unique_filename = str(uuid.uuid4())
         temp_file_path = os.path.join(storage_path, unique_filename)
 
         # Download file

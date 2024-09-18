@@ -53,48 +53,63 @@ def process_captioning(file_url, caption_srt, options, job_id):
 
         # Default FFmpeg options
         ffmpeg_options = {
-            'font_name': 'Arial',
+            'font_name': None,
             'font_size': 12,
-            'primary_color': 'white',
-            'secondary_color': 'yellow',
-            'outline_color': 'black',
-            'back_color': 'black',
-            'bold': False,
-            'italic': False,
-            'underline': False,
-            'strikeout': False,
-            'alignment': 2,
-            'margin_v': 10,
-            'margin_l': 10,
-            'margin_r': 10,
-            'outline': 2,
-            'shadow': 0,
-            'blur': 0,
-            'background_opacity': 0.5,
-            'border_style': 1,
-            'encoding': 1,
-            'spacing': 0,
-            'angle': 0,
-            'uppercase': False
+            'primary_color': None,
+            'secondary_color': None,
+            'outline_color': None,
+            'back_color': None,
+            'bold': None,
+            'italic': None,
+            'underline': None,
+            'strikeout': None,
+            'alignment': None,
+            'margin_v': None,
+            'margin_l': None,
+            'margin_r': None,
+            'outline': None,
+            'shadow': None,
+            'blur': None,
+            'border_style': None,
+            'encoding': None,
+            'spacing': None,
+            'angle': None,
+            'uppercase': None
         }
 
-        # Update options with user-provided values
+        # Update ffmpeg_options with provided options
         ffmpeg_options.update(options)
 
-        # Get the font file path
-        font_file = FONT_PATHS.get(ffmpeg_options['font_name'], '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+        # Construct FFmpeg filter options for subtitles with detailed styling
+        subtitle_filter = f"subtitles={srt_path}:force_style='"
+        style_options = {
+            'FontFile': ffmpeg_options['font_name'],
+            'FontSize': ffmpeg_options['font_size'],
+            'PrimaryColour': ffmpeg_options['primary_color'],
+            'SecondaryColour': ffmpeg_options['secondary_color'],
+            'OutlineColour': ffmpeg_options['outline_color'],
+            'BackColour': ffmpeg_options['back_color'],
+            'Bold': ffmpeg_options['bold'],
+            'Italic': ffmpeg_options['italic'],
+            'Underline': ffmpeg_options['underline'],
+            'StrikeOut': ffmpeg_options['strikeout'],
+            'Alignment': ffmpeg_options['alignment'],
+            'MarginV': ffmpeg_options['margin_v'],
+            'MarginL': ffmpeg_options['margin_l'],
+            'MarginR': ffmpeg_options['margin_r'],
+            'Outline': ffmpeg_options['outline'],
+            'Shadow': ffmpeg_options['shadow'],
+            'Blur': ffmpeg_options['blur'],
+            'BorderStyle': ffmpeg_options['border_style'],
+            'Encoding': ffmpeg_options['encoding'],
+            'Spacing': ffmpeg_options['spacing'],
+            'Angle': ffmpeg_options['angle'],
+            'UpperCase': ffmpeg_options['uppercase']
+        }
 
-        # Construct FFmpeg filter options for subtitles with a simplified filter
-        subtitle_filter = (
-            f"subtitles={srt_path}:force_style='FontFile={font_file},"
-            f"FontSize={ffmpeg_options['font_size']},PrimaryColour=&H{ffmpeg_options['primary_color']},"
-            f"OutlineColour=&H{ffmpeg_options['outline_color']},BackColour=&H{ffmpeg_options['back_color']},"
-            f"Bold={ffmpeg_options['bold']},Italic={ffmpeg_options['italic']},Underline={ffmpeg_options['underline']},"
-            f"StrikeOut={ffmpeg_options['strikeout']},Alignment={ffmpeg_options['alignment']},MarginV={ffmpeg_options['margin_v']},"
-            f"MarginL={ffmpeg_options['margin_l']},MarginR={ffmpeg_options['margin_r']},Outline={ffmpeg_options['outline']},"
-            f"Shadow={ffmpeg_options['shadow']},Blur={ffmpeg_options['blur']},BorderStyle={ffmpeg_options['border_style']},"
-            f"Spacing={ffmpeg_options['spacing']},Angle={ffmpeg_options['angle']},UpperCase={ffmpeg_options['uppercase']}'"
-        )
+        # Add only populated options to the subtitle filter
+        subtitle_filter += ','.join(f"{k}={v}" for k, v in style_options.items() if v is not None)
+        subtitle_filter += "'"
 
         try:
             # Log the FFmpeg command for debugging
@@ -104,10 +119,7 @@ def process_captioning(file_url, caption_srt, options, job_id):
             ffmpeg.input(video_path).output(
                 output_path,
                 vf=subtitle_filter,
-                vcodec='libx264',  # Re-encode the video stream to apply subtitles
-                acodec='copy',  # Copy the audio stream
-                format='mp4',
-                movflags='faststart'
+                acodec='copy',
             ).run(capture_stdout=True, capture_stderr=True)
             logger.info(f"Job {job_id}: FFmpeg processing completed, output file at {output_path}")
         except ffmpeg.Error as e:
@@ -124,13 +136,11 @@ def process_captioning(file_url, caption_srt, options, job_id):
         os.remove(srt_path)
         os.remove(output_path)
         logger.info(f"Job {job_id}: Local files cleaned up")
-
         return output_filename
-
     except Exception as e:
         logger.error(f"Job {job_id}: Error in process_captioning: {str(e)}")
         raise
-
+    
 def download_file(file_url, storage_path):
     session = requests.Session()
     retries = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])

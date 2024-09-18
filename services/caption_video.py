@@ -95,7 +95,14 @@ def process_captioning(file_url, caption_srt, options, job_id):
         # Construct FFmpeg filter options for subtitles with a simplified filter
         subtitle_filter = (
             f"subtitles={srt_path}:force_style='FontFile={font_file},"
-            f"FontSize={ffmpeg_options['font_size']}'"
+            f"FontSize={ffmpeg_options['font_size']},PrimaryColour=&H{ffmpeg_options['primary_color']},"
+            f"OutlineColour=&H{ffmpeg_options['outline_color']},BackColour=&H{ffmpeg_options['back_color']},"
+            f"Bold={ffmpeg_options['bold']},Italic={ffmpeg_options['italic']},Underline={ffmpeg_options['underline']},"
+            f"StrikeOut={ffmpeg_options['strikeout']},Alignment={ffmpeg_options['alignment']},MarginV={ffmpeg_options['margin_v']},"
+            f"MarginL={ffmpeg_options['margin_l']},MarginR={ffmpeg_options['margin_r']},Outline={ffmpeg_options['outline']},"
+            f"Shadow={ffmpeg_options['shadow']},Blur={ffmpeg_options['blur']},BorderStyle={ffmpeg_options['border_style']},"
+            f"Encoding={ffmpeg_options['encoding']},ScaleX={ffmpeg_options['scale_x']},ScaleY={ffmpeg_options['scale_y']},"
+            f"Spacing={ffmpeg_options['spacing']},Angle={ffmpeg_options['angle']},UpperCase={ffmpeg_options['uppercase']}'"
         )
 
         try:

@@ -3,8 +3,20 @@ FROM python:3.9-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
+    ca-certificates \
+    wget \
+    tar \
+    xz-utils \ 
+    fonts-liberation \
+    fontconfig \ 
     && rm -rf /var/lib/apt/lists/*
+
+# Download and install the latest FFmpeg static build
+RUN wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-i686-static.tar.xz && \
+    tar -xf ffmpeg-release-i686-static.tar.xz && \
+    cp ffmpeg-*/ffmpeg /usr/local/bin/ffmpeg && \
+    cp ffmpeg-*/ffprobe /usr/local/bin/ffprobe && \
+    rm -rf ffmpeg-* ffmpeg-release-i686-static.tar.xz
 
 # Set work directory
 WORKDIR /app

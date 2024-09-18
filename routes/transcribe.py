@@ -28,7 +28,7 @@ def transcription_worker():
 worker_thread = threading.Thread(target=transcription_worker, daemon=True)
 worker_thread.start()
 
-def process_job(media_url, output, webhook_url, id, job_id):
+def process_job(media_url, output, job_id, webhook_url=None, id=None):
     #media_url = kwargs['media_url']
     #output = kwargs['output']
     #webhook_url = kwargs['webhook_url']
@@ -114,7 +114,7 @@ def transcribe():
     else:
         try:
             logger.info(f"Job {job_id}: No webhook provided, processing synchronously")
-            result = process_job(media_url=media_url, output=output)
+            result = process_job(media_url=media_url, output=output, job_id=job_id)
             logger.info(f"Job {job_id}: Returning transcription result")
             return jsonify({
                     "code": 200,

@@ -73,8 +73,6 @@ def process_captioning(file_url, caption_srt, options, job_id):
             'background_opacity': 0.5,
             'border_style': 1,
             'encoding': 1,
-            'scale_x': 100,
-            'scale_y': 100,
             'spacing': 0,
             'angle': 0,
             'uppercase': False
@@ -86,12 +84,6 @@ def process_captioning(file_url, caption_srt, options, job_id):
         # Get the font file path
         font_file = FONT_PATHS.get(ffmpeg_options['font_name'], '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
 
-        # Extract video details (dimensions)
-        probe = ffmpeg.probe(video_path)
-        video_info = next(stream for stream in probe['streams'] if stream['codec_type'] == 'video')
-        width = video_info['width']
-        height = video_info['height']
-
         # Construct FFmpeg filter options for subtitles with a simplified filter
         subtitle_filter = (
             f"subtitles={srt_path}:force_style='FontFile={font_file},"
@@ -101,7 +93,6 @@ def process_captioning(file_url, caption_srt, options, job_id):
             f"StrikeOut={ffmpeg_options['strikeout']},Alignment={ffmpeg_options['alignment']},MarginV={ffmpeg_options['margin_v']},"
             f"MarginL={ffmpeg_options['margin_l']},MarginR={ffmpeg_options['margin_r']},Outline={ffmpeg_options['outline']},"
             f"Shadow={ffmpeg_options['shadow']},Blur={ffmpeg_options['blur']},BorderStyle={ffmpeg_options['border_style']},"
-            f"Encoding={ffmpeg_options['encoding']},ScaleX={ffmpeg_options['scale_x']},ScaleY={ffmpeg_options['scale_y']},"
             f"Spacing={ffmpeg_options['spacing']},Angle={ffmpeg_options['angle']},UpperCase={ffmpeg_options['uppercase']}'"
         )
 
@@ -113,15 +104,10 @@ def process_captioning(file_url, caption_srt, options, job_id):
             ffmpeg.input(video_path).output(
                 output_path,
                 vf=subtitle_filter,
-                vcodec='libx264',
-                acodec='aac',
-                strict='experimental',
-                video_bitrate='3000k',
-                audio_bitrate='128k',
+                vcodec='libx264',  # Re-encode the video stream to apply subtitles
+                acodec='copy',  # Copy the audio stream
                 format='mp4',
-                pix_fmt='yuv420p',
-                movflags='faststart',
-                s=f"{width}x{height}"
+                movflags='faststart'
             ).run(capture_stdout=True, capture_stderr=True)
             logger.info(f"Job {job_id}: FFmpeg processing completed, output file at {output_path}")
         except ffmpeg.Error as e:

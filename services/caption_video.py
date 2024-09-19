@@ -65,6 +65,8 @@ def process_captioning(file_url, caption_srt, options, job_id):
 
         output_path = os.path.join(STORAGE_PATH, f"{job_id}_captioned.mp4")
 
+        options = convert_array_to_collection(options)
+
         # Default FFmpeg options
         ffmpeg_options = {
             'font_name': None,
@@ -154,3 +156,6 @@ def process_captioning(file_url, caption_srt, options, job_id):
     except Exception as e:
         logger.error(f"Job {job_id}: Error in process_captioning: {str(e)}")
         raise
+
+def convert_array_to_collection(options):
+    return {item["option"]: item["value"] for item in options}

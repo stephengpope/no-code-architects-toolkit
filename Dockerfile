@@ -1,10 +1,118 @@
 # Base image
 FROM python:3.9-slim
 
-# Install system dependencies
+# Install system dependencies, build tools, and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ffmpeg \
+    ca-certificates \
+    wget \
+    tar \
+    xz-utils \
+    fonts-liberation \
+    fontconfig \
+    build-essential \
+    yasm \
+    cmake \
+    meson \
+    ninja-build \
+    nasm \
+    libssl-dev \
+    libvpx-dev \
+    libx264-dev \
+    libx265-dev \
+    libnuma-dev \
+    libmp3lame-dev \
+    libopus-dev \
+    libvorbis-dev \
+    libtheora-dev \
+    libspeex-dev \
+    libass-dev \
+    libfreetype6-dev \
+    libfontconfig1-dev \
+    libgnutls28-dev \
+    libaom-dev \
+    libdav1d-dev \
+    librav1e-dev \
+    libsvtav1-dev \
+    libzimg-dev \
+    libwebp-dev \
+    git \
+    pkg-config \
+    autoconf \
+    automake \
+    libtool \
     && rm -rf /var/lib/apt/lists/*
+
+# Install SRT from source (latest version using cmake)
+RUN git clone https://github.com/Haivision/srt.git && \
+    cd srt && \
+    mkdir build && cd build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd ../.. && rm -rf srt
+
+# Install SVT-AV1 from source
+RUN git clone https://gitlab.com/AOMediaCodec/SVT-AV1.git && \
+    cd SVT-AV1 && \
+    git checkout v0.9.0 && \
+    cd Build && \
+    cmake .. && \
+    make -j$(nproc) && \
+    make install && \
+    cd ../.. && rm -rf SVT-AV1
+
+# Install libvmaf from source
+RUN git clone https://github.com/Netflix/vmaf.git && \
+    cd vmaf/libvmaf && \
+    meson build --buildtype release && \
+    ninja -C build && \
+    ninja -C build install && \
+    cd ../.. && rm -rf vmaf && \
+    ldconfig  # Update the dynamic linker cache
+
+# Manually build and install fdk-aac (since it is not available via apt-get)
+RUN git clone https://github.com/mstorsjo/fdk-aac && \
+    cd fdk-aac && \
+    autoreconf -fiv && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    cd .. && rm -rf fdk-aac
+
+# Build and install FFmpeg with all required features (without macOS-specific options)
+RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
+    cd ffmpeg && \
+    git checkout n7.0.2 && \
+    ./configure --prefix=/usr/local \
+    --enable-gpl \
+    --enable-pthreads \
+    --enable-neon \
+    --enable-libaom \
+    --enable-libdav1d \
+    --enable-librav1e \
+    --enable-libsvtav1 \
+    --enable-libvmaf \
+    --enable-libzimg \
+    --enable-libx264 \
+    --enable-libx265 \
+    --enable-libvpx \
+    --enable-libwebp \
+    --enable-libmp3lame \
+    --enable-libopus \
+    --enable-libvorbis \
+    --enable-libtheora \
+    --enable-libspeex \
+    --enable-libass \
+    --enable-libfreetype \
+    --enable-fontconfig \
+    --enable-libsrt \
+    --enable-gnutls && \
+    make -j$(nproc) && \
+    make install && \
+    cd .. && rm -rf ffmpeg
+
+# Add /usr/local/bin to PATH (if not already included)
+ENV PATH="/usr/local/bin:${PATH}"
 
 # Set work directory
 WORKDIR /app

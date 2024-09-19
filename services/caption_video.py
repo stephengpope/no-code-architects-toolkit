@@ -154,37 +154,3 @@ def process_captioning(file_url, caption_srt, options, job_id):
     except Exception as e:
         logger.error(f"Job {job_id}: Error in process_captioning: {str(e)}")
         raise
-    
-def download_file(file_url, storage_path):
-    session = requests.Session()
-    retries = Retry(total=5, backoff_factor=1, status_forcelist=[502, 503, 504])
-    session.mount('http://', HTTPAdapter(max_retries=retries))
-    session.mount('https://', HTTPAdapter(max_retries=retries))
-
-    if 'drive.google.com' in file_url:
-        file_id = extract_drive_id(file_url)
-        download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
-        response = session.get(download_url, stream=True)
-    else:
-        response = session.get(file_url, stream=True)
-
-    response.raise_for_status()
-
-    filename = os.path.join(storage_path, file_url.split('/')[-1])
-    with open(filename, 'wb') as f:
-        for chunk in response.iter_content(chunk_size=8192):
-            if chunk:
-                f.write(chunk)
-
-    return filename
-
-def extract_drive_id(file_url):
-    """
-    Extract the file ID from a Google Drive URL.
-    """
-    if 'id=' in file_url:
-        return file_url.split('id=')[1].split('&')[0]
-    elif '/d/' in file_url:
-        return file_url.split('/d/')[1].split('/')[0]
-    else:
-        raise ValueError("Invalid URL: 'id' parameter not found in the URL")

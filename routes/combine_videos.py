@@ -61,19 +61,19 @@ def process_job(media_urls, webhook_url, id, job_id):
 @authenticate
 def combine_videos():
     data = request.json
-    media_urls = data.get('media_urls')
+    media_urls = data.get('video_urls')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
     job_id = str(uuid.uuid4())
 
-    logger.info(f"Received combine-videos request: media_urls={media_urls}, webhook_url={webhook_url}, id={id}")
+    logger.info(f"Received combine-videos request: video_urls={media_urls}, webhook_url={webhook_url}, id={id}")
 
     if not (isinstance(media_urls, list) and 
             all(isinstance(item, dict) and 
-                isinstance(item.get('media_url'), str) 
+                isinstance(item.get('video_url'), str) 
                 for item in media_urls)):
-        logger.error("Invalid or missing media_urls parameter in request")
-        return jsonify({"message": "Invalid or missing media_urls parameter"}), 400
+        logger.error("Invalid or missing video_urls parameter in request")
+        return jsonify({"message": "Invalid or missing video_urls parameter"}), 400
 
     #if webhook_url and not id:
     #    logger.warning("id is missing when webhook_url is provided")

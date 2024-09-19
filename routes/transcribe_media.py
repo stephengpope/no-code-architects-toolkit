@@ -67,7 +67,7 @@ def process_job(media_url, output, job_id, webhook_url=None, id=None):
         else:
             raise
 
-@transcribe_bp.route('/transcribe', methods=['POST'])
+@transcribe_bp.route('/transcribe-media', methods=['POST'])
 @authenticate
 def transcribe():
     data = request.json

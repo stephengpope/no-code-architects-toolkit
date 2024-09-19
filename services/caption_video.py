@@ -45,8 +45,22 @@ def process_captioning(file_url, caption_srt, options, job_id):
         logger.info(f"Job {job_id}: File downloaded to {video_path}")
 
         srt_path = os.path.join(STORAGE_PATH, f"{job_id}.srt")
-        with open(srt_path, 'w') as srt_file:
-            srt_file.write(caption_srt)
+
+        if caption_srt.startswith("https"):
+            # Download the file if caption_srt is a URL
+            logger.info(f"Job {job_id}: Downloading caption file from {caption_srt}")
+            response = requests.get(caption_srt)
+            response.raise_for_status()  # Raise an exception for bad status codes
+            
+            with open(srt_path, 'wb') as srt_file:
+                srt_file.write(response.content)
+            
+            logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
+        else:
+            # Write caption_srt content directly to file
+            with open(srt_path, 'w') as srt_file:
+                srt_file.write(caption_srt)
+        
         logger.info(f"Job {job_id}: SRT file created at {srt_path}")
 
         output_path = os.path.join(STORAGE_PATH, f"{job_id}_captioned.mp4")
@@ -120,7 +134,7 @@ def process_captioning(file_url, caption_srt, options, job_id):
                 output_path,
                 vf=subtitle_filter,
                 acodec='copy',
-            ).run(capture_stdout=True, capture_stderr=True)
+            ).run()
             logger.info(f"Job {job_id}: FFmpeg processing completed, output file at {output_path}")
         except ffmpeg.Error as e:
             # Log the FFmpeg stderr output

@@ -14,8 +14,8 @@ caption_bp = Blueprint('caption', __name__)
 def process_job(data, job_id):
     try:
         logger.info(f"Job {job_id}: Starting captioning process")
-        file_url = data['file_url']
-        caption_srt = data['caption_srt']
+        file_url = data['video_url']
+        caption_srt = data['srt']
         options = data.get('options', {})
 
         output_filename = process_captioning(file_url, caption_srt, options, job_id)
@@ -56,9 +56,9 @@ def caption_video():
         logger.error("Missing X-API-Key header")
         return jsonify({"message": "Missing X-API-Key header"}), 400
 
-    if not all(k in data for k in ('file_url', 'caption_srt')):
-        logger.error("file_url and caption_srt are required")
-        return jsonify({"message": "file_url and caption_srt are required"}), 400
+    if not all(k in data for k in ('video_url', 'srt')):
+        logger.error("video_url and srt are required")
+        return jsonify({"message": "video_url and srt are required"}), 400
 
     job_id = str(uuid.uuid4())
     logger.info(f"Processing Job ID: {job_id}")

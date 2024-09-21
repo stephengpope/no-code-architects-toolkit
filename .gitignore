@@ -96,3 +96,6 @@ dmypy.json
 /tmp/*
 !/tmp/.gitkeep
 .DS_Store
+
+# Run server
+run.sh

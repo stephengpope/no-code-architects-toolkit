@@ -1,108 +1,205 @@
+# Media Processing API
 
-# No-Code Architects Toolkit
+This project is a Flask-based API that provides various media processing services, including audio conversion, video combination, transcription, captioning, and Google Drive upload capabilities.
 
-This Docker build helps you reduce or eliminate monthly subscription costs for various APIs used in your automations.
+## Features
 
-It's built with Flask, utilizes FFmpeg for media conversion, and leverages the Whisper model for transcription.
+- Convert media files to MP3
+- Combine multiple videos
+- Transcribe media files
+- Add captions to videos
+- Upload files to Google Drive
+- Audio mixing
+- Authentication middleware
 
-### Features in the v1.0 Build:
+## Prerequisites
 
-- Convert media files to MP3 format.
-- Transcribe video/audio files without the 25 MB Whisper limit.
+- Docker
+- Google Cloud Platform account (for GCS and Google Drive integration)
 
-### Upcoming Features:
+## Environment Variables
 
-- Merge videos and add audio for faceless video automations.
-- Automate podcast editing, intros, outros, music, etc.
-- Translate text to other languages.
-- Automatically add video subtitles.
-- Upload large videos to Google Drive.
+The following environment variables are required:
 
-## Installation with Docker
+- `API_KEY`: Your API key for authentication
+- `GCP_SA_CREDENTIALS`: Google Cloud Platform service account credentials (JSON format)
+- `GDRIVE_USER`: Google Drive user email for impersonation
+- `GCP_BUCKET_NAME`: Google Cloud Storage bucket name
 
-1. Clone this repository:
-   ```bash
-   git clone git@github.com:stephengpope/no-code-architects-toolkit.git
-   cd <repository-directory>
-   ```
+## Docker Build and Run
 
-2. Build the Docker image:
-   ```bash
-   docker build -t no-code-architects-toolkit .
-   ```
+1. Build the Docker image:
 
-3. Run the Docker container with the necessary environment variables:
+```bash
+docker build -t media-processing-api .
+```
 
-   ```bash
-   docker run -p 8080:8080 \
-   -e API_KEY=your_secret_api_key_here \
-   -e GCP_SA_CREDENTIALS='{"type": "service_account", ...}' \ # Required if using GCP
-   -e GCP_BUCKET_NAME=your_gcp_bucket_name \ # Required if using GCP
-   -e GDRIVE_USER=your_google_drive_user_id \ # Required if using Google Drive
-   no-code-architects-toolkit
-   ```
+2. Run the Docker container:
 
-   Replace the environment variables with your actual values.
-
-The API will now be accessible at `http://localhost:8080`.
+```bash
+docker run -d -p 8080:8080 \
+  -e API_KEY=your_api_key \
+  -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
+  -e GDRIVE_USER=your_gdrive_user@example.com \
+  -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+  media-processing-api
+```
 
 ## API Endpoints
 
 ### Authentication
 
-All endpoints require authentication using the `X-API-Key` header.
+All endpoints require an `X-API-Key` header for authentication.
 
-#### Test Authentication
+### 1. Convert Media to MP3
 
-```bash
-curl -X POST http://localhost:8080/authenticate \
-  -H "X-API-Key: your_api_key_here"
+**Endpoint:** `/media-to-mp3`
+
+**Method:** POST
+
+**Payload:**
+```json
+{
+  "media_url": "https://example.com/media.mp4",
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
 ```
 
-### Convert Media to MP3
+### 2. Combine Videos
 
-Convert a media file to MP3 format.
+**Endpoint:** `/combine-videos`
 
-```bash
-curl -X POST http://localhost:8080/media-to-mp3 \
-  -H "X-API-Key: your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "media_url": "https://example.com/path/to/media/file",
-    "webhook_url": "https://your-webhook-url.com/endpoint"
-  }'
+**Method:** POST
+
+**Payload:**
+```json
+{
+  "video_urls": [
+    {"video_url": "https://example.com/video1.mp4"},
+    {"video_url": "https://example.com/video2.mp4"}
+  ],
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
 ```
 
-### Transcribe Media
+### 3. Transcribe Media
 
-Transcribe a media file to text or SRT format.
+**Endpoint:** `/transcribe-media`
 
-```bash
-curl -X POST http://localhost:8080/transcribe \
-  -H "X-API-Key: your_api_key_here" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "media_url": "https://example.com/path/to/media/file",
-    "output": "transcript",
-    "webhook_url": "https://your-webhook-url.com/endpoint"
-  }'
+**Method:** POST
+
+**Payload:**
+```json
+{
+  "media_url": "https://example.com/media.mp4",
+  "output": "transcript",
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
 ```
 
-- **Output Options**:
-  - `"transcript"`: Transcribes the media file to plain text.
-  - `"srt"`: Generates a subtitle file in SRT format.
+### 4. Caption Video
 
-### Environment Variables
+**Endpoint:** `/caption-video`
 
-- **`API_KEY`**: The secret API key required for authenticating API requests.
-- **`GCP_SA_CREDENTIALS`**: Google Cloud service account credentials in JSON format (required for `gcp` or `drive` storage).
-- **`GCP_BUCKET_NAME`**: The name of the Google Cloud Storage bucket (required for `gcp` storage).
-- **`GDRIVE_USER`**: The Google Drive user ID or email to specify the target drive (required for `drive` storage).
+**Method:** POST
 
-### Notes
+**Payload:**
+```json
+{
+  "video_url": "https://example.com/video.mp4",
+  "srt": "1\n00:00:01,000 --> 00:00:04,000\nThis is a caption",
+  "options": {},
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
+```
 
-- The API uses webhooks for asynchronous processing. Provide a `webhook_url` in your requests to receive results upon completion.
-- Processed files are stored temporarily according to the selected storage method.
-- The transcription feature uses the Whisper AI model for accurate results.
+### 5. Upload to Google Drive
 
-For more details on the API implementation, please refer to the source code.
+**Endpoint:** `/gdrive-upload`
+
+**Method:** POST
+
+**Payload:**
+```json
+{
+  "file_url": "https://example.com/file.pdf",
+  "filename": "uploaded_file.pdf",
+  "folder_id": "google_drive_folder_id",
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
+```
+
+### 6. Audio Mixing
+
+**Endpoint:** `/audio-mixing`
+
+**Method:** POST
+
+**Payload:**
+```json
+{
+  "video_url": "https://example.com/video.mp4",
+  "audio_url": "https://example.com/audio.mp3",
+  "video_vol": 100,
+  "audio_vol": 100,
+  "output_length": "video",
+  "webhook_url": "https://your-webhook.com/callback",
+  "id": "unique_request_id"
+}
+```
+
+## Response Format
+
+For asynchronous processing (when `webhook_url` is provided):
+
+```json
+{
+  "code": 202,
+  "id": "unique_request_id",
+  "job_id": "generated_job_id",
+  "message": "processing"
+}
+```
+
+For synchronous processing:
+
+```json
+{
+  "code": 200,
+  "response": "result_or_file_url",
+  "message": "success"
+}
+```
+
+## Webhook Callback Format
+
+```json
+{
+  "endpoint": "/endpoint-name",
+  "code": 200,
+  "id": "unique_request_id",
+  "job_id": "generated_job_id",
+  "response": "result_or_file_url",
+  "message": "success"
+}
+```
+
+## Error Handling
+
+In case of errors, the API will return appropriate HTTP status codes along with error messages in the response body.
+
+## Notes
+
+- All endpoints support both synchronous and asynchronous processing.
+- For asynchronous processing, provide a `webhook_url` in the request payload.
+- The API uses Google Cloud Storage for storing processed files when `GCP_BUCKET_NAME` is set.
+- Google Drive integration requires proper setup of service account credentials and user impersonation.
+
+## License
+
+[MIT License](LICENSE)

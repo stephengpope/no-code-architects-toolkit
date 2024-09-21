@@ -35,9 +35,9 @@ def extract_keyframes():
                 
                 #print(f"Images: {response}")
                 
-                response = str({"image_urls": response})
+                response = {"image_urls": response}
                 
-                print(f"Images: {response}")
+                #print(f"Images: {response}")
 
                 if webhook_url:
                     send_webhook(webhook_url, {

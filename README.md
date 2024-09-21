@@ -1,3 +1,5 @@
+![Original Logo Symbol](https://github.com/user-attachments/assets/c25eabcf-917d-4c46-8320-43f8eddc0fb9)
+
 # No-Code Architects Toolkit
 
 This project is a Flask-based API that provides various media processing services, including audio conversion, video combination, transcription, captioning, and Google Drive upload capabilities.

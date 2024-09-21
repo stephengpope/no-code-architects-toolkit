@@ -9,8 +9,7 @@ This project is a Flask-based API that provides various media processing service
 - Transcribe media files
 - Add captions to videos
 - Upload files to Google Drive
-- Audio mixing
-- Authentication middleware
+- Adding audio to video file
 
 ## Prerequisites
 

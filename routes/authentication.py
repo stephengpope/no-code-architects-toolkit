@@ -1,4 +1,5 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, current_app
+from queue_utils import *
 from functools import wraps
 import os
 
@@ -16,6 +17,7 @@ def authenticate(func):
     return wrapper
 
 @auth_bp.route('/authenticate', methods=['POST'])
+@queue_task_wrapper(bypass_queue=True)
 def authenticate_endpoint():
     api_key = request.headers.get('X-API-Key')
     if api_key == API_KEY:

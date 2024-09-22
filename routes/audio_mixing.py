@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask import current_app
+from queue_utils import *
 import uuid
 import threading
 import logging
@@ -13,8 +14,10 @@ logger = logging.getLogger(__name__)
 
 @audio_mixing_bp.route('/audio-mixing', methods=['POST'])
 @authenticate
-def audio_mixing():
-    data = request.json
+@validate_payload('video_url', 'audio_url')
+@queue_task_wrapper(bypass_queue=False)
+def audio_mixing(job_id, data):
+    
     video_url = data.get('video_url')
     audio_url = data.get('audio_url')
     video_vol = data.get('video_vol', 100)
@@ -23,50 +26,42 @@ def audio_mixing():
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
-    if not video_url or not audio_url:
-        return jsonify({"message": "Missing video_url or audio_url parameter"}), 400
+    logger.info(f"Job {job_id}: Received audio mixing request for {video_url} and {audio_url}")
 
-    job_id = str(uuid.uuid4())
-    current_app.logger.info(f"Job {job_id}: Received audio mixing request for {video_url} and {audio_url}")
+    try:
+        output_filename = process_audio_mixing(
+            video_url, audio_url, video_vol, audio_vol, output_length, job_id, webhook_url
+        )
+        gcs_url = upload_to_gcs(output_filename)
 
-    # Explicitly pass the app to the thread
-    app = current_app._get_current_object()
+        response_json = {
+            "endpoint": "/audio-mixing",
+            "code": 200,
+            "id": id,
+            "job_id": job_id,
+            "response": gcs_url,
+            "message": "success"
+        }
 
-    def process_job():
-        with app.app_context():  # Pass the app context explicitly
-            try:
-                output_filename = process_audio_mixing(
-                    video_url, audio_url, video_vol, audio_vol, output_length, job_id, webhook_url
-                )
-                gcs_url = upload_to_gcs(output_filename)
-                if webhook_url:
-                    send_webhook(webhook_url, {
-                        "endpoint": "/audio-mixing",
-                        "code": 200,
-                        "id": id,
-                        "job_id": job_id,
-                        "response": gcs_url,
-                        "message": "success"
-                    })
-            except Exception as e:
-                current_app.logger.error(f"Job {job_id}: Error during processing - {e}")
-                if webhook_url:
-                    send_webhook(webhook_url, {
-                        "endpoint": "/audio-mixing",
-                        "code": 500,
-                        "id": id,
-                        "job_id": job_id,
-                        "response": None,
-                        "message": str(e)
-                    })
+        if webhook_url:
+            send_webhook(webhook_url, response_json)
+        else:
+            return response_json, 200
+    except Exception as e:
+        
+        response_json = {
+            "endpoint": "/audio-mixing",
+            "code": 500,
+            "id": id,
+            "job_id": job_id,
+            "response": None,
+            "message": str(e)
+        }
 
-    # Start the thread with the app context passed
-    threading.Thread(target=process_job, daemon=True).start()
-    return jsonify(
-            {
-                "code": 202,
-                "id": data.get("id"),
-                "job_id": job_id,
-                "message": "processing"
-            }
-        ), 202
+        current_app.logger.error(f"Job {job_id}: Error during processing - {e}")
+        
+        if webhook_url:
+            send_webhook(webhook_url, response_json)
+        else:
+            return response_json, 200
+

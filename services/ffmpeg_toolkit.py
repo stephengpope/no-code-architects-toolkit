@@ -1,6 +1,7 @@
 import os
 import ffmpeg
 import requests
+from config import GPU_ENABLED  # Import GPU_ENABLED
 from services.file_management import download_file
 from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # Import gcs_client
 
@@ -14,10 +15,15 @@ def process_conversion(media_url, job_id, webhook_url=None):
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
+        # Check if GPU acceleration is enabled
+        if GPU_ENABLED:
+            input_stream = ffmpeg.input(input_filename).hwaccel('cuda').output_format('cuda')
+        else:
+            input_stream = ffmpeg.input(input_filename)
+
         # Convert media file to MP3
         (
-            ffmpeg
-            .input(input_filename)
+            input_stream
             .output(output_path, acodec='libmp3lame', audio_bitrate='128k')
             .overwrite_output()
             .run(capture_stdout=True, capture_stderr=True)
@@ -46,7 +52,14 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         for i, media_item in enumerate(media_urls):
             url = media_item['video_url']
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
-            input_files.append(input_filename)
+
+            # Check if GPU acceleration is enabled
+            if GPU_ENABLED:
+                input_stream = ffmpeg.input(input_filename).hwaccel('cuda').output_format('cuda')
+            else:
+                input_stream = ffmpeg.input(input_filename)
+
+            input_files.append(input_stream)
 
         # Generate an absolute path concat list file for FFmpeg
         concat_file_path = os.path.join(STORAGE_PATH, f"{job_id}_concat_list.txt")
@@ -56,11 +69,22 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
                 concat_file.write(f"file '{os.path.abspath(input_file)}'\n")
 
         # Use the concat demuxer to concatenate the videos
-        (
-            ffmpeg.input(concat_file_path, format='concat', safe=0).
-                output(output_path, c='copy').
-                run(overwrite_output=True)
-        )
+        if GPU_ENABLED:
+            (
+                ffmpeg
+                .input(concat_file_path, format='concat', safe=0)
+                .hwaccel('cuda')
+                .output_format('cuda')
+                .output(output_path, c='copy')
+                .run(overwrite_output=True)
+            )
+        else:
+            (
+                ffmpeg
+                .input(concat_file_path, format='concat', safe=0)
+                .output(output_path, c='copy')
+                .run(overwrite_output=True)
+            )
 
         # Clean up input files
         for f in input_files:
@@ -84,5 +108,5 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         return uploaded_file_url
     except Exception as e:
         print(f"Video combination failed: {str(e)}")
-        raise 
+        raise
     

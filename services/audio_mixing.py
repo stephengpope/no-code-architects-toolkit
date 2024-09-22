@@ -1,5 +1,6 @@
 import os
 import ffmpeg
+from config import GPU_ENABLED  # Import GPU_ENABLED
 from services.file_management import download_file
 
 # Set the default local storage directory
@@ -19,9 +20,13 @@ def process_audio_mixing(video_url, audio_url, video_vol, audio_vol, output_leng
     # Check if video has audio
     video_has_audio = any(stream['codec_type'] == 'audio' for stream in video_info['streams'])
 
-    # Prepare FFmpeg inputs
-    video = ffmpeg.input(video_path)
-    audio = ffmpeg.input(audio_path)
+    # Check if GPU acceleration is enabled
+    if GPU_ENABLED:
+        video = ffmpeg.input(video_path).hwaccel('cuda').output_format('cuda')
+        audio = ffmpeg.input(audio_path).hwaccel('cuda').output_format('cuda')
+    else:
+        video = ffmpeg.input(video_path)
+        audio = ffmpeg.input(audio_path)
 
     # Apply volume filter to input audio
     input_audio = audio.filter('volume', volume=f"{audio_vol/100}")

@@ -51,16 +51,16 @@ def process_captioning(file_url, caption_srt, options, job_id):
             logger.info(f"Job {job_id}: Downloading caption file from {caption_srt}")
             response = requests.get(caption_srt)
             response.raise_for_status()  # Raise an exception for bad status codes
-            
+
             with open(srt_path, 'wb') as srt_file:
                 srt_file.write(response.content)
-            
+
             logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
         else:
             # Write caption_srt content directly to file
             with open(srt_path, 'w') as srt_file:
                 srt_file.write(caption_srt)
-        
+
         logger.info(f"Job {job_id}: SRT file created at {srt_path}")
 
         output_path = os.path.join(STORAGE_PATH, f"{job_id}_captioned.mp4")
@@ -131,13 +131,21 @@ def process_captioning(file_url, caption_srt, options, job_id):
             # Log the FFmpeg command for debugging
             logger.info(f"Job {job_id}: Running FFmpeg with filter: {subtitle_filter}")
 
+            # Check if GPU acceleration is enabled
+            if GPU_ENABLED:
+                input_stream = ffmpeg.input(video_path).hwaccel('cuda').output_format('cuda')
+            else:
+                input_stream = ffmpeg.input(video_path)
+
             # Run FFmpeg to add subtitles to the video
-            ffmpeg.input(video_path).output(
+            input_stream.output(
                 output_path,
                 vf=subtitle_filter,
                 acodec='copy',
             ).run()
+
             logger.info(f"Job {job_id}: FFmpeg processing completed, output file at {output_path}")
+
         except ffmpeg.Error as e:
             # Log the FFmpeg stderr output
             logger.error(f"Job {job_id}: FFmpeg error: {e.stderr.decode('utf8')}")
@@ -153,6 +161,7 @@ def process_captioning(file_url, caption_srt, options, job_id):
         os.remove(output_path)
         logger.info(f"Job {job_id}: Local files cleaned up")
         return output_filename
+
     except Exception as e:
         logger.error(f"Job {job_id}: Error in process_captioning: {str(e)}")
         raise

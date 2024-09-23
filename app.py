@@ -60,6 +60,7 @@ def create_app():
                     response = f(job_id=job_id, pid=pid, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
+                        "endpoint": response[1],
                         "code": response[2],
                         "id": data.get("id"),
                         "job_id": job_id,

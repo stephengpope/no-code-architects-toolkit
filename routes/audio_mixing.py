@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
-def audio_mixing(job_id, pid, data):
+def audio_mixing(job_id, data):
     
     video_url = data.get('video_url')
     audio_url = data.get('audio_url')

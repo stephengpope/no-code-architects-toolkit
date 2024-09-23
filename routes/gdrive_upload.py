@@ -4,6 +4,7 @@ from flask import Blueprint, request, jsonify
 import threading
 import requests
 import uuid
+from services.authentication import authenticate
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaFileUpload

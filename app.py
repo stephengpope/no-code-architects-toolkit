@@ -6,7 +6,6 @@ import uuid
 import os
 import time
 
-# Get MAX_QUEUE_LENGTH from environment variable, default to 0 (no limit)
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
 def create_app():
@@ -14,13 +13,15 @@ def create_app():
 
     # Create a queue to hold tasks
     task_queue = Queue()
+    queue_id = id(task_queue)  # Generate a single queue_id for this worker
 
     # Function to process tasks from the queue
     def process_queue():
         while True:
-            job_id, pid, data, task_func, queue_start_time = task_queue.get()
+            job_id, data, task_func, queue_start_time = task_queue.get()
             queue_time = time.time() - queue_start_time
             run_start_time = time.time()
+            pid = os.getpid()  # Get the PID of the actual processing thread
             response = task_func()
             run_time = time.time() - run_start_time
             total_time = time.time() - queue_start_time
@@ -33,7 +34,7 @@ def create_app():
                 "response": response[0] if response[2] == 200 else None,
                 "message": "success" if response[2] == 200 else response[0],
                 "pid": pid,
-                "queue_id": id(task_queue),
+                "queue_id": queue_id,
                 "run_time": round(run_time, 3),
                 "queue_time": round(queue_time, 3),
                 "total_time": round(total_time, 3),
@@ -53,10 +54,11 @@ def create_app():
             def wrapper(*args, **kwargs):
                 job_id = str(uuid.uuid4())
                 data = request.json if request.is_json else {}
-                pid = os.getpid()
+                pid = os.getpid()  # Get PID for non-queued tasks
                 start_time = time.time()
                 
                 if bypass_queue or 'webhook_url' not in data:
+                    
                     response = f(job_id=job_id, pid=pid, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
@@ -69,28 +71,34 @@ def create_app():
                         "run_time": round(run_time, 3),
                         "queue_time": 0,
                         "total_time": round(run_time, 3),
+                        "pid": pid,
+                        "queue_id": queue_id,
                         "queue_length": task_queue.qsize()
                     }, response[2]
                 else:
-                    # Check if queue length has reached the maximum
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
                         return {
                             "code": 429,
                             "id": data.get("id"),
                             "job_id": job_id,
                             "message": f"MAX_QUEUE_LENGTH ({MAX_QUEUE_LENGTH}) reached",
+                            "pid": pid,
+                            "queue_id": queue_id,
                             "queue_length": task_queue.qsize()
                         }, 429
                     
-                    task_queue.put((job_id, pid, data, lambda: f(job_id=job_id, pid=pid, data=data, *args, **kwargs), start_time))
+                    task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
                     
                     return {
                         "code": 202,
                         "id": data.get("id"),
                         "job_id": job_id,
                         "message": "processing",
-                        "queue_length": task_queue.qsize(),
-                        "max_queue_length": MAX_QUEUE_LENGTH if MAX_QUEUE_LENGTH > 0 else "unlimited"
+                        "pid": pid,
+                        "queue_id": queue_id,
+                        "max_queue_length": MAX_QUEUE_LENGTH if MAX_QUEUE_LENGTH > 0 else "unlimited",
+                        "queue_length": task_queue.qsize()
+                        
                     }, 202
             return wrapper
         return decorator

@@ -148,7 +148,7 @@ EXPOSE 8080
 
 RUN echo '#!/bin/bash\n\
 gunicorn --bind 0.0.0.0:8080 \
-    --workers ${GUNICORN_WORKERS:-4} \
+    --workers ${GUNICORN_WORKERS:-2} \
     --timeout ${GUNICORN_TIMEOUT:-300} \
     --worker-class sync \
     app:app' > /app/run_gunicorn.sh && \

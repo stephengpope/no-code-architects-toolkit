@@ -1,130 +1,48 @@
-from flask import Blueprint, request, jsonify, after_this_request
-import uuid
-import threading
+from flask import Blueprint
+from app_utils import *
 import logging
-import queue
+import os
 from services.transcription import process_transcription
 from services.authentication import authenticate
-from services.webhook import send_webhook
+from services.gcp_toolkit import upload_to_gcs
 
 transcribe_bp = Blueprint('transcribe', __name__)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Create a queue for transcription jobs
-transcription_queue = queue.Queue()
-
-def transcription_worker():
-    while True:
-        job = transcription_queue.get()
-        try:
-            process_job(**job)
-        except Exception as e:
-            logger.error(f"Error processing job: {e}")
-        finally:
-            transcription_queue.task_done()
-
-# Start the worker thread
-worker_thread = threading.Thread(target=transcription_worker, daemon=True)
-worker_thread.start()
-
-def process_job(media_url, output, job_id, webhook_url=None, id=None):
-    #media_url = kwargs['media_url']
-    #output = kwargs['output']
-    #webhook_url = kwargs['webhook_url']
-    #id = kwargs['id']
-    #job_id = kwargs['job_id']
-    
-    try:
-        logger.info(f"Job {job_id}: Starting transcription process for {media_url}")
-        result = process_transcription(media_url, output)
-        logger.info(f"Job {job_id}: Transcription process completed successfully")
-
-        if webhook_url:
-            logger.info(f"Job {job_id}: Sending success webhook to {webhook_url}")
-            send_webhook(webhook_url, {
-                "endpoint": "/transcribe",
-                "code": 200,
-                "id": id,
-                "job_id": job_id,
-                "response": result,
-                "message": "success"
-            })
-        else:
-            return result;
-    except Exception as e:
-        logger.error(f"Job {job_id}: Error during transcription - {e}")
-        if webhook_url:
-            logger.info(f"Job {job_id}: Sending failure webhook to {webhook_url}")
-            send_webhook(webhook_url, {
-                "endpoint": "/transcribe",
-                "code": 500,
-                "id": id,
-                "job_id": job_id,
-                "response": None,
-                "message": str(e)
-            })
-        else:
-            raise
 
 @transcribe_bp.route('/transcribe-media', methods=['POST'])
 @authenticate
-def transcribe():
-    data = request.json
-    media_url = data.get('media_url')
+@validate_payload({
+    "type": "object",
+    "properties": {
+        "media_url": {"type": "string", "format": "uri"},
+        "output": {"type": "string", "enum": ["transcript", "srt", "vtt"]},
+        "webhook_url": {"type": "string", "format": "uri"},
+        "id": {"type": "string"}
+    },
+    "required": ["media_url"],
+    "additionalProperties": False
+})
+@queue_task_wrapper(bypass_queue=False)
+def transcribe(job_id, data):
+    media_url = data['media_url']
     output = data.get('output', 'transcript').lower()
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
-    logger.info(f"Received transcription request: media_url={media_url}, output={output}, webhook_url={webhook_url}, id={id}")
+    logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
-    if not media_url:
-        logger.error("Missing media_url parameter in request")
-        return jsonify({"message": "Missing media_url parameter"}), 400
+    try:
+        result = process_transcription(media_url, output)
+        logger.info(f"Job {job_id}: Transcription process completed successfully")
 
-    # Check if either webhook_url or id is missing and return the appropriate message
-    #if webhook_url and not id:
-    #    logger.warning("id is missing when webhook_url is provided")
-    #    return jsonify({"message": "It appears that the id is missing. Please review your API call and try again."}), 500
-    #elif id and not webhook_url:
-    #    logger.warning("webhook_url is missing when id is provided")
-    #    return jsonify({"message": "It appears that the webhook_url is missing. Please review your API call and try again."}), 500
-
-    job_id = str(uuid.uuid4())
-    logger.info(f"Generated job_id: {job_id}")
-
-    # If webhook_url and id are provided, add the job to the queue
-    if webhook_url:
-        transcription_queue.put({
-            'media_url': media_url,
-            'output': output,
-            'webhook_url': webhook_url,
-            'id': id,
-            'job_id': job_id
-        })
-        logger.info(f"Job {job_id}: Added to queue for background processing")
-        return jsonify(
-            {
-                "code": 202,
-                "id": data.get("id"),
-                "job_id": job_id,
-                "message": "processing"
-            }
-        ), 202
-    else:
-        try:
-            logger.info(f"Job {job_id}: No webhook provided, processing synchronously")
-            result = process_job(media_url=media_url, output=output, job_id=job_id)
-            logger.info(f"Job {job_id}: Returning transcription result")
-            return jsonify({
-                    "code": 200,
-                    "response": result,
-                    "message": "success"
-            }), 200
+        # If the result is a file path, upload it to GCS
+        if output in ['srt', 'vtt']:
+            gcs_url = upload_to_gcs(result)
+            os.remove(result)  # Remove the temporary file after uploading
+            return gcs_url, "/transcribe-media", 200
+        else:
+            return result, "/transcribe-media", 200
         
-        except Exception as e:
-            logger.error(f"Job {job_id}: Error during synchronous transcription - {e}")
-            return jsonify({
-                "code": 500,
-                "message": str(e)
-            }), 500
+    except Exception as e:
+        logger.error(f"Job {job_id}: Error during transcription process - {str(e)}")
+        return str(e), "/transcribe-media", 500

@@ -1,15 +1,14 @@
 import os
 import logging
-from flask import Blueprint, request, jsonify
-import threading
-import requests
-import uuid
+from flask import Blueprint
+from app_utils import *
 from services.authentication import authenticate
 from googleapiclient.discovery import build
 from google.oauth2.service_account import Credentials
 from googleapiclient.http import MediaFileUpload
 import json
-from datetime import datetime
+import requests
+import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -110,85 +109,40 @@ def upload_to_gdrive(file_path, filename, folder_id):
             os.remove(file_path)
             logger.info(f"Temporary file {file_path} deleted.")
 
-def process_job(data, job_id):
-    try:
-        logger.info(f"Processing request with Job ID: {job_id}")
-        file_path = download_file(data['file_url'], STORAGE_PATH)
-        file_id = upload_to_gdrive(file_path, data['filename'], data['folder_id'])
-        file_url = f"https://drive.google.com/file/d/{file_id}/view"
-
-        if 'webhook_url' in data:
-            webhook_payload = {
-                'endpoint': '/gdrive-upload',
-                'code': 200,
-                'id': data.get("id"),
-                'job_id': job_id,
-                'response': file_id,
-                'message': 'success'
-            }
-            logger.info(f"Sending success webhook to: {data['webhook_url']}")
-            requests.post(data['webhook_url'], json=webhook_payload)
-        else:
-            return file_id
-
-    except Exception as e:
-        logger.error(f"Error processing request: {e}")
-        if 'webhook_url' in data:
-            webhook_payload = {
-                'endpoint': '/gdrive-upload',
-                'code': 500,
-                'id': data['id'],
-                'job_id': job_id,
-                'response': None,
-                'message': str(e)
-            }
-            logger.info(f"Sending failure webhook to: {data['webhook_url']}")
-            requests.post(data['webhook_url'], json=webhook_payload)
-        else:
-            raise
-
 @gdrive_upload_bp.route('/gdrive-upload', methods=['POST'])
 @authenticate
-def gdrive_upload():
-    data = request.json
+@validate_payload({
+    "type": "object",
+    "properties": {
+        "file_url": {"type": "string", "format": "uri"},
+        "filename": {"type": "string"},
+        "folder_id": {"type": "string"},
+        "webhook_url": {"type": "string", "format": "uri"},
+        "id": {"type": "string"}
+    },
+    "required": ["file_url", "filename", "folder_id"],
+    "additionalProperties": False
+})
+@queue_task_wrapper(bypass_queue=False)
+def gdrive_upload(job_id, data):
+    file_url = data['file_url']
+    filename = data['filename']
+    folder_id = data['folder_id']
+    webhook_url = data.get('webhook_url')
+    id = data.get('id')
 
-    if 'X-API-Key' not in request.headers:
-        logger.error("Missing X-API-Key header")
-        return jsonify({"message": "Missing X-API-Key header"}), 400
+    logger.info(f"Job {job_id}: Received Google Drive upload request for {file_url}")
 
     if not GDRIVE_USER:
         logger.error("GDRIVE_USER environment variable is not set")
-        return jsonify({"message": "GDRIVE_USER environment variable is not set. Please set it up as an environment variable in Docker."}), 400
+        return "GDRIVE_USER environment variable is not set. Please set it up as an environment variable in Docker.", "/gdrive-upload", 400
 
-    data = request.json
-    if not all(k in data for k in ('file_url', 'filename', 'folder_id')):
-        logger.error("file_url, filename, and folder_id are required")
-        return jsonify({"message": "file_url, filename, and folder_id are required"}), 400
+    try:
+        file_path = download_file(file_url, STORAGE_PATH)
+        file_id = upload_to_gdrive(file_path, filename, folder_id)
 
-    job_id = str(uuid.uuid4())
-    logger.info(f"Processing Job ID: {job_id}")
-
-    if 'webhook_url' in data:
-        threading.Thread(target=process_job, args=(data, job_id)).start()
-        return jsonify(
-            {
-                "code": 202,
-                "id": data.get("id"),
-                "job_id": job_id,
-                "message": "processing"
-            }
-        ), 202
-    else:
-        try:
-            file_id = process_job(data, job_id)
-            return jsonify({
-                "code": 200,
-                "response": file_id,
-                "message": "success"
-            }), 200
-        except Exception as e:
-            logger.error(f"Job {job_id}: Error during synchronous processing - {e}")
-            return jsonify({
-                "code": 500,
-                "message": str(e)
-            }), 500
+        return file_id, "/gdrive-upload", 200
+        
+    except Exception as e:
+        logger.error(f"Job {job_id}: Error during Google Drive upload process - {str(e)}")
+        return str(e), "/gdrive-upload", 500

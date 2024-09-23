@@ -59,7 +59,7 @@ def create_app():
                 
                 if bypass_queue or 'webhook_url' not in data:
                     
-                    response = f(job_id=job_id, pid=pid, data=data, *args, **kwargs)
+                    response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
                         "endpoint": response[1],

@@ -1,16 +1,17 @@
 from flask import request, jsonify, current_app
 from functools import wraps
+import jsonschema
 
-def validate_payload(*required_fields):
+def validate_payload(schema):
     def decorator(f):
         @wraps(f)
         def decorated_function(*args, **kwargs):
             if not request.json:
                 return jsonify({"message": "Missing JSON in request"}), 400
-            
-            missing_fields = [field for field in required_fields if field not in request.json]
-            if missing_fields:
-                return jsonify({"message": f"Missing required fields: {', '.join(missing_fields)}"}), 400
+            try:
+                jsonschema.validate(instance=request.json, schema=schema)
+            except jsonschema.exceptions.ValidationError as validation_error:
+                return jsonify({"message": f"Invalid payload: {validation_error.message}"}), 400
             
             return f(*args, **kwargs)
         return decorated_function

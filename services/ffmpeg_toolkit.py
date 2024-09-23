@@ -81,6 +81,8 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         if not uploaded_file_url:
             raise FileNotFoundError(f"Failed to upload the output file {output_path}")
 
+        os.remove(output_path)
+
         return uploaded_file_url
     except Exception as e:
         print(f"Video combination failed: {str(e)}")

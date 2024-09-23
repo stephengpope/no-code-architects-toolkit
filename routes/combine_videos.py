@@ -3,7 +3,6 @@ from app_utils import *
 import logging
 from services.ffmpeg_toolkit import process_video_combination
 from services.authentication import authenticate
-from services.gcp_toolkit import upload_to_gcs
 
 combine_bp = Blueprint('combine', __name__)
 logger = logging.getLogger(__name__)
@@ -39,10 +38,8 @@ def combine_videos(job_id, data):
     logger.info(f"Job {job_id}: Received combine-videos request for {len(media_urls)} videos")
 
     try:
-        output_filename = process_video_combination(media_urls, job_id)
+        gcs_url = process_video_combination(media_urls, job_id)
         logger.info(f"Job {job_id}: Video combination process completed successfully")
-
-        gcs_url = upload_to_gcs(output_filename)
 
         return gcs_url, "/combine-videos", 200
         

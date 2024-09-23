@@ -147,6 +147,7 @@ def process_job(data, job_id):
             raise
 
 @gdrive_upload_bp.route('/gdrive-upload', methods=['POST'])
+@authenticate
 def gdrive_upload():
     data = request.json
 

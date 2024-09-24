@@ -40,88 +40,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
     automake \
     libtool \
+    libsndfile1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Install SRT from source (latest version using cmake)
-RUN git clone https://github.com/Haivision/srt.git && \
-    cd srt && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd ../.. && rm -rf srt
+# ... (keep the rest of the build steps unchanged)
 
-# Install SVT-AV1 from source
-RUN git clone https://gitlab.com/AOMediaCodec/SVT-AV1.git && \
-    cd SVT-AV1 && \
-    git checkout v0.9.0 && \
-    cd Build && \
-    cmake .. && \
-    make -j$(nproc) && \
-    make install && \
-    cd ../.. && rm -rf SVT-AV1
-
-# Install libvmaf from source
-RUN git clone https://github.com/Netflix/vmaf.git && \
-    cd vmaf/libvmaf && \
-    meson build --buildtype release && \
-    ninja -C build && \
-    ninja -C build install && \
-    cd ../.. && rm -rf vmaf && \
-    ldconfig  # Update the dynamic linker cache
-
-# Manually build and install fdk-aac (since it is not available via apt-get)
-RUN git clone https://github.com/mstorsjo/fdk-aac && \
-    cd fdk-aac && \
-    autoreconf -fiv && \
-    ./configure && \
-    make -j$(nproc) && \
-    make install && \
-    cd .. && rm -rf fdk-aac
-
-# Build and install FFmpeg with all required features (without macOS-specific options)
-RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
-    cd ffmpeg && \
-    git checkout n7.0.2 && \
-    ./configure --prefix=/usr/local \
-    --enable-gpl \
-    --enable-pthreads \
-    --enable-neon \
-    --enable-libaom \
-    --enable-libdav1d \
-    --enable-librav1e \
-    --enable-libsvtav1 \
-    --enable-libvmaf \
-    --enable-libzimg \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-libvpx \
-    --enable-libwebp \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-libvorbis \
-    --enable-libtheora \
-    --enable-libspeex \
-    --enable-libass \
-    --enable-libfreetype \
-    --enable-fontconfig \
-    --enable-libsrt \
-    --enable-gnutls && \
-    make -j$(nproc) && \
-    make install && \
-    cd .. && rm -rf ffmpeg
-
-# Add /usr/local/bin to PATH (if not already included)
+# Set environment variables
 ENV PATH="/usr/local/bin:${PATH}"
-
-# Set work directory
-WORKDIR /app
-
-# Set environment variable for Whisper cache
 ENV WHISPER_CACHE_DIR="/app/whisper_cache"
+ENV TRANSFORMERS_CACHE=/tmp/transformers_cache
+ENV NUMBA_CACHE_DIR=/tmp/numba_cache
+ENV PYTHONUNBUFFERED=1
+ENV NUMBA_DISABLE_JIT=1
 
-# Create cache directory
-RUN mkdir -p ${WHISPER_CACHE_DIR} && chmod 777 ${WHISPER_CACHE_DIR}
+# Create cache directories and set permissions
+RUN mkdir -p ${WHISPER_CACHE_DIR} && chmod 777 ${WHISPER_CACHE_DIR} && \
+    mkdir -p /tmp/transformers_cache && chmod 777 /tmp/transformers_cache && \
+    mkdir -p /tmp/numba_cache && chmod 777 /tmp/numba_cache
 
 # Copy the requirements file first to optimize caching
 COPY requirements.txt .
@@ -131,17 +66,18 @@ RUN pip install openai-whisper && \
     pip install jsonschema && \
     pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
+    pip install --no-cache-dir torch torchaudio --extra-index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir tortoise-tts && \
+    pip install --no-cache-dir scipy && \
     python -c "import os; os.environ['WHISPER_CACHE_DIR'] = '${WHISPER_CACHE_DIR}'; import whisper; whisper.load_model('base')"
 
 # Copy the rest of the application code
 COPY . .
 
 # Create a non-root user and switch to it
-RUN useradd -m appuser && chown -R appuser /app
+RUN useradd -m appuser && chown -R appuser:appuser /app
+RUN mkdir -p /home/appuser/.cache && chown -R appuser:appuser /home/appuser/.cache
 USER appuser
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
 
 # Expose the port the app runs on
 EXPOSE 8080

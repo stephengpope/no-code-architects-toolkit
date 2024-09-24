@@ -18,7 +18,8 @@ GCP_BUCKET_NAME = os.getenv('GCP_BUCKET_NAME')
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"}
+        "id": {"type": "string"},
+        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"}
     },
     "required": ["media_url"],
     "additionalProperties": False
@@ -28,11 +29,12 @@ def convert_media_to_mp3(job_id, data):
     media_url = data.get('media_url')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
+    bitrate = data.get('bitrate', '128k')  # Default to 128k if not provided
 
-    logger.info(f"Job {job_id}: Received conversion request for {media_url}")
+    logger.info(f"Job {job_id}: Received conversion request for {media_url} with bitrate {bitrate}")
 
     try:
-        output_path = process_conversion(media_url, job_id)
+        output_path = process_conversion(media_url, job_id, bitrate)
         logger.info(f"Job {job_id}: Conversion completed. Output file: {output_path}")
 
         if not GCP_BUCKET_NAME:

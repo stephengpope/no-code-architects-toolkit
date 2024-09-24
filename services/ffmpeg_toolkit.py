@@ -7,23 +7,23 @@ from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # I
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_conversion(media_url, job_id, webhook_url=None):
-    """Convert media to MP3 format."""
+def process_conversion(media_url, job_id, bitrate='128k', webhook_url=None):
+    """Convert media to MP3 format with specified bitrate."""
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, f"{job_id}_input"))
     output_filename = f"{job_id}.mp3"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
-        # Convert media file to MP3
+        # Convert media file to MP3 with specified bitrate
         (
             ffmpeg
             .input(input_filename)
-            .output(output_path, acodec='libmp3lame', audio_bitrate='128k')
+            .output(output_path, acodec='libmp3lame', audio_bitrate=bitrate)
             .overwrite_output()
             .run(capture_stdout=True, capture_stderr=True)
         )
         os.remove(input_filename)
-        print(f"Conversion successful: {output_path}")
+        print(f"Conversion successful: {output_path} with bitrate {bitrate}")
 
         # Ensure the output file exists locally before attempting upload
         if not os.path.exists(output_path):

@@ -37,30 +37,35 @@ FONT_PATHS = {
     'Korean Bold': '/usr/share/fonts/truetype/custom/Korean-Bold.ttf'
 }
 
-def process_captioning(file_url, caption_srt, options, job_id):
+def process_captioning(file_url, caption_srt, caption_type, options, job_id):
     """Process video captioning using FFmpeg."""
     try:
         logger.info(f"Job {job_id}: Starting download of file from {file_url}")
         video_path = download_file(file_url, STORAGE_PATH)
         logger.info(f"Job {job_id}: File downloaded to {video_path}")
 
-        srt_path = os.path.join(STORAGE_PATH, f"{job_id}.srt")
+        # Determine subtitle file extension
+        
+        subtitle_extension = '.' + caption_type
+        
+        srt_path = os.path.join(STORAGE_PATH, f"{job_id}{subtitle_extension}")
 
         if caption_srt.startswith("https"):
             # Download the file if caption_srt is a URL
             logger.info(f"Job {job_id}: Downloading caption file from {caption_srt}")
             response = requests.get(caption_srt)
             response.raise_for_status()  # Raise an exception for bad status codes
-            
+
             with open(srt_path, 'wb') as srt_file:
                 srt_file.write(response.content)
-            
+
             logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
         else:
+            
             # Write caption_srt content directly to file
             with open(srt_path, 'w') as srt_file:
                 srt_file.write(caption_srt)
-        
+
         logger.info(f"Job {job_id}: SRT file created at {srt_path}")
 
         output_path = os.path.join(STORAGE_PATH, f"{job_id}_captioned.mp4")
@@ -96,36 +101,41 @@ def process_captioning(file_url, caption_srt, options, job_id):
         # Update ffmpeg_options with provided options
         ffmpeg_options.update(options)
 
+        # For ASS subtitles, we should avoid overriding styles
+        if subtitle_extension == '.ass':
+            # Use the subtitles filter without force_style
+            subtitle_filter = f"subtitles='{srt_path}'"
+        else:
         # Construct FFmpeg filter options for subtitles with detailed styling
-        subtitle_filter = f"subtitles={srt_path}:force_style='"
-        style_options = {
-            'FontFile': ffmpeg_options['font_name'],
-            'FontSize': ffmpeg_options['font_size'],
-            'PrimaryColour': ffmpeg_options['primary_color'],
-            'SecondaryColour': ffmpeg_options['secondary_color'],
-            'OutlineColour': ffmpeg_options['outline_color'],
-            'BackColour': ffmpeg_options['back_color'],
-            'Bold': ffmpeg_options['bold'],
-            'Italic': ffmpeg_options['italic'],
-            'Underline': ffmpeg_options['underline'],
-            'StrikeOut': ffmpeg_options['strikeout'],
-            'Alignment': ffmpeg_options['alignment'],
-            'MarginV': ffmpeg_options['margin_v'],
-            'MarginL': ffmpeg_options['margin_l'],
-            'MarginR': ffmpeg_options['margin_r'],
-            'Outline': ffmpeg_options['outline'],
-            'Shadow': ffmpeg_options['shadow'],
-            'Blur': ffmpeg_options['blur'],
-            'BorderStyle': ffmpeg_options['border_style'],
-            'Encoding': ffmpeg_options['encoding'],
-            'Spacing': ffmpeg_options['spacing'],
-            'Angle': ffmpeg_options['angle'],
-            'UpperCase': ffmpeg_options['uppercase']
-        }
+            subtitle_filter = f"subtitles={srt_path}:force_style='"
+            style_options = {
+                'FontFile': ffmpeg_options['font_name'],
+                'FontSize': ffmpeg_options['font_size'],
+                'PrimaryColour': ffmpeg_options['primary_color'],
+                'SecondaryColour': ffmpeg_options['secondary_color'],
+                'OutlineColour': ffmpeg_options['outline_color'],
+                'BackColour': ffmpeg_options['back_color'],
+                'Bold': ffmpeg_options['bold'],
+                'Italic': ffmpeg_options['italic'],
+                'Underline': ffmpeg_options['underline'],
+                'StrikeOut': ffmpeg_options['strikeout'],
+                'Alignment': ffmpeg_options['alignment'],
+                'MarginV': ffmpeg_options['margin_v'],
+                'MarginL': ffmpeg_options['margin_l'],
+                'MarginR': ffmpeg_options['margin_r'],
+                'Outline': ffmpeg_options['outline'],
+                'Shadow': ffmpeg_options['shadow'],
+                'Blur': ffmpeg_options['blur'],
+                'BorderStyle': ffmpeg_options['border_style'],
+                'Encoding': ffmpeg_options['encoding'],
+                'Spacing': ffmpeg_options['spacing'],
+                'Angle': ffmpeg_options['angle'],
+                'UpperCase': ffmpeg_options['uppercase']
+            }
 
-        # Add only populated options to the subtitle filter
-        subtitle_filter += ','.join(f"{k}={v}" for k, v in style_options.items() if v is not None)
-        subtitle_filter += "'"
+            # Add only populated options to the subtitle filter
+            subtitle_filter += ','.join(f"{k}={v}" for k, v in style_options.items() if v is not None)
+            subtitle_filter += "'"
 
         try:
             # Log the FFmpeg command for debugging

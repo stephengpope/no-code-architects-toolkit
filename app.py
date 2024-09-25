@@ -5,6 +5,7 @@ import threading
 import uuid
 import os
 import time
+from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -38,7 +39,8 @@ def create_app():
                 "run_time": round(run_time, 3),
                 "queue_time": round(queue_time, 3),
                 "total_time": round(total_time, 3),
-                "queue_length": task_queue.qsize()
+                "queue_length": task_queue.qsize(),
+                "build_number": BUILD_NUMBER  # Add build number to response
             }
 
             send_webhook(data.get("webhook_url"), response_data)
@@ -73,7 +75,8 @@ def create_app():
                         "total_time": round(run_time, 3),
                         "pid": pid,
                         "queue_id": queue_id,
-                        "queue_length": task_queue.qsize()
+                        "queue_length": task_queue.qsize(),
+                        "build_number": BUILD_NUMBER  # Add build number to response
                     }, response[2]
                 else:
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
@@ -84,7 +87,8 @@ def create_app():
                             "message": f"MAX_QUEUE_LENGTH ({MAX_QUEUE_LENGTH}) reached",
                             "pid": pid,
                             "queue_id": queue_id,
-                            "queue_length": task_queue.qsize()
+                            "queue_length": task_queue.qsize(),
+                            "build_number": BUILD_NUMBER  # Add build number to response
                         }, 429
                     
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
@@ -97,8 +101,8 @@ def create_app():
                         "pid": pid,
                         "queue_id": queue_id,
                         "max_queue_length": MAX_QUEUE_LENGTH if MAX_QUEUE_LENGTH > 0 else "unlimited",
-                        "queue_length": task_queue.qsize()
-                        
+                        "queue_length": task_queue.qsize(),
+                        "build_number": BUILD_NUMBER  # Add build number to response
                     }, 202
             return wrapper
         return decorator

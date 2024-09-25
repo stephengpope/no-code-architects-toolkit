@@ -3,7 +3,7 @@ name: Update Build Number
 on:
   push:
     branches:
-      - testing
+      - build
 
 permissions:
   contents: write
@@ -12,7 +12,8 @@ jobs:
   update-build-number:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       
@@ -30,5 +31,11 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
           git add build_number.txt version.py
-          git commit -m "Bump build number to $build_number [skip ci]"
-          git push
+          git commit -m "Build $build_number: Bump build number [skip ci]"
+          git push origin build
+
+      - name: Push changes to testing branch
+        run: |
+          git checkout testing
+          git merge --no-ff build -m "Build $build_number: Merge build branch with updated build number"
+          git push origin testing

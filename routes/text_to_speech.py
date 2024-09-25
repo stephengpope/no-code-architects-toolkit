@@ -1,5 +1,3 @@
-import preload
-
 from flask import Blueprint, request, jsonify
 from flask import current_app
 from app_utils import *

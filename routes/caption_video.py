@@ -17,9 +17,10 @@ def process_job(data, job_id):
         logger.info(f"Job {job_id}: Starting captioning process")
         file_url = data['video_url']
         caption_srt = data['srt']
+        caption_type= data['caption_type']
         options = data.get('options', {})
 
-        output_filename = process_captioning(file_url, caption_srt, options, job_id)
+        output_filename = process_captioning(file_url, caption_srt, caption_type, options, job_id)
 
         if 'webhook_url' in data:
             send_webhook(data['webhook_url'], {

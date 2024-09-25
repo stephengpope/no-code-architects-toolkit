@@ -1,13 +1,10 @@
 name: Update Build Number
-
 on:
   push:
     branches:
       - build
-
 permissions:
   contents: write
-
 jobs:
   update-build-number:
     runs-on: ubuntu-latest
@@ -16,6 +13,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.ACTION_BYPASS }}
       
       - name: Update build number
         run: |

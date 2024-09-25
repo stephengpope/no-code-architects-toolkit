@@ -12,65 +12,23 @@ jobs:
   update-build-number:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Debug information
-        run: |
-          echo "Current directory: $(pwd)"
-          echo "Repository contents:"
-          ls -la
-          echo "Git status:"
-          git status
-          echo "Current branch:"
-          git branch --show-current
-
+      
       - name: Update build number
         run: |
-          echo "Checking for build_number.txt"
           if [ ! -f build_number.txt ]; then
-            echo "build_number.txt not found, creating it"
             echo "0" > build_number.txt
-          else
-            echo "build_number.txt found"
           fi
-          
-          echo "Contents of build_number.txt:"
-          cat build_number.txt
-          
-          echo "Incrementing build number"
           build_number=$(( $(cat build_number.txt) + 1 ))
-          echo "New build number: $build_number"
           echo $build_number > build_number.txt
           
-          echo "Updating version.py"
+          # Update the version in your code file (e.g., version.py)
           echo "BUILD_NUMBER = $build_number" > version.py
           
-          echo "Configuring git"
           git config user.name github-actions
           git config user.email github-actions@github.com
-          
-          echo "Adding files to git"
           git add build_number.txt version.py
-          
-          echo "Committing changes"
           git commit -m "Bump build number to $build_number [skip ci]"
-          
-          echo "Pushing changes"
           git push
-
-      - name: Display error on failure
-        if: failure()
-        run: |
-          echo "Error occurred. Current directory contents:"
-          ls -la
-          echo "build_number.txt contents:"
-          cat build_number.txt || echo "build_number.txt not found"
-          echo "version.py contents:"
-          cat version.py || echo "version.py not found"
-          echo "Git status:"
-          git status
-          echo "Git log (last 5 commits):"
-          git log -n 5 --oneline

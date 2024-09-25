@@ -55,9 +55,12 @@ def process_transcription(media_url, output_type):
             #     f.write(ass_content)
             # logger.info(f"ASS subtitle file saved")
             output = ass_content
-            return output
         else:
             raise ValueError("Invalid output type. Must be 'ass'.")
+        os.remove(input_filename)
+        logger.info(f"Removed local file: {input_filename}")
+        logger.info(f"Transcription successful, output type: {output_type}")
+        return output
     except Exception as e:
         logger.error(f"Transcription failed: {str(e)}")
         raise

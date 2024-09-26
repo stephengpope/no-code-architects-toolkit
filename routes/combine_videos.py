@@ -3,6 +3,7 @@ from app_utils import *
 import logging
 from services.ffmpeg_toolkit import process_video_combination
 from services.authentication import authenticate
+from services.cloud_storage import upload_file
 
 combine_bp = Blueprint('combine', __name__)
 logger = logging.getLogger(__name__)
@@ -38,11 +39,14 @@ def combine_videos(job_id, data):
     logger.info(f"Job {job_id}: Received combine-videos request for {len(media_urls)} videos")
 
     try:
-        gcs_url = process_video_combination(media_urls, job_id)
+        output_file = process_video_combination(media_urls, job_id)
         logger.info(f"Job {job_id}: Video combination process completed successfully")
 
-        return gcs_url, "/combine-videos", 200
-        
+        cloud_url = upload_file(output_file)
+        logger.info(f"Job {job_id}: Combined video uploaded to cloud storage: {cloud_url}")
+
+        return cloud_url, "/combine-videos", 200
+
     except Exception as e:
         logger.error(f"Job {job_id}: Error during video combination process - {str(e)}")
         return str(e), "/combine-videos", 500

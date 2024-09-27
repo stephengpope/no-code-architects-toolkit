@@ -67,19 +67,9 @@ def process_transcription(media_url, output_type):
 
 def generate_ass_subtitle(result):
     """Generate ASS subtitle content with highlighted current words, showing one line at a time."""
+    logger.info("Generate ASS subtitle content with highlighted current words")
     # ASS file header
-    ass_content = """
-[Script Info]
-Title: Highlight Current Word
-ScriptType: v4.00+
-
-[V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default, Arial Black, 36, &H00FFFFFF, &H00000000, &H64000000, 1, 0, 0, 0, 100, 100, 0, 0, 1, 3, 1, 2, 10, 10, 30, 1
-
-[Events]
-Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-"""
+    ass_content = ""
 
     # Helper function to format time
     def format_time(t):
@@ -89,7 +79,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         centiseconds = int(round((t - int(t)) * 100))
         return f"{hours}:{minutes:02d}:{seconds:02d}.{centiseconds:02d}"
 
-    max_chars_per_line = 40  # Maximum characters per line
+    max_chars_per_line = 56  # Maximum characters per line
 
     # Process each segment
     for segment in result['segments']:

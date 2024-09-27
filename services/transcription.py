@@ -12,7 +12,7 @@ logging.basicConfig(level=logging.INFO)
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_transcription(media_url, output_type):
+def process_transcription(media_url, output_type, max_chars=56):
     """Transcribe media and return the ASS subtitle file with highlighted words."""
     logger.info(f"Starting transcription for media URL: {media_url} with output type: {output_type}")
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
@@ -46,7 +46,7 @@ def process_transcription(media_url, output_type):
             )
             logger.info("Transcription completed with word-level timestamps")
             # Generate ASS subtitle content
-            ass_content = generate_ass_subtitle(result)
+            ass_content = generate_ass_subtitle(result, max_chars)
             logger.info("Generated ASS subtitle content")
 
             # Write the ASS content to a file
@@ -65,7 +65,7 @@ def process_transcription(media_url, output_type):
         logger.error(f"Transcription failed: {str(e)}")
         raise
 
-def generate_ass_subtitle(result):
+def generate_ass_subtitle(result, max_chars):
     """Generate ASS subtitle content with highlighted current words, showing one line at a time."""
     logger.info("Generate ASS subtitle content with highlighted current words")
     # ASS file header
@@ -79,7 +79,7 @@ def generate_ass_subtitle(result):
         centiseconds = int(round((t - int(t)) * 100))
         return f"{hours}:{minutes:02d}:{seconds:02d}.{centiseconds:02d}"
 
-    max_chars_per_line = 56  # Maximum characters per line
+    max_chars_per_line = max_chars  # Maximum characters per line
 
     # Process each segment
     for segment in result['segments']:

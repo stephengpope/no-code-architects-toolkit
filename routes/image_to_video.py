@@ -29,7 +29,7 @@ def image_to_video(job_id, data):
     image_url = data.get('image_url')
     length = data.get('length', 5)
     frame_rate = data.get('frame_rate', 30)
-    zoom_speed = data.get('zoom_speed', 0.05)/100
+    zoom_speed = data.get('zoom_speed', 3)/100
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 

@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
     "properties": {
         "image_url": {"type": "string", "format": "uri"},
         "length": {"type": "number", "minimum": 1, "maximum": 60},
-        "frames": {"type": "integer", "minimum": 30, "maximum": 1800},
-        "zoom": {"type": "number", "minimum": 0.0001, "maximum": 0.1},
+        "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
+        "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 def image_to_video(job_id, data):
     image_url = data.get('image_url')
     length = data.get('length', 5)
-    frames = data.get('frames', 600)
-    zoom = data.get('zoom', 0.0015)
+    frame_rate = data.get('frame_rate', 30)
+    zoom_speed = data.get('zoom_speed', 0.05)/100
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
@@ -37,7 +37,7 @@ def image_to_video(job_id, data):
 
     try:
         output_filename = process_image_to_video(
-            image_url, length, frames, zoom, job_id, webhook_url
+            image_url, length, frame_rate, zoom_speed, job_id, webhook_url
         )
         gcs_url = upload_to_gcs(output_filename)
 

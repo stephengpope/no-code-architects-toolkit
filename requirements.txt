@@ -14,3 +14,4 @@ google-auth-httplib2
 google-api-python-client
 google-cloud-storage
 psutil
+Pillow

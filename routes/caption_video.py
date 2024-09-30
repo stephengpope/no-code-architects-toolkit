@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
         "srt": {"type": "string"},
+        "caption_type": {"type": "string"},
         "options": {
             "type": "array",
             "items": {
@@ -36,6 +37,7 @@ logger = logging.getLogger(__name__)
 def caption_video(job_id, data):
     video_url = data['video_url']
     caption_srt = data['srt']
+    caption_type= data['caption_type', 'srt']
     options = data.get('options', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')
@@ -44,7 +46,7 @@ def caption_video(job_id, data):
     logger.info(f"Job {job_id}: Options received: {options}")
 
     try:
-        output_filename = process_captioning(video_url, caption_srt, options, job_id)
+        output_filename = process_captioning(video_url, caption_srt, caption_type, options, job_id)
         logger.info(f"Job {job_id}: Captioning process completed successfully")
 
         return output_filename, "/caption-video", 200

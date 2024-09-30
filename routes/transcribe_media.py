@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
-        "output": {"type": "string", "enum": ["transcript", "srt", "vtt"]},
+        "output": {"type": "string", "enum": ["transcript", "srt", "vtt", "ass"]},
         "webhook_url": {"type": "string", "format": "uri"},
+        "max_chars": {"type": "integer"},
         "id": {"type": "string"}
     },
     "required": ["media_url"],
@@ -27,16 +28,17 @@ def transcribe(job_id, data):
     media_url = data['media_url']
     output = data.get('output', 'transcript').lower()
     webhook_url = data.get('webhook_url')
+    max_chars = data.get('max_chars', 56)
     id = data.get('id')
 
     logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
     try:
-        result = process_transcription(media_url, output)
+        result = process_transcription(media_url, output, max_chars)
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
         # If the result is a file path, upload it to GCS
-        if output in ['srt', 'vtt']:
+        if output in ['srt', 'vtt', 'ass']:
             gcs_url = upload_to_gcs(result)
             os.remove(result)  # Remove the temporary file after uploading
             return gcs_url, "/transcribe-media", 200

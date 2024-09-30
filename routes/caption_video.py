@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 def caption_video(job_id, data):
     video_url = data['video_url']
     caption_srt = data['srt']
-    caption_type= data['caption_type', 'srt']
+    caption_type= data.get('caption_type', 'srt')
     options = data.get('options', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')

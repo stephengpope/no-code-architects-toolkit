@@ -67,10 +67,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             logger.info(f"Job {job_id}: Downloading caption file from {caption_srt}")
             response = requests.get(caption_srt)
             response.raise_for_status()  # Raise an exception for bad status codes
-            subtitle_content = caption_style + response.content
-
-            with open(srt_path, 'wb') as srt_file:
-                srt_file.write(subtitle_content)
+            if caption_type in ['srt','vtt']:
+                with open(srt_path, 'wb') as srt_file:
+                    srt_file.write(response.content)
+            else:
+                subtitle_content = caption_style + response.text
+                with open(srt_path, 'w') as srt_file:
+                    srt_file.write(subtitle_content)
             
             logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
         else:

@@ -70,11 +70,13 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             if caption_type in ['srt','vtt']:
                 with open(srt_path, 'wb') as srt_file:
                     srt_file.write(response.content)
-            else:
+            elif caption_type == 'ass':
                 subtitle_content = caption_style + response.text
                 with open(srt_path, 'w') as srt_file:
                     srt_file.write(subtitle_content)
-            
+            else:
+                logger.error('Unknown caption type try srt, vtt or ass')
+                raise
             logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
         else:
             # Write caption_srt content directly to file

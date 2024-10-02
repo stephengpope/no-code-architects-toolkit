@@ -68,7 +68,7 @@ def process_transcription(media_url, output_type, max_chars=56):
             output = output_filename
             logger.info(f"Generated {output_type.upper()} output: {output}")
         else:
-            raise ValueError("Invalid output type. Must be 'transcript', 'srt', or 'vtt'.")
+            raise ValueError("Invalid output type. Must be 'transcript', 'srt', 'vtt' or 'ass'.")
 
         os.remove(input_filename)
         logger.info(f"Removed local file: {input_filename}")

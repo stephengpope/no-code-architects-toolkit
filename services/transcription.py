@@ -31,6 +31,7 @@ def process_transcription(media_url, output_type, max_chars=56):
             output = result['text']
             logger.info("Generated transcript output")
         elif output_type in ['srt', 'vtt']:
+            result = model.transcribe(input_filename)
             srt_subtitles = []
             for i, segment in enumerate(result['segments'], start=1):
                 start = timedelta(seconds=segment['start'])

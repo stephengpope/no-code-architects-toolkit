@@ -14,4 +14,8 @@ google-auth-httplib2
 google-api-python-client
 google-cloud-storage
 psutil
+<<<<<<< HEAD
 boto3
+=======
+Pillow
+>>>>>>> build

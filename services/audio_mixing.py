@@ -1,73 +1,63 @@
 import os
-import ffmpeg
+import subprocess
 from services.file_management import download_file
 
-# Set the default local storage directory
 STORAGE_PATH = "/tmp/"
+
+def get_duration(file_path):
+    cmd = ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'default=noprint_wrappers=1:nokey=1', file_path]
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    return float(result.stdout)
 
 def process_audio_mixing(video_url, audio_url, video_vol, audio_vol, output_length, job_id, webhook_url=None):
     video_path = download_file(video_url, STORAGE_PATH)
     audio_path = download_file(audio_url, STORAGE_PATH)
     output_path = os.path.join(STORAGE_PATH, f"{job_id}.mp4")
 
-    # Get video and audio information
-    video_info = ffmpeg.probe(video_path)
-    audio_info = ffmpeg.probe(audio_path)
-    video_duration = float(video_info['streams'][0]['duration'])
-    audio_duration = float(audio_info['streams'][0]['duration'])
+    video_duration = get_duration(video_path)
+    audio_duration = get_duration(audio_path)
 
-    # Check if video has audio
-    video_has_audio = any(stream['codec_type'] == 'audio' for stream in video_info['streams'])
-
-    # Prepare FFmpeg inputs
-    video = ffmpeg.input(video_path)
-    audio = ffmpeg.input(audio_path)
-
-    # Apply volume filter to input audio
-    input_audio = audio.filter('volume', volume=f"{audio_vol/100}")
-
-    # Determine output duration
+    # Explicitly set output duration based on output_length
     output_duration = video_duration if output_length == 'video' else audio_duration
 
-    # Trim or pad audio
-    if output_duration > audio_duration:
-        input_audio = ffmpeg.filter([input_audio], 'apad', pad_dur=output_duration-audio_duration)
+    # Prepare FFmpeg command
+    cmd = ['ffmpeg', '-y']
+
+    # Input video
+    cmd.extend(['-i', video_path])
+
+    # Input audio
+    cmd.extend(['-i', audio_path])
+
+    # Video settings
+    if output_length == 'audio' and audio_duration > video_duration:
+        cmd.extend(['-stream_loop', '-1'])  # Loop video only if output_length is 'audio' and audio is longer
+
+    # Audio settings
+    audio_filter = f'[1:a]volume={audio_vol/100}'
+    if output_length == 'video':
+        audio_filter += f',atrim=duration={video_duration}'
+    audio_filter += '[a]'
+    cmd.extend(['-filter_complex', audio_filter])
+
+    # Output settings
+    cmd.extend(['-map', '0:v'])  # Map video from first input
+    cmd.extend(['-map', '[a]'])  # Map processed audio
+
+    if output_length == 'audio' and audio_duration > video_duration:
+        cmd.extend(['-c:v', 'libx264'])  # Re-encode video if looping
     else:
-        input_audio = input_audio.filter('atrim', duration=output_duration)
+        cmd.extend(['-c:v', 'copy'])  # Copy video codec otherwise
 
-    # Handle audio mixing based on whether video has audio
-    if video_has_audio:
-        video_audio = video.audio.filter('volume', volume=f"{video_vol/100}")
-        mixed_audio = ffmpeg.filter([video_audio, input_audio], 'amix', inputs=2)
-    else:
-        mixed_audio = input_audio
+    cmd.extend(['-c:a', 'aac'])  # Always encode audio to AAC
+    
+    # Explicitly set output duration
+    cmd.extend(['-t', str(output_duration)])
 
-    # Trim video if necessary
-    if output_duration < video_duration:
-        video = video.trim(duration=output_duration)
-
-    # Set up output
-    output = ffmpeg.output(
-        video.video,  # Copy video stream
-        mixed_audio,
-        output_path,
-        vcodec='copy',  # Copy video codec
-        acodec='aac',   # Re-encode audio to AAC
-        strict='experimental'
-    )
-
-    # If padding is needed, we can't use stream copy
-    if output_duration > video_duration:
-        output = ffmpeg.output(
-            ffmpeg.filter([video], 'tpad', stop_duration=output_duration-video_duration),
-            mixed_audio,
-            output_path,
-            acodec='aac',
-            strict='experimental'
-        )
+    cmd.append(output_path)
 
     # Run FFmpeg command
-    ffmpeg.run(output, overwrite_output=True)
+    subprocess.run(cmd, check=True)
 
     # Clean up input files
     os.remove(video_path)

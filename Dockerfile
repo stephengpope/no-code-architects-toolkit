@@ -25,7 +25,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libvorbis-dev \
     libtheora-dev \
     libspeex-dev \
-    libass-dev \
     libfreetype6-dev \
     libfontconfig1-dev \
     libgnutls28-dev \
@@ -40,6 +39,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf \
     automake \
     libtool \
+    libfribidi-dev \
+    libharfbuzz-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SRT from source (latest version using cmake)
@@ -79,10 +80,32 @@ RUN git clone https://github.com/mstorsjo/fdk-aac && \
     make install && \
     cd .. && rm -rf fdk-aac
 
+# Install libunibreak (required for ASS_FEATURE_WRAP_UNICODE)
+RUN git clone https://github.com/adah1972/libunibreak.git && \
+    cd libunibreak && \
+    ./autogen.sh && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    ldconfig && \
+    cd .. && rm -rf libunibreak
+
+# Build and install libass with libunibreak support and ASS_FEATURE_WRAP_UNICODE enabled
+RUN git clone https://github.com/libass/libass.git && \
+    cd libass && \
+    autoreconf -i && \
+    ./configure --enable-libunibreak || { cat config.log; exit 1; } && \
+    mkdir -p /app && echo "Config log located at: /app/config.log" && cp config.log /app/config.log && \
+    make -j$(nproc) || { echo "Libass build failed"; exit 1; } && \
+    make install && \
+    ldconfig && \
+    cd .. && rm -rf libass
+
 # Build and install FFmpeg with all required features (without macOS-specific options)
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
     git checkout n7.0.2 && \
+    CFLAGS="-I/usr/include/unibreak" LDFLAGS="-L/usr/lib" \
     ./configure --prefix=/usr/local \
     --enable-gpl \
     --enable-pthreads \
@@ -106,13 +129,20 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     --enable-libfreetype \
     --enable-fontconfig \
     --enable-libsrt \
-    --enable-gnutls && \
+    --enable-gnutls \
+    && \
     make -j$(nproc) && \
     make install && \
     cd .. && rm -rf ffmpeg
 
 # Add /usr/local/bin to PATH (if not already included)
 ENV PATH="/usr/local/bin:${PATH}"
+
+# Copy fonts into the custom fonts directory
+COPY ./fonts /usr/share/fonts/custom
+
+# Rebuild the font cache so that fontconfig can see the custom fonts
+RUN fc-cache -f -v
 
 # Set work directory
 WORKDIR /app

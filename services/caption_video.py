@@ -2,7 +2,6 @@ import os
 import ffmpeg
 import logging
 import requests
-import subprocess
 from services.file_management import download_file
 from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME
 
@@ -27,20 +26,6 @@ logger.info(f"Available fonts: {FONT_PATHS}")
 # Create a list of acceptable font names
 ACCEPTABLE_FONTS = list(FONT_PATHS.keys())
 logger.info(f"Acceptable font names: {ACCEPTABLE_FONTS}")
-
-# List fonts available in fontconfig
-def list_fontconfig_fonts():
-    try:
-        result = subprocess.run(['fc-list', ':family'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.returncode == 0:
-            fontconfig_fonts = result.stdout.split('\n')
-            logger.info(f"Fonts available in fontconfig: {fontconfig_fonts}")
-        else:
-            logger.error(f"Error listing fonts in fontconfig: {result.stderr}")
-    except Exception as e:
-        logger.error(f"Exception while listing fonts in fontconfig: {str(e)}")
-
-list_fontconfig_fonts()
 
 def generate_style_line(options):
     """Generate ASS style line from options."""

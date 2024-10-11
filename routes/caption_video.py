@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
         "srt": {"type": "string"},
-        "caption_type": {"type": "string"},
+        "ass": {"type": "string"},
         "options": {
             "type": "array",
             "items": {
@@ -30,14 +30,18 @@ logger = logging.getLogger(__name__)
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
-    "required": ["video_url", "srt"],
+    "required": ["video_url"],
+    "oneOf": [
+        {"required": ["srt"]},
+        {"required": ["ass"]}
+    ],
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
 def caption_video(job_id, data):
     video_url = data['video_url']
-    caption_srt = data['srt']
-    caption_type= data.get('caption_type', 'srt')
+    caption_srt = data.get('srt')
+    caption_ass = data.get('ass')
     options = data.get('options', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')
@@ -45,8 +49,15 @@ def caption_video(job_id, data):
     logger.info(f"Job {job_id}: Received captioning request for {video_url}")
     logger.info(f"Job {job_id}: Options received: {options}")
 
+    if caption_ass is not None:
+        captions = caption_ass
+        caption_type = "ass"
+    else:
+        captions = caption_srt
+        caption_type = "srt"
+
     try:
-        output_filename = process_captioning(video_url, caption_srt, caption_type, options, job_id)
+        output_filename = process_captioning(video_url, captions, caption_type, options, job_id)
         logger.info(f"Job {job_id}: Captioning process completed successfully")
 
         return output_filename, "/caption-video", 200

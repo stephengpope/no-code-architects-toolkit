@@ -2,6 +2,7 @@ import os
 import ffmpeg
 import logging
 import requests
+import subprocess
 from services.file_management import download_file
 from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME
 
@@ -21,11 +22,51 @@ for font_file in os.listdir(FONTS_DIR):
     if font_file.endswith('.ttf') or font_file.endswith('.TTF'):
         font_name = os.path.splitext(font_file)[0]
         FONT_PATHS[font_name] = os.path.join(FONTS_DIR, font_file)
-logger.info(f"Available fonts: {FONT_PATHS}")
+# logger.info(f"Available fonts: {FONT_PATHS}")
 
 # Create a list of acceptable font names
 ACCEPTABLE_FONTS = list(FONT_PATHS.keys())
-logger.info(f"Acceptable font names: {ACCEPTABLE_FONTS}")
+#logger.info(f"Acceptable font names: {ACCEPTABLE_FONTS}")
+
+# List fonts available in font_config
+def list_font_config_fonts():
+    try:
+        result = subprocess.run(['fc-list', ':family'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            font_config_fonts = result.stdout.split('\n')  # Uncomment this line
+            font_config_fonts = list(set(font_config_fonts))  # Remove duplicates
+            logger.info(f"Fonts available in font_config: {font_config_fonts}")
+        else:
+            logger.error(f"Error listing fonts in font_config: {result.stderr}")
+    except Exception as e:
+        logger.error(f"Exception while listing fonts in font_config: {str(e)}")
+
+list_font_config_fonts()
+
+# Match font files with fontconfig names
+def match_fonts():
+    try:
+        result = subprocess.run(['fc-list', ':family'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            fontconfig_fonts = result.stdout.split('\n')
+            fontconfig_fonts = list(set(fontconfig_fonts))  # Remove duplicates
+            matched_fonts = {}
+            for font_file in FONT_PATHS.keys():
+                for fontconfig_font in fontconfig_fonts:
+                    if font_file.lower() in fontconfig_font.lower():
+                        matched_fonts[font_file] = fontconfig_font.strip()
+            # logger.info(f"Matched fonts: {matched_fonts}")
+
+            # Parse and output the matched font names
+            for font in matched_fonts.values():
+                font_name = font.split(':')[1].strip()
+                print(font_name)
+        else:
+            logger.error(f"Error matching fonts: {result.stderr}")
+    except Exception as e:
+        logger.error(f"Exception while matching fonts: {str(e)}")
+
+match_fonts()
 
 def generate_style_line(options):
     """Generate ASS style line from options."""

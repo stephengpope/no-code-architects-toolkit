@@ -2,6 +2,7 @@ import os
 import whisper
 import srt
 from datetime import timedelta
+from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
 import logging
 import uuid
@@ -31,14 +32,25 @@ def process_transcription(media_url, output_type, language=None, max_chars=56):
             output = result['text']
             logger.info("Generated transcript output")
         elif output_type in ['srt', 'vtt']:
+
             result = model.transcribe(input_filename)
-             # Generate SRT content using Whisper's writer
-            from whisper.utils import WriteVTT, WriteSRT
-            writer = WriteSRT(output_dir=STORAGE_PATH) if output_type == 'srt' else WriteVTT(output_dir=STORAGE_PATH)
-            output_filename = writer(result, input_filename)
+            srt_subtitles = []
+            for i, segment in enumerate(result['segments'], start=1):
+                start = timedelta(seconds=segment['start'])
+                end = timedelta(seconds=segment['end'])
+                text = segment['text'].strip()
+                srt_subtitles.append(srt.Subtitle(i, start, end, text))
+            
+            output_content = srt.compose(srt_subtitles)
+            
+            # Write the output to a file
+            output_filename = os.path.join(STORAGE_PATH, f"{uuid.uuid4()}.{output_type}")
+            with open(output_filename, 'w') as f:
+                f.write(output_content)
             
             output = output_filename
             logger.info(f"Generated {output_type.upper()} output: {output}")
+
         elif output_type == 'ass':
             result = model.transcribe(
                 input_filename,

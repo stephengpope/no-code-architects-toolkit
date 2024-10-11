@@ -40,7 +40,6 @@ def match_fonts():
                 for fontconfig_font in fontconfig_fonts:
                     if font_file.lower() in fontconfig_font.lower():
                         matched_fonts[font_file] = fontconfig_font.strip()
-            # logger.info(f"Matched fonts: {matched_fonts}")
 
             # Parse and output the matched font names
             unique_font_names = set()
@@ -48,8 +47,8 @@ def match_fonts():
                 font_name = font.split(':')[1].strip()
                 unique_font_names.add(font_name)
             
-            # Remove duplicates from font_name
-            unique_font_names = list(set(unique_font_names))
+            # Remove duplicates from font_name and sort them alphabetically
+            unique_font_names = sorted(list(set(unique_font_names)))
             
             for font_name in unique_font_names:
                 print(font_name)

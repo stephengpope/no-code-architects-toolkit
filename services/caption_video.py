@@ -2,8 +2,7 @@ import os
 import ffmpeg
 import logging
 import requests
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+import subprocess
 from services.file_management import download_file
 from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME
 
@@ -14,28 +13,79 @@ STORAGE_PATH = "/tmp/"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define the font paths
-FONT_PATHS = {
-    'Arial': '/usr/share/fonts/truetype/custom/Arial.ttf',
-    'Libre Baskerville': '/usr/share/fonts/truetype/custom/LibreBaskerville-Regular.ttf',
-    'Lobster': '/usr/share/fonts/truetype/custom/Lobster-Regular.ttf',
-    'Luckiest Guy': '/usr/share/fonts/truetype/custom/LuckiestGuy-Regular.ttf',
-    'Nanum Pen Script': '/usr/share/fonts/truetype/custom/NanumPenScript-Regular.ttf',
-    'Nunito': '/usr/share/fonts/truetype/custom/Nunito-Regular.ttf',
-    'Pacifico': '/usr/share/fonts/truetype/custom/Pacifico-Regular.ttf',
-    'Roboto': '/usr/share/fonts/truetype/custom/Roboto-Regular.ttf',
-    'Comic Neue': '/usr/share/fonts/truetype/custom/ComicNeue-Regular.ttf',
-    'Oswald': '/usr/share/fonts/truetype/custom/Oswald-Regular.ttf',
-    'Oswald Bold': '/usr/share/fonts/truetype/custom/Oswald-Bold.ttf',
-    'Shrikhand': '/usr/share/fonts/truetype/custom/Shrikhand-Regular.ttf',
-    'Fredericka the Great': '/usr/share/fonts/truetype/custom/FrederickatheGreat-Regular.ttf',
-    'Permanent Marker': '/usr/share/fonts/truetype/custom/PermanentMarker-Regular.ttf',
-    'Simplified Chinese': '/usr/share/fonts/truetype/custom/SimplifiedChinese.ttf',
-    'Traditional Chinese': '/usr/share/fonts/truetype/custom/TraditionalChinese.ttf',
-    'Japanese': '/usr/share/fonts/truetype/custom/Japanese.ttf',
-    'Korean': '/usr/share/fonts/truetype/custom/Korean.ttf',
-    'Korean Bold': '/usr/share/fonts/truetype/custom/Korean-Bold.ttf'
-}
+# Define the path to the fonts directory
+FONTS_DIR = '/usr/share/fonts/custom'
+
+# Create the FONT_PATHS dictionary by reading the fonts directory
+FONT_PATHS = {}
+for font_file in os.listdir(FONTS_DIR):
+    if font_file.endswith('.ttf') or font_file.endswith('.TTF'):
+        font_name = os.path.splitext(font_file)[0]
+        FONT_PATHS[font_name] = os.path.join(FONTS_DIR, font_file)
+# logger.info(f"Available fonts: {FONT_PATHS}")
+
+# Create a list of acceptable font names
+ACCEPTABLE_FONTS = list(FONT_PATHS.keys())
+#logger.info(f"Acceptable font names: {ACCEPTABLE_FONTS}")
+
+# Match font files with fontconfig names
+def match_fonts():
+    try:
+        result = subprocess.run(['fc-list', ':family'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        if result.returncode == 0:
+            fontconfig_fonts = result.stdout.split('\n')
+            fontconfig_fonts = list(set(fontconfig_fonts))  # Remove duplicates
+            matched_fonts = {}
+            for font_file in FONT_PATHS.keys():
+                for fontconfig_font in fontconfig_fonts:
+                    if font_file.lower() in fontconfig_font.lower():
+                        matched_fonts[font_file] = fontconfig_font.strip()
+
+            # Parse and output the matched font names
+            unique_font_names = set()
+            for font in matched_fonts.values():
+                font_name = font.split(':')[1].strip()
+                unique_font_names.add(font_name)
+            
+            # Remove duplicates from font_name and sort them alphabetically
+            unique_font_names = sorted(list(set(unique_font_names)))
+            
+            for font_name in unique_font_names:
+                print(font_name)
+        else:
+            logger.error(f"Error matching fonts: {result.stderr}")
+    except Exception as e:
+        logger.error(f"Exception while matching fonts: {str(e)}")
+
+match_fonts()
+
+def generate_style_line(options):
+    """Generate ASS style line from options."""
+    style_options = {
+        'Name': 'Default',
+        'Fontname': options.get('font_name', 'Arial'),
+        'Fontsize': options.get('font_size', 24),
+        'PrimaryColour': options.get('primary_color', '&H00FFFFFF'),
+        'OutlineColour': options.get('outline_color', '&H00000000'),
+        'BackColour': options.get('back_color', '&H00000000'),
+        'Bold': options.get('bold', 0),
+        'Italic': options.get('italic', 0),
+        'Underline': options.get('underline', 0),
+        'StrikeOut': options.get('strikeout', 0),
+        'ScaleX': 100,
+        'ScaleY': 100,
+        'Spacing': 0,
+        'Angle': 0,
+        'BorderStyle': 1,
+        'Outline': options.get('outline', 1),
+        'Shadow': options.get('shadow', 0),
+        'Alignment': options.get('alignment', 2),
+        'MarginL': options.get('margin_l', 10),
+        'MarginR': options.get('margin_r', 10),
+        'MarginV': options.get('margin_v', 10),
+        'Encoding': options.get('encoding', 1)
+    }
+    return f"Style: {','.join(str(v) for v in style_options.values())}"
 
 def process_captioning(file_url, caption_srt, caption_type, options, job_id):
     """Process video captioning using FFmpeg."""
@@ -61,7 +111,8 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
-        
+            logger.info(f"Job {job_id}: Generated ASS style string: {style_string}")
+
         if caption_srt.startswith("https"):
             # Download the file if caption_srt is a URL
             logger.info(f"Job {job_id}: Downloading caption file from {caption_srt}")
@@ -74,83 +125,63 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
                 subtitle_content = caption_style + response.text
                 with open(srt_path, 'w') as srt_file:
                     srt_file.write(subtitle_content)
-            
             logger.info(f"Job {job_id}: Caption file downloaded to {srt_path}")
         else:
             # Write caption_srt content directly to file
             subtitle_content = caption_style + caption_srt
             with open(srt_path, 'w') as srt_file:
                 srt_file.write(subtitle_content)
-        
-        logger.info(f"Job {job_id}: SRT file created at {srt_path}")
+            logger.info(f"Job {job_id}: SRT file created at {srt_path}")
 
         output_path = os.path.join(STORAGE_PATH, f"{job_id}_captioned.mp4")
+        logger.info(f"Job {job_id}: Output path set to {output_path}")
 
-
-        # Default FFmpeg options
-        ffmpeg_options = {
-            'font_name': None,
-            'font_size': 12,
-            'primary_color': None,
-            'secondary_color': None,
-            'outline_color': None,
-            'back_color': None,
-            'bold': None,
-            'italic': None,
-            'underline': None,
-            'strikeout': None,
-            'alignment': None,
-            'margin_v': None,
-            'margin_l': None,
-            'margin_r': None,
-            'outline': None,
-            'shadow': None,
-            'blur': None,
-            'border_style': None,
-            'encoding': None,
-            'spacing': None,
-            'angle': None,
-            'uppercase': None
-        }
-
-        # Update ffmpeg_options with provided options
-        ffmpeg_options.update(options)
+        # Ensure font_name is converted to the full font path
+        font_name = options.get('font_name', 'Arial')
+        if font_name in FONT_PATHS:
+            selected_font = FONT_PATHS[font_name]
+            logger.info(f"Job {job_id}: Font path set to {selected_font}")
+        else:
+            selected_font = FONT_PATHS.get('Arial')
+            logger.warning(f"Job {job_id}: Font {font_name} not found. Using default font Arial.")
 
         # For ASS subtitles, we should avoid overriding styles
         if subtitle_extension == '.ass':
             # Use the subtitles filter without force_style
             subtitle_filter = f"subtitles='{srt_path}'"
+            logger.info(f"Job {job_id}: Using ASS subtitle filter: {subtitle_filter}")
         else:
             # Construct FFmpeg filter options for subtitles with detailed styling
             subtitle_filter = f"subtitles={srt_path}:force_style='"
             style_options = {
-                'FontFile': ffmpeg_options['font_name'],
-                'FontSize': ffmpeg_options['font_size'],
-                'PrimaryColour': ffmpeg_options['primary_color'],
-                'SecondaryColour': ffmpeg_options['secondary_color'],
-                'OutlineColour': ffmpeg_options['outline_color'],
-                'BackColour': ffmpeg_options['back_color'],
-                'Bold': ffmpeg_options['bold'],
-                'Italic': ffmpeg_options['italic'],
-                'Underline': ffmpeg_options['underline'],
-                'StrikeOut': ffmpeg_options['strikeout'],
-                'Alignment': ffmpeg_options['alignment'],
-                'MarginV': ffmpeg_options['margin_v'],
-                'MarginL': ffmpeg_options['margin_l'],
-                'MarginR': ffmpeg_options['margin_r'],
-                'Outline': ffmpeg_options['outline'],
-                'Shadow': ffmpeg_options['shadow'],
-                'Blur': ffmpeg_options['blur'],
-                'BorderStyle': ffmpeg_options['border_style'],
-                'Encoding': ffmpeg_options['encoding'],
-                'Spacing': ffmpeg_options['spacing'],
-                'Angle': ffmpeg_options['angle'],
-                'UpperCase': ffmpeg_options['uppercase']
+                'FontName': font_name,  # Use the font name instead of the font file path
+                'FontSize': options.get('font_size', 24),
+                'PrimaryColour': options.get('primary_color', '&H00FFFFFF'),
+                'SecondaryColour': options.get('secondary_color', '&H00000000'),
+                'OutlineColour': options.get('outline_color', '&H00000000'),
+                'BackColour': options.get('back_color', '&H00000000'),
+                'Bold': options.get('bold', 0),
+                'Italic': options.get('italic', 0),
+                'Underline': options.get('underline', 0),
+                'StrikeOut': options.get('strikeout', 0),
+                'Alignment': options.get('alignment', 2),
+                'MarginV': options.get('margin_v', 10),
+                'MarginL': options.get('margin_l', 10),
+                'MarginR': options.get('margin_r', 10),
+                'Outline': options.get('outline', 1),
+                'Shadow': options.get('shadow', 0),
+                'Blur': options.get('blur', 0),
+                'BorderStyle': options.get('border_style', 1),
+                'Encoding': options.get('encoding', 1),
+                'Spacing': options.get('spacing', 0),
+                'Angle': options.get('angle', 0),
+                'UpperCase': options.get('uppercase', 0)
             }
 
             # Add only populated options to the subtitle filter
             subtitle_filter += ','.join(f"{k}={v}" for k, v in style_options.items() if v is not None)
             subtitle_filter += "'"
+            logger.info(f"Job {job_id}: Using subtitle filter: {subtitle_filter}")
 
         try:
             # Log the FFmpeg command for debugging
@@ -160,12 +191,16 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
             ffmpeg.input(video_path).output(
                 output_path,
                 vf=subtitle_filter,
-                acodec='copy',
+                acodec='copy'
             ).run()
             logger.info(f"Job {job_id}: FFmpeg processing completed, output file at {output_path}")
         except ffmpeg.Error as e:
             # Log the FFmpeg stderr output
-            logger.error(f"Job {job_id}: FFmpeg error: {e.stderr.decode('utf8')}")
+            if e.stderr:
+                error_message = e.stderr.decode('utf8')
+            else:
+                error_message = 'Unknown FFmpeg error'
+            logger.error(f"Job {job_id}: FFmpeg error: {error_message}")
             raise
 
         # Upload the output video to GCP Storage
@@ -183,63 +218,5 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
         raise
 
 def convert_array_to_collection(options):
+    logger.info(f"Converting options array to dictionary: {options}")
     return {item["option"]: item["value"] for item in options}
-
-def parse_format_line(format_line):
-    # Remove 'Format: ' prefix and split by ', '
-    fields = format_line.replace('Format: ', '').split(', ')
-    return fields
-
-def parse_style_line(style_line):
-    # Remove 'Style: ' prefix and split by ', '
-    values = style_line.replace('Style: ', '').split(', ')
-    return values
-
-def generate_style_line(option_dict):
-    # The default Format and Style lines
-    format_line = 'Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding'
-    style_line = 'Style: Default, Arial Black, 32, &H00FFFFFF, &H00000000, &H64000000, 1, 0, 0, 0, 100, 100, 0, 0, 1, 2, 1, 2, 10, 10, 30, 1'
-
-    # Parse the format line and style line
-    fields = parse_format_line(format_line)
-    values = parse_style_line(style_line)
-    default_style = dict(zip(fields, values))
-
-    # Mapping from API option names to style field names
-    api_to_style_field_map = {
-        "font_name": "Fontname",
-        "font_size": "Fontsize",
-        "primary_colour": "PrimaryColour",
-        "outline_colour": "OutlineColour",
-        "back_colour": "BackColour",
-        "bold": "Bold",
-        "italic": "Italic",
-        "underline": "Underline",
-        "strikeout": "StrikeOut",
-        "scalex": "ScaleX",
-        "scaley": "ScaleY",
-        "spacing": "Spacing",
-        "angle": "Angle",
-        "border_style": "BorderStyle",
-        "outline": "Outline",
-        "shadow": "Shadow",
-        "alignment": "Alignment",
-        "margin_l": "MarginL",
-        "margin_r": "MarginR",
-        "margin_v": "MarginV",
-        "encoding": "Encoding"
-    }
-
-    # Override default style with options provided
-    for api_option_name, option_value in option_dict.items():
-        field_name = api_to_style_field_map.get(api_option_name)
-        if field_name:
-            default_style[field_name] = str(option_value)
-        else:
-            # Option not recognized, could log or ignore
-            pass
-
-    # Reconstruct the style line with updated values
-    updated_values = [default_style[field] for field in fields]
-    updated_style_line = 'Style: ' + ', '.join(updated_values)
-    return updated_style_line

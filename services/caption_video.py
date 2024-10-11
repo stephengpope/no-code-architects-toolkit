@@ -28,21 +28,6 @@ for font_file in os.listdir(FONTS_DIR):
 ACCEPTABLE_FONTS = list(FONT_PATHS.keys())
 #logger.info(f"Acceptable font names: {ACCEPTABLE_FONTS}")
 
-# List fonts available in font_config
-def list_font_config_fonts():
-    try:
-        result = subprocess.run(['fc-list', ':family'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        if result.returncode == 0:
-            font_config_fonts = result.stdout.split('\n')  # Uncomment this line
-            font_config_fonts = list(set(font_config_fonts))  # Remove duplicates
-            logger.info(f"Fonts available in font_config: {font_config_fonts}")
-        else:
-            logger.error(f"Error listing fonts in font_config: {result.stderr}")
-    except Exception as e:
-        logger.error(f"Exception while listing fonts in font_config: {str(e)}")
-
-list_font_config_fonts()
-
 # Match font files with fontconfig names
 def match_fonts():
     try:
@@ -58,8 +43,15 @@ def match_fonts():
             # logger.info(f"Matched fonts: {matched_fonts}")
 
             # Parse and output the matched font names
+            unique_font_names = set()
             for font in matched_fonts.values():
                 font_name = font.split(':')[1].strip()
+                unique_font_names.add(font_name)
+            
+            # Remove duplicates from font_name
+            unique_font_names = list(set(unique_font_names))
+            
+            for font_name in unique_font_names:
                 print(font_name)
         else:
             logger.error(f"Error matching fonts: {result.stderr}")

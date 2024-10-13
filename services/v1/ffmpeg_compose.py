@@ -26,7 +26,7 @@ def process_ffmpeg_compose(data, job_id):
                 command.append(option["option"])
                 if option["argument"] is not None:
                     command.append(str(option["argument"]))
-        input_path = download_file(input_data["url"], STORAGE_PATH)
+        input_path = download_file(input_data["file_url"], STORAGE_PATH)
         command.extend(["-i", input_path])
     
     # Add filters
@@ -52,7 +52,7 @@ def process_ffmpeg_compose(data, job_id):
     
     # Clean up input files
     for input_data in data["inputs"]:
-        input_path = os.path.join(STORAGE_PATH, os.path.basename(input_data["url"]))
+        input_path = os.path.join(STORAGE_PATH, os.path.basename(input_data["file_url"]))
         if os.path.exists(input_path):
             os.remove(input_path)
     
@@ -61,7 +61,7 @@ def process_ffmpeg_compose(data, job_id):
     for output_filename in output_filenames:
         if os.path.exists(output_filename):
             gcs_url = upload_to_gcs(output_filename)
-            output_urls.append({"url": gcs_url})
+            output_urls.append({"file_url": gcs_url})
             os.remove(output_filename)  # Clean up local output file after upload
         else:
             raise Exception(f"Expected output file {output_filename} not found")

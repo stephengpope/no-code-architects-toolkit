@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
             "items": {
                 "type": "object",
                 "properties": {
-                    "url": {"type": "string", "format": "uri"},
+                    "file_url": {"type": "string", "format": "uri"},
                     "options": {
                         "type": "array",
                         "items": {
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
                         }
                     }
                 },
-                "required": ["url"]
+                "required": ["file_url"]
             },
             "minItems": 1
         },

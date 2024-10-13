@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @queue_task_wrapper(bypass_queue=False)
 def transcribe(job_id, data):
     media_url = data['media_url']
-    output = data.get('output', 'transcript').lower()
+    output = data.get('output', 'transcript')
     webhook_url = data.get('webhook_url')
     max_chars = data.get('max_chars', 56)
     id = data.get('id')

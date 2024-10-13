@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_transcription(media_url, output_type, language=None, max_chars=56):
+def process_transcription(media_url, output_type, max_chars=56, language=None,):
     """Transcribe media and return the transcript, SRT or ASS file path."""
     logger.info(f"Starting transcription for media URL: {media_url} with output type: {output_type}")
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))

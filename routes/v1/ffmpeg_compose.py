@@ -95,4 +95,4 @@ def ffmpeg_api(job_id, data):
         
     except Exception as e:
         logger.error(f"Job {job_id}: Error processing FFmpeg request - {str(e)}")
-        return str(e), "/ffmpeg/compose", 500
+        return str(e), "/v1/ffmpeg/compose", 500

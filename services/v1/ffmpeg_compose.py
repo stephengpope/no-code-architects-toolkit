@@ -1,11 +1,32 @@
 import os
-import ffmpeg
-import requests
 import subprocess
 from services.file_management import download_file
-from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME, gcs_client
+from services.gcp_toolkit import upload_to_gcs
 
 STORAGE_PATH = "/tmp/"
+
+def get_extension_from_format(format_name):
+    # Mapping of common format names to file extensions
+    format_to_extension = {
+        'mp4': 'mp4',
+        'mov': 'mov',
+        'avi': 'avi',
+        'mkv': 'mkv',
+        'webm': 'webm',
+        'gif': 'gif',
+        'apng': 'apng',
+        'jpg': 'jpg',
+        'jpeg': 'jpg',
+        'png': 'png',
+        'image2': 'png',  # Assume png for image2 format
+        'rawvideo': 'raw',
+        'mp3': 'mp3',
+        'wav': 'wav',
+        'aac': 'aac',
+        'flac': 'flac',
+        'ogg': 'ogg'
+    }
+    return format_to_extension.get(format_name.lower(), 'mp4')  # Default to mp4 if unknown
 
 def process_ffmpeg_compose(data, job_id):
     output_filenames = []
@@ -36,8 +57,16 @@ def process_ffmpeg_compose(data, job_id):
     
     # Add outputs
     for i, output in enumerate(data["outputs"]):
-        output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}.mp4")
+        format_name = None
+        for option in output["options"]:
+            if option["option"] == "-f":
+                format_name = option["argument"]
+                break
+        
+        extension = get_extension_from_format(format_name) if format_name else 'mp4'
+        output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}.{extension}")
         output_filenames.append(output_filename)
+        
         for option in output["options"]:
             command.append(option["option"])
             if option["argument"] is not None:

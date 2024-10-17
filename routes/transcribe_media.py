@@ -4,7 +4,7 @@ import logging
 import os
 from services.transcription import process_transcription
 from services.authentication import authenticate
-from services.gcp_toolkit import upload_to_gcs
+from services.cloud_storage import upload_file
 
 transcribe_bp = Blueprint('transcribe', __name__)
 logger = logging.getLogger(__name__)
@@ -37,11 +37,11 @@ def transcribe(job_id, data):
         result = process_transcription(media_url, output, max_chars)
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
-        # If the result is a file path, upload it to GCS
+        # If the result is a file path, upload it using the unified upload_file() method
         if output in ['srt', 'vtt', 'ass']:
-            gcs_url = upload_to_gcs(result)
+            cloud_url = upload_file(result)
             os.remove(result)  # Remove the temporary file after uploading
-            return gcs_url, "/transcribe-media", 200
+            return cloud_url, "/transcribe-media", 200
         else:
             return result, "/transcribe-media", 200
         

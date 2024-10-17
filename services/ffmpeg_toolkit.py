@@ -2,7 +2,6 @@ import os
 import ffmpeg
 import requests
 from services.file_management import download_file
-from services.gcp_toolkit import upload_to_gcs, GCP_BUCKET_NAME, gcs_client  # Import gcs_client
 
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
@@ -73,18 +72,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         if not os.path.exists(output_path):
             raise FileNotFoundError(f"Output file {output_path} does not exist after combination.")
 
-        # Upload to Google Drive or GCP Storage
-        if GCP_BUCKET_NAME:
-            uploaded_file_url = upload_to_gcs(output_path, GCP_BUCKET_NAME) 
-
-        # If upload fails, log the failure
-        if not uploaded_file_url:
-            raise FileNotFoundError(f"Failed to upload the output file {output_path}")
-
-        os.remove(output_path)
-
-        return uploaded_file_url
+        return output_path
     except Exception as e:
         print(f"Video combination failed: {str(e)}")
         raise 
-    

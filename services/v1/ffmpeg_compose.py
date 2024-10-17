@@ -1,7 +1,6 @@
 import os
 import subprocess
 from services.file_management import download_file
-from services.gcp_toolkit import upload_to_gcs
 
 STORAGE_PATH = "/tmp/"
 
@@ -85,14 +84,4 @@ def process_ffmpeg_compose(data, job_id):
         if os.path.exists(input_path):
             os.remove(input_path)
     
-    # Upload output files to GCP and create result array
-    output_urls = []
-    for output_filename in output_filenames:
-        if os.path.exists(output_filename):
-            gcs_url = upload_to_gcs(output_filename)
-            output_urls.append({"file_url": gcs_url})
-            os.remove(output_filename)  # Clean up local output file after upload
-        else:
-            raise Exception(f"Expected output file {output_filename} not found")
-    
-    return output_urls
+    return output_filenames

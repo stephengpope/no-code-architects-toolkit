@@ -1,3 +1,4 @@
+import os
 from flask import Blueprint, request, jsonify
 from flask import current_app
 from app_utils import *
@@ -6,6 +7,7 @@ import threading
 import logging
 from services.v1.ffmpeg_compose import process_ffmpeg_compose
 from services.authentication import authenticate
+from services.cloud_storage import upload_file
 
 v1_ffmpeg_compose_bp = Blueprint('v1_ffmpeg_compose', __name__)
 logger = logging.getLogger(__name__)
@@ -90,7 +92,20 @@ def ffmpeg_api(job_id, data):
     logger.info(f"Job {job_id}: Received flexible FFmpeg request")
 
     try:
-        output_urls = process_ffmpeg_compose(data, job_id)
+        
+        output_filenames = process_ffmpeg_compose(data, job_id)
+        
+        # Upload output files to GCP and create result array
+        output_urls = []
+        for output_filename in output_filenames:
+            if os.path.exists(output_filename):
+                upload_url = upload_file(output_filename)
+                output_urls.append({"file_url": upload_url})
+                os.remove(output_filename)  # Clean up local output file after upload
+            else:
+                raise Exception(f"Expected output file {output_filename} not found")
+
+
         return output_urls, "/v1/ffmpeg/compose", 200
         
     except Exception as e:

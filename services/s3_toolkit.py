@@ -35,7 +35,7 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key):
     try:
         # Upload the file to the specified S3 bucket
         with open(file_path, 'rb') as data:
-            client.upload_fileobj(data, bucket_name, os.path.basename(file_path))
+            client.upload_fileobj(data, bucket_name, os.path.basename(file_path), ExtraArgs={'ACL': 'public-read'})
 
         file_url = f"{endpoint_url}/{bucket_name}/{os.path.basename(file_path)}"
         return file_url

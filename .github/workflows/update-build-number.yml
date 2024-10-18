@@ -34,6 +34,4 @@ jobs:
 
       - name: Push changes to testing branch
         run: |
-          git checkout testing
-          git merge --no-ff build -m "Build $build_number: Merge build branch with updated build number"
-          git push origin testing
+          git push origin build:testing --force

@@ -81,6 +81,7 @@ def create_app():
                 else:
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
                         return {
+                            "endpoint": response[1],
                             "code": 429,
                             "id": data.get("id"),
                             "job_id": job_id,
@@ -94,6 +95,7 @@ def create_app():
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
                     
                     return {
+                        "endpoint": response[1],
                         "code": 202,
                         "id": data.get("id"),
                         "job_id": job_id,
@@ -135,8 +137,10 @@ def create_app():
 
     # version 1.0
     from routes.v1.ffmpeg_compose import v1_ffmpeg_compose_bp
+    from routes.v1.transcribe_media import v1_transcribe_media_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
+    app.register_blueprint(v1_transcribe_media_bp)
 
     return app
 

@@ -64,6 +64,7 @@ def process_video_combination(media_urls, job_id, webhook_url=None):
         # Clean up input files
         for f in input_files:
             os.remove(f)
+            
         os.remove(concat_file_path)  # Remove the concat list file after the operation
 
         print(f"Video combination successful: {output_path}")

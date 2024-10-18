@@ -63,7 +63,7 @@ def generate_style_line(options):
     style_options = {
         'Name': 'Default',
         'Fontname': options.get('font_name', 'Arial'),
-        'Fontsize': options.get('font_size', 24),
+        'Fontsize': options.get('font_size', 12),
         'PrimaryColour': options.get('primary_color', '&H00FFFFFF'),
         'OutlineColour': options.get('outline_color', '&H00000000'),
         'BackColour': options.get('back_color', '&H00000000'),

@@ -2,7 +2,6 @@ import os
 import subprocess
 import json
 from services.file_management import download_file
-from services.gcp_toolkit import upload_to_gcs
 
 STORAGE_PATH = "/tmp/"
 

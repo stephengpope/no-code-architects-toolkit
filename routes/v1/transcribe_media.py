@@ -55,6 +55,7 @@ def transcribe(job_id, data):
             }
 
             return result_json, "/v1/transcribe/media", 200
+            
         else:
 
             cloud_urls = {
@@ -69,8 +70,6 @@ def transcribe(job_id, data):
 
             return cloud_urls, "/v1/transcribe/media", 200
 
-            
-        
     except Exception as e:
         logger.error(f"Job {job_id}: Error during transcription process - {str(e)}")
         return str(e), "/v1/transcribe/media", 500

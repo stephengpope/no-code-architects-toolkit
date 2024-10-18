@@ -64,7 +64,6 @@ def create_app():
                     response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
-                        "endpoint": response[1],
                         "code": response[2],
                         "id": data.get("id"),
                         "job_id": job_id,
@@ -81,7 +80,6 @@ def create_app():
                 else:
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
                         return {
-                            "endpoint": response[1],
                             "code": 429,
                             "id": data.get("id"),
                             "job_id": job_id,
@@ -95,7 +93,6 @@ def create_app():
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
                     
                     return {
-                        "endpoint": response[1],
                         "code": 202,
                         "id": data.get("id"),
                         "job_id": job_id,

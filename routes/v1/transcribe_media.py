@@ -65,8 +65,12 @@ def transcribe(job_id, data):
             }
 
             os.remove(result[0])  # Remove the temporary file after uploading
-            os.remove(result[1])
-            os.remove(result[2])
+            
+            if segments is True:
+                os.remove(result[1])
+            
+            if format_type in ["srt", "vtt"]:
+                os.remove(result[2]) 
 
             return cloud_urls, "/v1/transcribe/media", 200
 

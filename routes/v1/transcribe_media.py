@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
         "format_type": {"type": "string", "enum": ["text", "srt", "vtt", "ass"]},
         "word_timestamps": {"type": "boolean"},
         "segments": {"type": "boolean"},
-        "response_type": {"type": "string", "enum": ["inline", "files"]},
+        "response_type": {"type": "string", "enum": ["json", "cloud"]},
         "language": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
@@ -46,7 +46,7 @@ def transcribe(job_id, data):
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
         # If the result is a file path, upload it using the unified upload_file() method
-        if response_type == "inline":
+        if response_type == "json":
            
             result_json = {
                 "text": result[0],

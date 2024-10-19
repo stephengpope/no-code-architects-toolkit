@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_transcribe_media(media_url, task, format_type, word_timestamps, segments, output_type, language, job_id):
+def process_transcribe_media(media_url, task, format_type, word_timestamps, segments, response_type, language, job_id):
     
     """Transcribe media and return the transcript, SRT or ASS file path."""
     logger.info(f"Starting transcription for media URL: {media_url} with output type: {format_type}")
@@ -54,9 +54,9 @@ def process_transcribe_media(media_url, task, format_type, word_timestamps, segm
         os.remove(input_filename)
 
         logger.info(f"Removed local file: {input_filename}")
-        logger.info(f"Transcription successful, output type: {output_type}")
+        logger.info(f"Transcription successful, output type: {response_type}")
 
-        if (output_type == "inline" ):
+        if (response_type == "json" ):
 
             return text, segments_json, captions
         else:

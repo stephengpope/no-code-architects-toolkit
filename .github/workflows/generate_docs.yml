@@ -1,0 +1,68 @@
+name: Generate Documentation
+
+on:
+  push:
+    branches:
+      - features/docs           # Only run on changes in the features/docs branch
+    paths:
+      - 'routes/*.py'           # Trigger only when Python files in the routes folder change
+  pull_request:
+    branches:
+      - features/docs           # Run on pull requests targeting features/docs
+    paths:
+      - 'routes/*.py'
+
+jobs:
+  generate_docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0  # Fetch the full history for accurate git diff
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          pip install requests  # Install requests library for HTTP calls
+
+      - name: Get list of changed files
+        id: get_changed_files
+        run: |
+          # Get the list of added or modified files in the routes folder, comparing HEAD to its immediate previous commit
+          git diff --name-only HEAD^ HEAD | grep '^routes/.*\.py$' > changed_files.txt
+
+      - name: Generate documentation for changed files
+        if: success()
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -s changed_files.txt ]; then
+            mkdir -p docs
+            while IFS= read -r file; do
+              # Use Claude API to generate documentation for each modified file
+              python generate_docs.py "$file"
+            done < changed_files.txt
+          fi
+          rm -f changed_files.txt  # Clean up after processing
+
+      - name: Commit and push changes
+        if: success()
+        run: |
+          # Check for changes in the docs folder
+          if [ -n "$(git status --porcelain docs/)" ]; then
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add docs/
+            git commit -m "Update documentation for modified routes"
+            git push
+          else
+            echo "No changes in docs/ to commit."
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

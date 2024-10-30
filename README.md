@@ -46,160 +46,25 @@ docker run -d -p 8080:8080 \
   media-processing-api
 ```
 
-## API Endpoints
+## API Documentation
 
-### Authentication
+This repository contains documentation for each API endpoint. Below is a list of endpoints with links to detailed documentation files located in the `docs` folder.
 
-All endpoints require an `X-API-Key` header for authentication.
+## Endpoints
 
-### 1. Convert Media to MP3
+1. [Authenticate](docs/authenticate.md) - Verifies API key for access authorization.
+2. [Media to MP3](docs/media-to-mp3.md) - Converts media files to MP3 format.
+3. [Transcribe Media](docs/transcribe-media.md) - Transcribes audio from media files.
+4. [Transcribe Media (v1)](docs/v1/transcribe-media.md) - Provides transcription with additional options.
+5. [FFmpeg Compose](docs/v1/ffmpeg-compose.md) - Flexible media composition with FFmpeg.
+6. [Image to Video](docs/image-to-video.md) - Converts images into video with customizable animation.
+7. [Caption Video](docs/caption-video.md) - Adds captions to videos using SRT or ASS files.
+8. [Combine Videos](docs/combine-videos.md) - Merges multiple video files into one.
+9. [Audio Mixing](docs/audio-mixing.md) - Mixes audio with video, with adjustable volume.
+10. [Google Drive Upload](docs/gdrive-upload.md) - Uploads files to Google Drive with chunk support.
+11. [Extract Keyframes](docs/extract-keyframes.md) - Extracts keyframes from video files.
 
-**Endpoint:** `/media-to-mp3`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "media_url": "https://example.com/media.mp4",
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-### 2. Combine Videos
-
-**Endpoint:** `/combine-videos`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "video_urls": [
-    {"video_url": "https://example.com/video1.mp4"},
-    {"video_url": "https://example.com/video2.mp4"}
-  ],
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-### 3. Transcribe Media
-
-**Endpoint:** `/transcribe-media`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "media_url": "https://example.com/media.mp4",
-  "output": "transcript",
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-### 4. Caption Video
-
-**Endpoint:** `/caption-video`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "video_url": "https://example.com/video.mp4",
-  "srt": "1\n00:00:01,000 --> 00:00:04,000\nThis is a caption",
-  "options": {},
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-### 5. Upload to Google Drive
-
-**Endpoint:** `/gdrive-upload`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "file_url": "https://example.com/file.pdf",
-  "filename": "uploaded_file.pdf",
-  "folder_id": "google_drive_folder_id",
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-### 6. Audio Mixing
-
-**Endpoint:** `/audio-mixing`
-
-**Method:** POST
-
-**Payload:**
-```json
-{
-  "video_url": "https://example.com/video.mp4",
-  "audio_url": "https://example.com/audio.mp3",
-  "video_vol": 100,
-  "audio_vol": 100,
-  "output_length": "video",
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "unique_request_id"
-}
-```
-
-## Response Format
-
-For asynchronous processing (when `webhook_url` is provided):
-
-```json
-{
-  "code": 202,
-  "id": "unique_request_id",
-  "job_id": "generated_job_id",
-  "message": "processing"
-}
-```
-
-For synchronous processing:
-
-```json
-{
-  "code": 200,
-  "response": "result_or_file_url",
-  "message": "success"
-}
-```
-
-## Webhook Callback Format
-
-```json
-{
-  "endpoint": "/endpoint-name",
-  "code": 200,
-  "id": "unique_request_id",
-  "job_id": "generated_job_id",
-  "response": "result_or_file_url",
-  "message": "success"
-}
-```
-
-## Error Handling
-
-In case of errors, the API will return appropriate HTTP status codes along with error messages in the response body.
-
-## Notes
-
-- All endpoints support both synchronous and asynchronous processing.
-- For asynchronous processing, provide a `webhook_url` in the request payload.
-- The API uses Google Cloud Storage for storing processed files when `GCP_BUCKET_NAME` is set.
-- Google Drive integration requires proper setup of service account credentials and user impersonation.
+Refer to each linked file for detailed usage, examples, and response structures.
 
 ## License
 

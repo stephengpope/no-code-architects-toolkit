@@ -51,6 +51,7 @@ coverage.xml
 # Environments
 .env
 .venv
+.secrets
 env/
 venv/
 ENV/

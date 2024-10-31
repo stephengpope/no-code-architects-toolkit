@@ -37,6 +37,12 @@ jobs:
           # Get the list of added or modified files in the routes folder, comparing HEAD to its immediate previous commit
           git diff --name-only HEAD^ HEAD | grep '^routes/.*\.py$' > changed_files.txt
 
+      - name: Debugging Output
+        if: success()
+        run: |
+          echo "Changed files detected:"
+          cat changed_files.txt || echo "No changed files found."
+
       - name: Generate documentation for changed files
         if: success()
         env:

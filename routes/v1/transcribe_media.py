@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
         "task": {"type": "string", "enum": ["transcribe", "translate"]},
-        "format_type": {"type": "string", "enum": ["text", "srt", "vtt", "ass"]},
+        "format_type": {"type": "string", "enum": ["text", "srt", "vtt"]},
         "word_timestamps": {"type": "boolean"},
         "segments": {"type": "boolean"},
         "response_type": {"type": "string", "enum": ["json", "cloud"]},

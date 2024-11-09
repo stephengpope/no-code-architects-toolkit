@@ -84,7 +84,8 @@ logger = logging.getLogger(__name__)
                 "thumbnail": {"type": "boolean"},
                 "filesize": {"type": "boolean"},
                 "duration": {"type": "boolean"},
-                "bitrate": {"type": "boolean"}
+                "bitrate": {"type": "boolean"},
+                "encoder": {"type": "boolean"}
             }
         },
         "webhook_url": {"type": "string", "format": "uri"},

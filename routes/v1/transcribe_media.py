@@ -34,7 +34,7 @@ def transcribe(job_id, data):
     format_type = data.get('format_type', 'text')
     word_timestamps = data.get('word_timestamps', False)
     segments = data.get('segments', False)
-    response_type = data.get('response_type', 'inline')
+    response_type = data.get('response_type', 'json')
     language = data.get('language', None)
     webhook_url = data.get('webhook_url')
     id = data.get('id')

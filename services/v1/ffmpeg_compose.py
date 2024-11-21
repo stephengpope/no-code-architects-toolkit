@@ -1,12 +1,17 @@
 import os
 import subprocess
 import json
+import logging
 from services.file_management import download_file
 
 STORAGE_PATH = "/tmp/"
+logger = logging.getLogger(__name__)
+
 
 def get_extension_from_format(format_name):
-    # Mapping of common format names to file extensions
+    """
+    Map format names to file extensions.
+    """
     format_to_extension = {
         'mp4': 'mp4',
         'mov': 'mov',
@@ -18,7 +23,7 @@ def get_extension_from_format(format_name):
         'jpg': 'jpg',
         'jpeg': 'jpg',
         'png': 'png',
-        'image2': 'png',  # Assume png for image2 format
+        'image2': 'png',  # Default to PNG for image sequences
         'rawvideo': 'raw',
         'mp3': 'mp3',
         'wav': 'wav',
@@ -26,9 +31,13 @@ def get_extension_from_format(format_name):
         'flac': 'flac',
         'ogg': 'ogg'
     }
-    return format_to_extension.get(format_name.lower(), 'mp4')  # Default to mp4 if unknown
+    return format_to_extension.get(format_name.lower(), 'mp4')  # Default to MP4
+
 
 def get_metadata(filename, metadata_requests, job_id):
+    """
+    Retrieve metadata from a media file using FFmpeg and FFprobe.
+    """
     metadata = {}
     if metadata_requests.get('thumbnail'):
         thumbnail_filename = f"{os.path.splitext(filename)[0]}_thumbnail.jpg"
@@ -42,9 +51,9 @@ def get_metadata(filename, metadata_requests, job_id):
         try:
             subprocess.run(thumbnail_command, check=True, capture_output=True, text=True)
             if os.path.exists(thumbnail_filename):
-                metadata['thumbnail'] = thumbnail_filename  # Return local path instead of URL
+                metadata['thumbnail'] = thumbnail_filename
         except subprocess.CalledProcessError as e:
-            print(f"Thumbnail generation failed: {e.stderr}")
+            logger.error(f"Thumbnail generation failed for {filename}: {e.stderr}")
 
     if metadata_requests.get('filesize'):
         metadata['filesize'] = os.path.getsize(filename)
@@ -65,7 +74,6 @@ def get_metadata(filename, metadata_requests, job_id):
             metadata['duration'] = float(probe_data['format']['duration'])
         if metadata_requests.get('bitrate'):
             metadata['bitrate'] = int(probe_data['format']['bit_rate'])
-        
         if metadata_requests.get('encoder'):
             metadata['encoder'] = {}
             for stream in probe_data['streams']:
@@ -76,18 +84,20 @@ def get_metadata(filename, metadata_requests, job_id):
 
     return metadata
 
+
 def process_ffmpeg_compose(data, job_id):
+    """
+    Process FFmpeg composition requests, handling inputs, filters, and outputs.
+    """
     output_filenames = []
-    
-    # Build FFmpeg command
     command = ["ffmpeg"]
-    
+
     # Add global options
     for option in data.get("global_options", []):
         command.append(option["option"])
         if "argument" in option and option["argument"] is not None:
             command.append(str(option["argument"]))
-    
+
     # Add inputs
     for input_data in data["inputs"]:
         if "options" in input_data:
@@ -97,12 +107,12 @@ def process_ffmpeg_compose(data, job_id):
                     command.append(str(option["argument"]))
         input_path = download_file(input_data["file_url"], STORAGE_PATH)
         command.extend(["-i", input_path])
-    
+
     # Add filters
     if data.get("filters"):
         filter_complex = ";".join(filter_obj["filter"] for filter_obj in data["filters"])
         command.extend(["-filter_complex", filter_complex])
-    
+
     # Add outputs
     for i, output in enumerate(data["outputs"]):
         format_name = None
@@ -110,33 +120,41 @@ def process_ffmpeg_compose(data, job_id):
             if option["option"] == "-f":
                 format_name = option.get("argument")
                 break
-        
+
         extension = get_extension_from_format(format_name) if format_name else 'mp4'
-        output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}.{extension}")
+
+        # Add sequence pattern for image2 format
+        if format_name == "image2":
+            output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}_%03d.{extension}")
+        else:
+            output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}.{extension}")
+
         output_filenames.append(output_filename)
-        
+
         for option in output["options"]:
             command.append(option["option"])
             if "argument" in option and option["argument"] is not None:
                 command.append(str(option["argument"]))
         command.append(output_filename)
-    
+
     # Execute FFmpeg command
     try:
+        logger.info(f"Executing FFmpeg command: {' '.join(command)}")
         subprocess.run(command, check=True, capture_output=True, text=True)
     except subprocess.CalledProcessError as e:
+        logger.error(f"FFmpeg command failed: {e.stderr}")
         raise Exception(f"FFmpeg command failed: {e.stderr}")
-    
+
     # Clean up input files
     for input_data in data["inputs"]:
         input_path = os.path.join(STORAGE_PATH, os.path.basename(input_data["file_url"]))
         if os.path.exists(input_path):
             os.remove(input_path)
-    
+
     # Get metadata if requested
     metadata = []
     if data.get("metadata"):
         for output_filename in output_filenames:
             metadata.append(get_metadata(output_filename, data["metadata"], job_id))
-    
+
     return output_filenames, metadata

@@ -4,7 +4,7 @@ import requests
 
 # Set up Anthropic API key from environment variables
 anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
-api_url = "https://api.anthropic.com/v1/complete"  # Update if Claude's endpoint changes
+api_url = "https://api.anthropic.com/v1/messages"  # Updated to the correct messages endpoint
 
 # Prompt template to guide Claude
 base_prompt = """
@@ -33,7 +33,7 @@ Format the documentation with markdown headings, bullet points, and code blocks,
 
 ...
 
-Repeat this structure for each API endpoint you find in the Python file. Provide each endpoint’s documentation as a separate Markdown file, with file names corresponding to the endpoint (e.g., example-endpoint.md).
+Repeat this structure for each API endpoint you find in the Python file. Provide each endpoint's documentation as a separate Markdown file, with file names corresponding to the endpoint (e.g., example-endpoint.md).
 """
 
 # Function to generate documentation for a single Python file
@@ -45,24 +45,35 @@ def generate_documentation(file_path):
     # Make a request to Claude
     headers = {
         "x-api-key": anthropic_api_key,
+        "anthropic-version": "2023-06-01",  # Added required header
         "Content-Type": "application/json"
     }
+    
+    # Updated payload structure for the messages API
     payload = {
-        "prompt": base_prompt + "\n\n" + file_content,
-        "model": "claude-2",  # or the specific Claude model version you are using
-        "max_tokens_to_sample": 2000,
-        "temperature": 0.5,
-        "stop_sequences": ["\n\n"]
+        "messages": [{
+            "role": "user",
+            "content": base_prompt + "\n\n" + file_content
+        }],
+        "model": "claude-3-sonnet-20240229",  # Updated to current model
+        "max_tokens": 2000,
+        "temperature": 0.5
     }
+    
     response = requests.post(api_url, headers=headers, json=payload)
     
     if response.status_code != 200:
         print(f"Error: {response.status_code}, {response.text}")
         return
 
-    # Retrieve the generated documentation text
-    documentation = response.json().get("completion", "").strip()
-    
+    # Updated to handle the new messages API response format
+    try:
+        documentation = response.json()["content"][0]["text"].strip()
+    except (KeyError, IndexError) as e:
+        print(f"Error parsing response: {e}")
+        print(f"Response content: {response.text}")
+        return
+
     # Create a markdown file with the same base name as the Python file in the docs folder
     output_file = os.path.join("docs", f"{os.path.splitext(os.path.basename(file_path))[0]}.md")
     os.makedirs("docs", exist_ok=True)
@@ -73,5 +84,8 @@ def generate_documentation(file_path):
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("Usage: python script.py <path_to_python_file>")
+        sys.exit(1)
     file_path = sys.argv[1]
     generate_documentation(file_path)

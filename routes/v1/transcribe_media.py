@@ -16,9 +16,9 @@ logger = logging.getLogger(__name__)
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
         "task": {"type": "string", "enum": ["transcribe", "translate"]},
-        "text": {"type": "boolean"},
-        "srt": {"type": "boolean"},
-        "segments": {"type": "boolean"},
+        "include_text": {"type": "boolean"},
+        "include_srt": {"type": "boolean"},
+        "include_segments": {"type": "boolean"},
         "word_timestamps": {"type": "boolean"},
         "response_type": {"type": "string", "enum": ["direct", "cloud"]},
         "language": {"type": "string"},
@@ -32,9 +32,9 @@ logger = logging.getLogger(__name__)
 def transcribe(job_id, data):
     media_url = data['media_url']
     task = data.get('task', 'transcribe')
-    text = data.get('text', True)
-    srt = data.get('srt', False)
-    segments = data.get('segments', False)
+    include_text = data.get('include_text', True)
+    include_srt = data.get('include_srt', False)
+    include_segments = data.get('include_segments', False)
     word_timestamps = data.get('word_timestamps', False)
     response_type = data.get('response_type', 'direct')
     language = data.get('language', None)
@@ -44,7 +44,7 @@ def transcribe(job_id, data):
     logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
     try:
-        result = process_transcribe_media(media_url, task, text, srt, segments, word_timestamps, response_type, language, job_id)
+        result = process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id)
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
         # If the result is a file path, upload it using the unified upload_file() method
@@ -61,18 +61,18 @@ def transcribe(job_id, data):
         else:
 
             cloud_urls = {
-                "text": upload_file(result[0]) if text is True else None,
-                "srt": upload_file(result[1]) if srt is True else None,
-                "segments": upload_file(result[2]) if segments is True else None,
+                "text": upload_file(result[0]) if include_text is True else None,
+                "srt": upload_file(result[1]) if include_srt is True else None,
+                "segments": upload_file(result[2]) if include_segments is True else None,
             }
 
-            if text is True:
+            if include_text is True:
                 os.remove(result[0])  # Remove the temporary file after uploading
             
-            if srt is True:
+            if include_srt is True:
                 os.remove(result[1])
 
-            if segments is True:
+            if include_segments is True:
                 os.remove(result[2])
             
             return cloud_urls, "/v1/transcribe/media", 200

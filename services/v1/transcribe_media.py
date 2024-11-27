@@ -13,7 +13,7 @@ logging.basicConfig(level=logging.INFO)
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_transcribe_media(media_url, task, include_text, include_srt, segments, word_timestamps, response_type, language, job_id):
+def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
@@ -60,7 +60,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, segment
             
             srt_text = srt.compose(srt_subtitles)
 
-        if segments is True:
+        if include_segments is True:
             segments_json = result['segments']
 
         os.remove(input_filename)
@@ -85,7 +85,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, segment
             else:
                 srt_filename = None
 
-            if segments is True:
+            if include_segments is True:
                 segments_filename = os.path.join(STORAGE_PATH, f"{job_id}.json")
                 with open(segments_filename, 'w') as f:
                     f.write(str(segments_json))

@@ -16,10 +16,11 @@ logger = logging.getLogger(__name__)
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
         "task": {"type": "string", "enum": ["transcribe", "translate"]},
-        "format_type": {"type": "string", "enum": ["text", "srt", "vtt"]},
-        "word_timestamps": {"type": "boolean"},
+        "text": {"type": "boolean"},
+        "srt": {"type": "boolean"},
         "segments": {"type": "boolean"},
-        "response_type": {"type": "string", "enum": ["json", "cloud"]},
+        "word_timestamps": {"type": "boolean"},
+        "response_type": {"type": "string", "enum": ["direct", "cloud"]},
         "language": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
@@ -31,10 +32,11 @@ logger = logging.getLogger(__name__)
 def transcribe(job_id, data):
     media_url = data['media_url']
     task = data.get('task', 'transcribe')
-    format_type = data.get('format_type', 'text')
-    word_timestamps = data.get('word_timestamps', False)
+    text = data.get('text', True)
+    srt = data.get('srt', False)
     segments = data.get('segments', False)
-    response_type = data.get('response_type', 'json')
+    word_timestamps = data.get('word_timestamps', False)
+    response_type = data.get('response_type', 'direct')
     language = data.get('language', None)
     webhook_url = data.get('webhook_url')
     id = data.get('id')
@@ -42,16 +44,16 @@ def transcribe(job_id, data):
     logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
     try:
-        result = process_transcribe_media(media_url, task, format_type, word_timestamps, segments, response_type, language, job_id)
+        result = process_transcribe_media(media_url, task, text, srt, segments, word_timestamps, response_type, language, job_id)
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
         # If the result is a file path, upload it using the unified upload_file() method
-        if response_type == "json":
+        if response_type == "direct":
            
             result_json = {
                 "text": result[0],
-                "segments": result[1],
-                "captions": result[2],
+                "srt": result[1],
+                "segments": result[2]
             }
 
             return result_json, "/v1/transcribe/media", 200
@@ -59,19 +61,20 @@ def transcribe(job_id, data):
         else:
 
             cloud_urls = {
-                "text_url": upload_file(result[0]),
-                "segments_url": upload_file(result[1]) if segments is True else None,
-                "captions_url": upload_file(result[2]) if format_type in ["srt", "vtt"] else None,
+                "text": upload_file(result[0]) if text is True else None,
+                "srt": upload_file(result[1]) if srt is True else None,
+                "segments": upload_file(result[2]) if segments is True else None,
             }
 
-            os.remove(result[0])  # Remove the temporary file after uploading
+            if text is True:
+                os.remove(result[0])  # Remove the temporary file after uploading
             
-            if segments is True:
+            if srt is True:
                 os.remove(result[1])
-            
-            if format_type in ["srt", "vtt"]:
-                os.remove(result[2]) 
 
+            if segments is True:
+                os.remove(result[2])
+            
             return cloud_urls, "/v1/transcribe/media", 200
 
     except Exception as e:

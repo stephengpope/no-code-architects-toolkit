@@ -22,7 +22,7 @@ def process_transcribe_media(media_url, task, format_type, word_timestamps, segm
     try:
         # Load a larger model for better translation quality
         #model_size = "large" if task == "translate" else "base"
-        model_size = "base"
+        model_size = "turbo"
         model = whisper.load_model(model_size)
         logger.info(f"Loaded Whisper {model_size} model")
 

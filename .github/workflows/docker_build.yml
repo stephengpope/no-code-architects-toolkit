@@ -27,6 +27,7 @@ jobs:
         run: |
           echo "Configuring Docker authentication for Artifact Registry..."
           gcloud auth configure-docker us-east1-docker.pkg.dev
+          gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-east1-docker.pkg.dev
 
       - name: Build and Push Docker Image
         run: make build_container

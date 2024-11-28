@@ -38,9 +38,9 @@ jobs:
         run: |
           echo "Tagging nginx:latest for Google Artifact Registry..."
           docker tag nginx:latest \
-          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/nginx:latest
+          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit:latest
 
       - name: Push Image to Google Artifact Registry
         run: |
           echo "Pushing nginx:latest to Google Artifact Registry..."
-          docker push us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/nginx:latest
+          docker push us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit:latest

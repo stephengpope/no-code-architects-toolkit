@@ -18,12 +18,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
         with:
-          role-to-assume: ${{ secrets.CD_ROLE_ARN }}
-          role-session-name: ${{ github.sha }}
-          aws-region: us-east-1
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-      - name: Build
+      - name: Set up Docker to Authenticate with Artifact Registry
+        run: |
+          echo "Configuring Docker authentication for Artifact Registry..."
+          gcloud auth configure-docker us-east1-docker.pkg.dev
+
+      - name: Build and Push Docker Image
         run: make build_container

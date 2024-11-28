@@ -29,18 +29,18 @@ jobs:
           gcloud auth configure-docker us-east1-docker.pkg.dev
           gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin https://us-east1-docker.pkg.dev
 
-      - name: Pull Image from Docker Hub
+      - name: Pull Image from Amazon ECR Public
         run: |
-          echo "Pulling nginx:latest image from Docker Hub..."
-          docker pull nginx:latest
+          echo "Pulling image from Amazon ECR Public..."
+          docker pull public.ecr.aws/t6d9z0z5/no-code-architects-toolkit:latest
 
       - name: Tag Image for Google Artifact Registry
         run: |
-          echo "Tagging nginx:latest for Google Artifact Registry..."
-          docker tag nginx:latest \
-          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/nginx:latest
+          echo "Tagging image for Google Artifact Registry..."
+          docker tag public.ecr.aws/t6d9z0z5/no-code-architects-toolkit:latest \
+          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/no-code-architects-toolkit:latest
 
       - name: Push Image to Google Artifact Registry
         run: |
-          echo "Pushing nginx:latest to Google Artifact Registry..."
-          docker push us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/nginx:latest
+          echo "Pushing image to Google Artifact Registry..."
+          docker push us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/no-code-architects-toolkit:latest

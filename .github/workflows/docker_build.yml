@@ -38,9 +38,9 @@ jobs:
         run: |
           echo "Tagging image for Google Artifact Registry..."
           docker tag public.ecr.aws/t6d9z0z5/no-code-architects-toolkit:latest \
-          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/no-code-architects-toolkit:latest
+          us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit:latest
 
       - name: Push Image to Google Artifact Registry
         run: |
           echo "Pushing image to Google Artifact Registry..."
-          docker push us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit/no-code-architects-toolkit:latest
+          docker us-east1-docker.pkg.dev/csagi-439110/no-code-architects-toolkit:latest

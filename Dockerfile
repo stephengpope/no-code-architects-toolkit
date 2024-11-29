@@ -135,6 +135,17 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     make install && \
     cd .. && rm -rf ffmpeg
 
+    # Install dependencies
+RUN apt-get update && \
+apt-get install -y --no-install-recommends \
+nodejs \
+npm \
+&& rm -rf /var/lib/apt/lists/*
+
+# Verify installations
+RUN node -v
+RUN npm -v
+
 # Add /usr/local/bin to PATH (if not already included)
 ENV PATH="/usr/local/bin:${PATH}"
 

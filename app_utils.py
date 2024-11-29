@@ -19,7 +19,10 @@ def validate_payload(schema):
 
 def queue_task_wrapper(bypass_queue=False):
     def decorator(f):
-        def wrapper(*args, **kwargs):
-            return current_app.queue_task(bypass_queue=bypass_queue)(f)(*args, **kwargs)
-        return wrapper
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            # Access current_app within the request context
+            queue_task_decorator = current_app.queue_task(bypass_queue=bypass_queue)
+            return queue_task_decorator(f)(*args, **kwargs)
+        return wrapped
     return decorator

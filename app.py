@@ -6,6 +6,8 @@ import uuid
 import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
+from functools import wraps
+
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -53,6 +55,7 @@ def create_app():
     # Decorator to add tasks to the queue or bypass it
     def queue_task(bypass_queue=False):
         def decorator(f):
+            @wraps(f)
             def wrapper(*args, **kwargs):
                 job_id = str(uuid.uuid4())
                 data = request.json if request.is_json else {}
@@ -60,7 +63,6 @@ def create_app():
                 start_time = time.time()
                 
                 if bypass_queue or 'webhook_url' not in data:
-                    
                     response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
@@ -118,7 +120,7 @@ def create_app():
     from routes.caption_video import caption_bp 
     from routes.extract_keyframes import extract_keyframes_bp
     from routes.image_to_video import image_to_video_bp
-    
+    from routes.v1.code_execution import code_execution_bp
 
     # Register blueprints
     app.register_blueprint(convert_bp)
@@ -130,7 +132,8 @@ def create_app():
     app.register_blueprint(caption_bp)
     app.register_blueprint(extract_keyframes_bp)
     app.register_blueprint(image_to_video_bp)
-    
+    app.register_blueprint(code_execution_bp)
+
 
     # version 1.0
     from routes.v1.ffmpeg_compose import v1_ffmpeg_compose_bp

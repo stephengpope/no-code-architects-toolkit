@@ -15,9 +15,9 @@ STORAGE_PATH = "/tmp/"
 
 def process_transcribe_media(media_url, task, format_type, word_timestamps, segments, response_type, language, job_id):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
-    logger.info(f"Starting {task} for media URL: {media_url} with output type: {format_type}")
+    logger.info(f"2 Starting {task} for media URL: {media_url} with output type: {format_type}")
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
-    logger.info(f"Downloaded media to local file: {input_filename}")
+    logger.info(f"2 Downloaded media to local file: {input_filename}")
 
     try:
         # Load a larger model for better translation quality

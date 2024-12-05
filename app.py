@@ -135,7 +135,9 @@ def create_app():
     # version 1.0
     from routes.v1.ffmpeg_compose import v1_ffmpeg_compose_bp
     from routes.v1.transcribe_media import v1_transcribe_media_bp
-
+    from routes.v1.caption_video import v1_caption_bp
+    
+    app.register_blueprint(v1_caption_bp)
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_transcribe_media_bp)
 

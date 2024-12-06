@@ -508,7 +508,7 @@ def process_captioning_v1(video_url, caption_srt, caption_ass, options, job_id, 
         # os.remove(video_path)
         # os.remove(subtitle_path)
 
-        return {"output_path": output_path}
+        return output_path
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error in process_captioning_v1: {str(e)}")

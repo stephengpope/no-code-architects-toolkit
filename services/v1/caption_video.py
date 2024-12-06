@@ -323,9 +323,9 @@ Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour,
 
 def srt_to_ass_highlight(transcription_result, options=None, video_resolution=(384, 288)):
     """
-    Convert transcription result to ASS format with a "highlight" style.
-    The entire line is visible, but the currently active word is highlighted using \4c override tags.
-    One Dialogue event per word, so that the highlight shifts from word to word as time passes.
+    Convert transcription result to ASS format with a "highlight" style:
+    The entire line is visible, but the currently active word is highlighted by changing its text color.
+    One Dialogue event per word is produced, updating the highlight as time progresses.
     """
     if options is None:
         options = []
@@ -349,23 +349,21 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
     ass_content = ass_header + style_line + "\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
 
     replace_dict = style_options.get('replace', {})
-    max_words_per_line = int(style_options.get('max_words_per_line', 0))  # Not really relevant here since we show full line
+    max_words_per_line = int(style_options.get('max_words_per_line', 0))
     all_caps = style_options.get('all_caps', False)
     x = style_options.get('x', None)
     y = style_options.get('y', None)
     position_tag = f"{{\\pos({x},{y})}}" if x is not None and y is not None else ""
 
     highlight_color = rgb_to_ass_color(style_options.get('highlight_color', '#FF0000'))
-    box_color = rgb_to_ass_color(style_options.get('box_color', '#000000'))
 
-    # Process each segment
     for segment in transcription_result['segments']:
         start_time = segment['start']
         end_time = segment['end']
         segment_duration = end_time - start_time
         text = segment['text'].strip().replace('\n', ' ')
 
-        # Apply replaces and all_caps to the entire line once (words individually will also be processed)
+        # Apply global replacements and all_caps to the entire line
         line_processed = text
         for old_word, new_word in replace_dict.items():
             line_processed = re.sub(re.escape(old_word), new_word, line_processed, flags=re.IGNORECASE)
@@ -373,54 +371,40 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
             line_processed = line_processed.upper()
 
         words_info = segment.get('words', [])
+
         if words_info and len(words_info) > 0:
-            # Word-level timestamps available
-            # We'll produce one Dialogue event per word
-            words = [w['word'].strip().replace('\n', ' ') for w in words_info if w['word'].strip()]
-            # Also apply per-word replacements and all-caps after initial processing, to ensure consistency
+            # We have word-level timestamps
+            # Extract just the processed words
+            # Note: replacements and casing have been applied line-wide, but we apply per-word again for safety
+            original_words = line_processed.split()
+            # In case the word count changed due to replacements, we rely on the original indices.
+            # We'll assume the word counts match or are close enough.
+            # If mismatch occurs, we highlight based on word_info indexing as best as possible.
+            
             processed_words = []
-            for w in words:
-                w_processed = w
+            for w_info in words_info:
+                w = w_info['word'].strip().replace('\n', ' ')
+                # Apply replacements and all_caps individually again to be sure
                 for old_word, new_word in replace_dict.items():
-                    w_processed = re.sub(re.escape(old_word), new_word, w_processed, flags=re.IGNORECASE)
+                    w = re.sub(re.escape(old_word), new_word, w, flags=re.IGNORECASE)
                 if all_caps:
-                    w_processed = w_processed.upper()
-                processed_words.append(w_processed)
+                    w = w.upper()
+                processed_words.append(w)
 
-            # Build full line as array of words
-            full_line_words = line_processed.split()
-            # Ensure processed_words aligns with full_line_words
-            # If not perfectly aligned due to replacements, we rely on processed_words for highlighting
-            # We'll highlight based on processed_words as they come from words_info
-            # We'll assume processed_words count matches or is a subset of full_line_words count:
-            # If there's a discrepancy, highlight best-effort.
-
-            # Map each word timing
+            # Now for each word, we produce a Dialogue event
             for i, w_info in enumerate(words_info):
                 w_start = w_info['start']
                 w_end = w_info['end']
-                current_word = processed_words[i]
 
-                # Construct the line with highlight on current_word
-                # We'll reconstruct the line from processed_words to maintain consistent replacements/casing
-                # But if replacements changed word count drastically, we must fallback to full_line_words
-                # We'll assume same word count for simplicity
-                highlighted_line = ""
-                line_words = line_processed.split()
-                # match current_word with line_words[i], highlight it:
-                # We must ensure indexing is consistent. If replacements changed words drastically,
-                # you may need a more robust mapping. For now, assume same length of words.
-                # If lengths differ, highlight the i-th word in the processed_words within the original line_words.
-                # Let's trust word counts align. If not, highlight i-th word in processed_words directly in line_words.
-
-                # We'll find the i-th word in the line and highlight that:
+                # Construct the line with highlight on the i-th word
                 line_words_for_highlight = line_processed.split()
+
                 if i < len(line_words_for_highlight):
-                    line_words_for_highlight[i] = f"{{\\4c{highlight_color}}}{line_words_for_highlight[i]}{{\\4c{box_color}}}"
+                    # Highlight this word by changing its text color
+                    line_words_for_highlight[i] = f"{{\\c{highlight_color}}}{line_words_for_highlight[i]}{{\\c}}"
                 else:
-                    # If index out of range due to mismatch, just highlight current_word at end:
-                    # This is a fallback scenario
-                    line_words_for_highlight[-1] = f"{{\\4c{highlight_color}}}{line_words_for_highlight[-1]}{{\\4c{box_color}}}"
+                    # If indexing off, fallback by highlighting the last word
+                    line_words_for_highlight[-1] = f"{{\\c{highlight_color}}}{line_words_for_highlight[-1]}{{\\c}}"
 
                 highlighted_line = ' '.join(line_words_for_highlight)
 
@@ -429,10 +413,10 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
                 ass_content += f"Dialogue: 0,{start_ass},{end_ass},Default,,0,0,0,,{position_tag}{highlighted_line}\n"
 
         else:
-            # No word-level timing. Split the line into words and divide time evenly like karaoke fallback
+            # No word-level timing
             line_words = line_processed.split()
             if not line_words:
-                # No words, just show the line as is for the full duration
+                # No words, just display the line as is
                 start_ass = format_ass_time(start_time)
                 end_ass = format_ass_time(end_time)
                 ass_content += f"Dialogue: 0,{start_ass},{end_ass},Default,,0,0,0,,{position_tag}{line_processed}\n"
@@ -442,11 +426,9 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
             word_duration = segment_duration / num_words
 
             for i, w in enumerate(line_words):
-                # Highlight the i-th word
-                # Reconstruct line with highlight on w
-                highlighted_line = ""
+                # Highlight the i-th word by changing text color
                 temp_line = line_words[:]
-                temp_line[i] = f"{{\\4c{highlight_color}}}{temp_line[i]}{{\\4c{box_color}}}"
+                temp_line[i] = f"{{\\c{highlight_color}}}{temp_line[i]}{{\\c}}"
                 highlighted_line = ' '.join(temp_line)
 
                 word_start = start_time + i * word_duration
@@ -457,6 +439,7 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
                 ass_content += f"Dialogue: 0,{start_ass},{end_ass},Default,,0,0,0,,{position_tag}{highlighted_line}\n"
 
     return ass_content
+
 
 def srt_to_ass_underline(transcription_result, options=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS format with active word underlined."""

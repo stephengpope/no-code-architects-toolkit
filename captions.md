@@ -1,33 +1,63 @@
-## Below is a comprehensive guide to every parameter and option supported by the capton-video API, along with explanations on how they influence the caption generation process.
+## Captions and Subtitle Customization: Comprehensive Guide
 
-## Overview
+This API allows you to submit a video and produce captions that can be generated automatically through speech-to-text transcription, or derived from provided SRT/ASS subtitles. In addition, it offers a wide range of styling and formatting options to fully control the appearance and behavior of your captions.
 
-The API accepts a JSON POST request body with several fields that define:
-
-1. **The Input Video:**  
-   - `video_url`: The URL to the source video.
-   - `caption_srt` (optional): Inline SRT subtitle content if already available.
-   - `caption_ass` (optional): Inline ASS subtitle content if already available.
-
-   If neither `caption_srt` nor `caption_ass` is provided, the API will automatically generate captions from the video's audio track using speech-to-text transcription.
-
-2. **Job Metadata:**
-   - `job_id`: A unique identifier for the captioning job.
-   - `language`: The language of the audio (or `auto` to let the system detect it).
-
-3. **Caption Customization Options:**
-   The `options` array allows you to control how the captions look, feel, and are formatted. Each element in `options` is an object with an `option` key and a `value` key. For example:
-   ```json
-   { "option": "line-color", "value": "#FF0000" }
-   ```
-   
-   The following sections detail every available option.
+**Key Features:**
+- Automatic transcription if no subtitles are provided.
+- Support for inline SRT or ASS subtitles if you already have them.
+- A comprehensive set of styling options (`options` array) to customize colors, fonts, positions, effects, and behaviors.
+- Multiple “styles” of caption display, such as `classic`, `karaoke`, `highlight`, `underline`, and `word-by-word`, each controlling how active words or lines are presented.
 
 ---
 
 ## Request Body Structure
 
-### Example
+### Required and Optional Fields
+
+**`video_url` (string, required)**  
+The URL pointing to the video you want to process. The API will download and analyze this video.  
+- **Example:** `"https://example.com/path/to/video.mp4"`  
+If this field is not provided, the request is invalid as no video is available to process.
+
+**`caption_srt` (string or null, optional)**  
+If you have an SRT subtitle file (in plain text), you can inline it here. Providing this bypasses the need for automatic transcription.  
+- **Example:** 
+  - `null`: No inline SRT provided, rely on `caption_ass` or generate automatically.
+  - A valid SRT could look like:
+    ```  
+    1
+    00:00:00,000 --> 00:00:02,000
+    Hello world!
+    ```
+
+**`caption_ass` (string or null, optional)**  
+If you have an ASS subtitle file, provide it here. This also bypasses transcription, using your preexisting subtitles.  
+- **Example:**  
+  - `null`: No ASS provided.
+  - A valid ASS file starting with `[Script Info]` section.
+
+**Behavior When Subtitles Are Provided:**
+- If `caption_ass` is provided, it overrides the need for transcription and uses the given ASS subtitles directly.
+- If `caption_srt` is provided (and `caption_ass` is not), it uses the SRT subtitles and converts them to ASS format internally, applying your styling options.
+- If neither `caption_srt` nor `caption_ass` is provided, the API will automatically transcribe the video’s audio to create captions.
+
+**`job_id` (string, required)**  
+A unique identifier for the captioning job. Use this to track logs, monitor progress, or reference results later.  
+- **Example:** `"f3873330-83fb-42f7-98cf-5a256016fe3e"`
+
+**`language` (string, optional)**  
+Specifies the language of the audio. If set to `"auto"`, the API attempts to detect the language automatically. Otherwise, provide a specific language code (e.g., `"en"` for English, `"fr"` for French) to guide transcription.  
+- **Default:** `"auto"`
+- **Example:** `"en"`
+
+**`options` (array of objects, optional)**  
+An array of `{ "option": "<name>", "value": <value> }` objects that control every aspect of your captions, including color, font, size, position, styling (e.g., karaoke or highlight), and more. Each entry modifies a single parameter.
+
+If no `options` are provided, sensible defaults are used, resulting in basic white text captions centered at the bottom of the screen.
+
+---
+
+### Example Request Body
 
 ```json
 {
@@ -49,7 +79,8 @@ The API accepts a JSON POST request body with several fields that define:
     { "option": "bold", "value": true },
     { "option": "italic", "value": false },
     { "option": "underline", "value": false },
-    { "option": "strikeout", "value": false }
+    { "option": "strikeout", "value": false },
+    { "option": "style", "value": "classic" }
   ],
   "job_id": "f3873330-83fb-42f7-98cf-5a256016fe3e",
   "language": "en"
@@ -58,246 +89,245 @@ The API accepts a JSON POST request body with several fields that define:
 
 ---
 
-## Top-Level Fields
+## Detailed Description of Each Option
 
-### `video_url` (string, required)
-The URL of the video to be processed. The API will download and analyze this video to generate or apply captions.
+### 1. Color and Appearance Options
 
-- **Example:** `"https://example.com/path/to/video.mp4"`
+**`line-color`**  
+- **Description:** Sets the primary color of the subtitle text.  
+- **Type:** Hex color code (`#RRGGBB`)  
+- **Default:** `#FFFFFF` (white)  
+- **Impact:** Changes the color of all non-active words or the entire line’s text if no highlighting is applied.  
+- **Example:** `{"option": "line-color", "value": "#FF0000"}` makes the base text red.
 
-### `caption_srt` (string or null, optional)
-Inline SRT subtitle data. If provided, the API will use these subtitles instead of generating them. If set to `null`, the API will rely on `caption_ass` or generate subtitles.
+**`word-color`**  
+- **Description:** For styles like `karaoke` or `underline`, this defines the color of the currently "active" spoken word if the style supports per-word highlighting.  
+- **Type:** Hex color code  
+- **Default:** `#FFFF00` (yellow)  
+- **Example:** `{"option": "word-color", "value": "#00FF00"}` makes the active word appear green in karaoke mode.
 
-- **Example:** `null` or `"1\n00:00:00,000 --> 00:00:02,000\nHello world!"`
+**`outline-color`**  
+- **Description:** The color of the outline stroke around the subtitle characters.  
+- **Type:** Hex color code  
+- **Default:** `#000000` (black)  
+- **Impact:** Highly visible if `outline-width` is increased.  
+- **Example:** `{"option": "outline-color", "value": "#0000FF"}` creates a blue outline.
 
-### `caption_ass` (string or null, optional)
-Inline ASS subtitle data. Similar to `caption_srt`, but in ASS format. Overrides the need for transcription if provided.
+**`box-color`**  
+- **Description:** Background or "box" color behind the subtitles if the selected style and border settings support it.  
+- **Type:** Hex color code  
+- **Default:** `#000000` (black)  
+- **When Visible:** If `border-style=3` (opaque box) is used, `box-color` fills the area behind the text.  
+- **Example:** `{"option": "box-color", "value": "#FFFF00"}` for a yellow background box.
 
-- **Example:** `null` or an ASS-formatted subtitle string.
+**`highlight-color`**  
+- **Description:** Used in advanced styles like `highlight` or `karaoke` to emphasize the active word. In `highlight` style, this often changes the active word’s text color.  
+- **Type:** Hex color code  
+- **Default:** `#FF0000` (red)  
+- **Example:** `{"option": "highlight-color", "value": "#FF00FF"}` makes highlighted words magenta.
 
-### `job_id` (string, required)
-A unique identifier for the captioning job. Useful for tracking processing and retrieving logs.
-
-- **Example:** `"f3873330-83fb-42f7-98cf-5a256016fe3e"`
-
-### `language` (string, optional)
-Specifies the language of the video's audio.  
-- Use `"auto"` to let the system detect the language automatically.
-- Use a supported language code (e.g., `en`, `fr`, `de`, etc.) if known.
-
-- **Default:** `"auto"`
-- **Example:** `"en"`
+**`shadow-color`** *(Limited Support)*  
+- **Description:** Intended to define the shadow color. However, ASS does not directly support a separate shadow color distinct from text/outline color.  
+- **Type:** Hex color code  
+- **Default:** `#000000` (black)  
+- **Note:** May have no visible effect depending on style and rendering engine.
 
 ---
-
-## The `options` Array
-
-The `options` array is where you customize every visual and formatting aspect of the subtitles. Each object in this array has the form:
-```json
-{
-  "option": "<option-name>",
-  "value": "<option-value>"
-}
-```
-
-Below is a detailed list of all supported options:
-
-### 1. Color and Appearance
-
-**`line-color`**
-- **Description:** Sets the main color of subtitle text (primary color).
-- **Value:** A hex color code in `#RRGGBB` format.
-- **Default:** `#FFFFFF` (white)
-- **Example:** `{"option": "line-color", "value": "#FF0000"}` (red text)
-
-**`word-color`**
-- **Description:** For karaoke or progressive styles, defines the color of the currently "active" spoken word.
-- **Value:** A hex color code.
-- **Default:** `#FFFF00` (yellow)
-- **Example:** `{"option": "word-color", "value": "#00FF00"}` (green active word)
-
-**`outline-color`**
-- **Description:** The color of the outline stroke around the subtitle text.
-- **Value:** A hex color code.
-- **Default:** `#000000` (black)
-- **Example:** `{"option": "outline-color", "value": "#0000FF"}` (blue outline)
-
-**`box-color`**
-- **Description:** The background or "box" color behind the subtitle line (if the selected style uses one).
-- **Value:** A hex color code.
-- **Default:** `#000000` (black)
-- **Example:** `{"option": "box-color", "value": "#FFFF00"}` (yellow box)
-
-**`highlight-color`**
-- **Description:** Used creatively in karaoke-style captions to highlight the active word. Due to ASS limitations, this often affects text color rather than a true background highlight.
-- **Value:** A hex color code.
-- **Default:** `#FF0000` (red)
-- **Example:** `{"option": "highlight-color", "value": "#FF00FF"}` (magenta highlight)
-
-**`shadow-color`** *(Not directly supported by ASS)*
-- **Description:** Intended for shadow color customization. ASS does not natively support a separate shadow color from the text and outline colors.
-- **Value:** A hex color code.
-- **Default:** `#000000` (black)
-- **Note:** Currently not applied due to ASS limitations.
 
 ### 2. Text Transformations and Formatting
 
-**`all-caps`**
-- **Description:** Convert all subtitle text to uppercase.
-- **Value:** Boolean (`true` or `false`)
-- **Default:** `false`
-- **Example:** `{"option": "all-caps", "value": true}` (all text will be uppercase)
+**`all-caps`**  
+- **Description:** Converts all subtitle text to uppercase, overriding original casing.  
+- **Type:** Boolean  
+- **Default:** `false`  
+- **Example:** `{"option": "all-caps", "value": true}` ensures all displayed text is uppercase.
 
-**`replace`**
-- **Description:** Replace certain words or phrases in the text. This is useful for correcting common transcription errors or using preferred terminology.
-- **Value:** A JSON object mapping original words to their replacements.
-- **Example:** `{"option": "replace", "value": {"hello": "hi"}}` (replaces "hello" with "hi")
+**`replace`**  
+- **Description:** A dictionary of words to be replaced in the subtitles. Useful for correcting transcription errors or substituting certain words. Matching is case-insensitive.  
+- **Type:** JSON object mapping strings to replacements.  
+- **Default:** None (no replacements)  
+- **Example:** `{"option": "replace", "value": {"hello": "hi"}}` replaces every "hello" with "hi".
 
-**`max-words-per-line`**
-- **Description:** Limits the maximum number of words per subtitle line, wrapping to the next line once the limit is reached. Helps improve readability.
-- **Value:** Integer (0 means no limit)
-- **Default:** 0 (no limit)
-- **Example:** `{"option": "max-words-per-line", "value": 5}`
-
-### 3. Position and Layout
-
-**`position`**
-- **Description:** Sets the subtitle alignment on the screen.
-- **Allowed Values:** `top-left`, `top-center`, `top-right`, `center-left`, `center-center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right`
-- **Default:** `bottom-center`
-- **Example:** `{"option": "position", "value": "top-center"}` (Subtitles appear at the top center of the screen)
-
-**`x`** and **`y`**
-- **Description:** Customize the exact position of the subtitles using coordinates. Used in conjunction with override tags to precisely place subtitles.
-- **Value:** Integer coordinates
-- **Default:** not set (depends on alignment)
-- **Example:** `{"option": "x", "value": 100}`, `{"option": "y", "value": 200}`
-
-### 4. Font and Style
-
-**`font-family`**
-- **Description:** Choose the font family for the subtitle text. The font must be available on the system.
-- **Value:** String (font name)
-- **Default:** `Arial`
-- **Example:** `{"option": "font-family", "value": "Roboto"}`
-
-**`font-size`**
-- **Description:** Sets the font size. Usually a value in pixels or a relative size.
-- **Value:** Integer
-- **Default:** Approximately 5% of the video height if not specified.
-- **Example:** `{"option": "font-size", "value": 24}`
-
-**`bold`**
-- **Description:** Make the subtitle text bold.
-- **Value:** Boolean
-- **Default:** `false`
-- **Example:** `{"option": "bold", "value": true}`
-
-**`italic`**
-- **Description:** Make the subtitle text italic.
-- **Value:** Boolean
-- **Default:** `false`
-- **Example:** `{"option": "italic", "value": true}`
-
-**`underline`**
-- **Description:** Underline the subtitle text.
-- **Value:** Boolean
-- **Default:** `false`
-- **Example:** `{"option": "underline", "value": true}`
-
-**`strikeout`**
-- **Description:** Apply a strike-through effect to the text.
-- **Value:** Boolean
-- **Default:** `false`
-- **Example:** `{"option": "strikeout", "value": true}`
-
-**`scale_x` and `scale_y`**
-- **Description:** Scale the subtitles horizontally (`scale_x`) or vertically (`scale_y`) as a percentage.
-- **Value:** Integer representing percentage.
-- **Default:** `100`
-- **Example:** `{"option": "scale_x", "value": "120"}` (makes text 20% wider)
-
-**`spacing`**
-- **Description:** Adjust spacing between characters.
-- **Value:** Integer (pixel units)
-- **Default:** `0`
-- **Example:** `{"option": "spacing", "value": 2}`
-
-**`angle`**
-- **Description:** Rotate the subtitle text by a given angle in degrees.
-- **Value:** Integer (degrees)
-- **Default:** `0`
-- **Example:** `{"option": "angle", "value": 45}` (rotates text by 45 degrees)
-
-**`border_style`**
-- **Description:** Determines the style of the subtitle background and border.
-- **Value:** `1` for outline+shadow style, `3` for opaque box background style.
-- **Default:** `1`
-- **Example:** `{"option": "border-style", "value": "3"}` (opaque box background)
-
-**`outline_width`**
-- **Description:** The thickness of the outline around the text.
-- **Value:** Integer (pixel units)
-- **Default:** `2`
-- **Example:** `{"option": "outline-width", "value": 4}` (thicker outline)
-
-**`shadow_offset`**
-- **Description:** The offset (distance) of the subtitle shadow from the text.
-- **Value:** Integer
-- **Default:** `0`
-- **Example:** `{"option": "shadow-offset", "value": 1}`
+**`max-words-per-line`**  
+- **Description:** Limits how many words appear on a single line before wrapping to the next line. Improves readability by preventing overly long lines.  
+- **Type:** Integer (0 = no limit)  
+- **Default:** 0 (no wrapping based on word count)  
+- **Example:** `{"option": "max-words-per-line", "value": 5}` breaks lines after every 5 words.
 
 ---
 
-## Additional Behavior and Styles
+### 3. Position and Layout
 
-- If `caption_srt` or `caption_ass` is provided, no automatic transcription occurs.
-- If neither is provided, the API automatically transcribes the video.
-- The API can produce several "styles," such as `classic` and `karaoke`. These styles determine how `word_color` and `highlight_color` are applied. By default, `style` is `classic`.
+**`position`**  
+- **Description:** Sets the on-screen alignment of subtitles.  
+- **Allowed Values:** `top-left`, `top-center`, `top-right`, `center-left`, `center-center`, `center-right`, `bottom-left`, `bottom-center`, `bottom-right`  
+- **Default:** `bottom-center`  
+- **Example:** `{"option": "position", "value": "top-center"}` displays subtitles at the top center.
 
-### Setting the Style
+**`x` and `y`**  
+- **Description:** Fine-grained control over subtitle positioning in pixel coordinates. Used with override tags like `\pos(x,y)` inside dialogue lines.  
+- **Type:** Integer  
+- **Default:** Not set (aligns by `position`)  
+- **Example:** `{"option": "x", "value": 100}`, `{"option": "y", "value": 200}` precisely places subtitles at (100,200).
 
-Although not shown in the original snippet, you can set:
-```json
-{"option": "style", "value": "karaoke"}
-```
-to enable karaoke-style subtitles. Other styles may be available or implemented in the future (`highlight`, `underline`, `word-by-word`), each using these options differently.
+---
+
+### 4. Font and Style
+
+**`font-family`**  
+- **Description:** Sets the font used for rendering subtitles. The font must exist on the system.  
+- **Type:** String (font name)  
+- **Default:** `Arial`  
+- **Example:** `{"option": "font-family", "value": "Roboto"}` selects Roboto if available.
+
+**`font-size`**  
+- **Description:** The size of the subtitle text, generally in pixels. Larger values produce more readable subtitles for testing.  
+- **Type:** Integer  
+- **Default:** Approximately 5% of the video height if not specified.  
+- **Example:** `{"option": "font-size", "value": 36}` larger text.
+
+**`bold`**  
+- **Description:** Makes the subtitle text bold.  
+- **Type:** Boolean  
+- **Default:** `false`  
+- **Example:** `{"option": "bold", "value": true}` creates bold text.
+
+**`italic`**  
+- **Description:** Italicizes the subtitle text.  
+- **Type:** Boolean  
+- **Default:** `false`  
+- **Example:** `{"option": "italic", "value": true}` italicizes the text.
+
+**`underline`**  
+- **Description:** Underlines the subtitle text.  
+- **Type:** Boolean  
+- **Default:** `false`  
+- **Example:** `{"option": "underline", "value": true}` underlines all text.
+
+**`strikeout`**  
+- **Description:** Applies a strike-through effect to the text.  
+- **Type:** Boolean  
+- **Default:** `false`  
+- **Example:** `{"option": "strikeout", "value": true}` displays strikethrough text.
+
+**`scale_x` and `scale_y`**  
+- **Description:** Scales subtitles horizontally or vertically as a percentage.  
+- **Type:** Integer representing a percentage (100 = no scale).  
+- **Default:** `100` for both  
+- **Example:** `{"option": "scale_x", "value": "120"}` widens text by 20%.
+
+**`spacing`**  
+- **Description:** Adjust character spacing. A positive integer increases space between letters, improving readability.  
+- **Type:** Integer (pixels)  
+- **Default:** `0`  
+- **Example:** `{"option": "spacing", "value": 2}` adds slight extra space between characters.
+
+**`angle`**  
+- **Description:** Rotates the subtitle text by the given angle in degrees.  
+- **Type:** Integer (degrees)  
+- **Default:** `0` (no rotation)  
+- **Example:** `{"option": "angle", "value": 45}` rotates text by 45°.
+
+**`border-style`**  
+- **Description:** Controls how the border and background are rendered.  
+- **Type:** Integer (1 or 3 are most common)
+  - `1`: Outlined text with optional shadow.
+  - `3`: Opaque box behind text, making `box-color` visible.
+- **Default:** `1` (outline + shadow)
+- **Example:** `{"option": "border-style", "value": "3"}` creates an opaque background box behind the text.
+
+**`outline-width`**  
+- **Description:** Thickness of the text outline in pixels. Larger values produce a thicker, more visible outline.  
+- **Type:** Integer  
+- **Default:** `2`  
+- **Example:** `{"option": "outline-width", "value": 4}` thicker outline.
+
+**`shadow-offset`**  
+- **Description:** The offset (distance) of the shadow from the text. A non-zero value creates a drop-shadow effect.  
+- **Type:** Integer  
+- **Default:** `0` (no shadow offset)  
+- **Example:** `{"option": "shadow-offset", "value": 1}` small drop shadow.
+
+---
+
+### 5. Styles (e.g., `style` option)
+
+**`style`**
+- **Description:** Selects the overall display style of the captions. Different styles may interpret `highlight-color`, `word-color`, and other options differently.
+- **Type:** String
+- **Allowed Values:** 
+  - `classic`: Standard subtitles with no special word highlighting.
+  - `karaoke`: Shows each word "activating" in sequence, often using `word-color` and `highlight-color` to emphasize the currently spoken word.
+  - `highlight`: The entire line is visible while the currently active word’s text color changes (`highlight-color`) over time. Multiple Dialogue events simulate a moving highlight.
+  - `underline`: Similar to karaoke but underlines the active word instead of changing its color.
+  - `word-by-word`: Displays each word individually, replacing the previous word as time progresses.
+- **Default:** `classic`
+- **Example:** `{"option": "style", "value": "karaoke"}` engages a karaoke-style display.
+
+---
+
+## Additional Behavior
+
+- **Automatic Transcription:**  
+  If neither `caption_srt` nor `caption_ass` is provided, the API will transcribe the video's audio to generate captions. Options like `replace` or `all-caps` then apply to the transcribed text.
+
+- **Fallback Logic for Styles:**  
+  Some styles (like `karaoke` and `highlight`) rely on word-level timing data from transcription. If word-level data is not available (e.g., using an SRT that doesn’t include word-level timestamps), the API attempts to evenly divide the segment duration among the words to simulate these effects.
+
+- **Font Availability:**  
+  If the specified `font-family` is not available on the system, the API returns an error. You can then choose a different font from the provided list.
 
 ---
 
 ## Error Handling
 
-- If a specified font is not available, the API returns an error object with a list of available fonts.
-- If FFmpeg fails to process the video, the `error` field in the response describes the issue.
-- If invalid values are provided for any options, the API may fallback to defaults or return an error, depending on the implementation.
+- **Invalid Fonts:**  
+  If a chosen font is not found, the API responds with an error and a list of available fonts.
+- **FFmpeg Errors:**  
+  If the video cannot be processed, the API returns an error describing the issue (e.g., invalid video URL, unsupported format).
+- **Invalid Values:**  
+  If you provide invalid options or values (e.g., non-hex strings for colors, non-integer for `font-size`), the API may revert to defaults or return an error. Check logs and responses for details.
 
 ---
 
-## Example Usage Scenarios
+## Usage Scenarios and Tips
 
-1. **Simple Captions with Defaults:**
-   Only provide `video_url`, no `options` or subtitles. The API auto-generates captions and uses default styles.
+1. **Simple Setup:**  
+   Provide only `video_url`. The API transcribes the audio and produces basic white captions at the bottom.
 
-2. **Add a Red Outline and Larger Font:**
+2. **Advanced Styling:**  
+   Use a combination of `border-style=3`, a bright `outline-color`, and `highlight-color` for emphasis. Increase `font-size` and set `bold=true` for maximum readability during testing.
+
+3. **Term Correction with `replace`:**  
+   If transcription outputs "um" frequently, you can replace it with an empty string to remove filler words:
    ```json
-   { "option": "outline-color", "value": "#FF0000" },
-   { "option": "font-size", "value": 36 }
+   {"option": "replace", "value": {"um": ""}}
    ```
 
-3. **Create Karaoke-Style Captions with Active Word Highlighting:**
-   ```json
-   { "option": "style", "value": "karaoke" },
-   { "option": "word-color", "value": "#00FF00" },
-   { "option": "highlight-color", "value": "#FF00FF" }
-   ```
+4. **Testing Different Styles:**
+   - **Karaoke:**  
+     ```json
+     {"option": "style", "value": "karaoke"},
+     {"option": "word-color", "value": "#00FF00"},
+     {"option": "highlight-color", "value": "#FF00FF"}
+     ```
+     Makes each spoken word activate in sequence, changing colors as they are “spoken.”
+   
+   - **Highlight:**  
+     ```json
+     {"option": "style", "value": "highlight"},
+     {"option": "highlight-color", "value": "#00FF00"}
+     ```
+     The entire line is visible while the active word changes color over time.
 
-4. **Restrict Captions to Three Words per Line:**
-   ```json
-   { "option": "max-words-per-line", "value": 3 }
-   ```
+   - **Underline:**  
+     ```json
+     {"option": "style", "value": "underline"}
+     ```
+     The active word is underlined instead of recolored.
 
-5. **Replace Certain Words:**
-   ```json
-   { "option": "replace", "value": { "um": "", "like": "" } }
-   ```
-   This removes filler words.
+   - **Word-by-Word:**
+     ```json
+     {"option": "style", "value": "word-by-word"}
+     ```
+     Each word is displayed individually, replacing the previous one as time passes.

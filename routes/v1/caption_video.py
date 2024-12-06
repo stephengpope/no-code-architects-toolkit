@@ -15,8 +15,7 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
-        "srt": {"type": "string"},
-        "ass": {"type": "string"},
+        "caption": {"type": "string"},  # Single caption field (SRT or ASS)
         "options": {
             "type": "array",
             "items": {
@@ -37,8 +36,7 @@ logger = logging.getLogger(__name__)
 @queue_task_wrapper(bypass_queue=False)
 def caption_video_v1(job_id, data):
     video_url = data['video_url']
-    caption_srt = data.get('srt')
-    caption_ass = data.get('ass')
+    caption = data.get('caption')
     options = data.get('options', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')
@@ -48,7 +46,7 @@ def caption_video_v1(job_id, data):
 
     try:
         # Process video with the enhanced v1 service
-        output_filename = process_captioning_v1(video_url, caption_srt, caption_ass, options, job_id)
+        output_filename = process_captioning_v1(video_url, caption, options, job_id)
         logger.info(f"Job {job_id}: Captioning process completed successfully")
 
         # Upload the captioned video

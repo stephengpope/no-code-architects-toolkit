@@ -320,7 +320,7 @@ Follow these detailed steps to deploy the No-Code Architects Toolkit on Google C
   - Click **+ CREATE SERVICE**.
   - **Service Settings**:
     - **Container Image URL**:
-      - Enter `stephengpope/no-code-architects-toolkit:v1.0.1`.
+      - Enter `stephengpope/no-code-architects-toolkit:latest`.
     - **Service Name**:
       - Use the default or specify a name.
     - **Region**:

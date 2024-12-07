@@ -16,16 +16,26 @@ logger = logging.getLogger(__name__)
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
         "captions": {"type": "string"},  # Renamed from "caption"
-        "settings": {  # Renamed from "options"
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "option": {"type": "string"},
-                    "value": {}  # Allow any type for value
-                },
-                "required": ["option", "value"]
-            }
+        "settings": {
+            "type": "object",
+            "properties": {
+                "line_color": {"type": "string"},
+                "word_color": {"type": "string"},
+                "box_color": {"type": "string"},
+                "all_caps": {"type": "boolean"},
+                "max_words_per_line": {"type": "integer"},
+                "position": {"type": "string"},
+                "font_family": {"type": "string"},
+                "font_size": {"type": "integer"},
+                "bold": {"type": "boolean"},
+                "italic": {"type": "boolean"},
+                "underline": {"type": "boolean"},
+                "strikeout": {"type": "boolean"},
+                "style": {"type": "string"},
+                "border_style": {"type": "string"},
+                "outline_width": {"type": "integer"}
+            },
+            "additionalProperties": False
         },
         "replace": {  # Moved to main payload
             "type": "array",

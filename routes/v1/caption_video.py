@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
                 "x": {"type": "integer"},
                 "y": {"type": "integer"},
                 "spacing": {"type": "integer"},
+                "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
             },
             "additionalProperties": False

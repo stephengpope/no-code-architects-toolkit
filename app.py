@@ -133,12 +133,12 @@ def create_app():
     
 
     # version 1.0
-    from routes.v1.ffmpeg_compose import v1_ffmpeg_compose_bp
-    from routes.v1.transcribe_media import v1_transcribe_media_bp
+    from routes.v1.ffmpeg.compose import v1_ffmpeg_compose_bp
+    from routes.v1.media.transcribe import v1_media_transcribe_bp
     from routes.v1.toolkit.test import v1_toolkit_test_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
-    app.register_blueprint(v1_transcribe_media_bp)
+    app.register_blueprint(v1_media_transcribe_bp)
     app.register_blueprint(v1_toolkit_test_bp)
 
     return app

@@ -2,14 +2,14 @@ from flask import Blueprint
 from app_utils import *
 import logging
 import os
-from services.v1.transcribe_media import process_transcribe_media
+from services.v1.media.transcribe import process_transcribe_media
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 
-v1_transcribe_media_bp = Blueprint('v1_transcribe_media', __name__)
+v1_media_transcribe_bp = Blueprint('v1_media_transcribe', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_transcribe_media_bp.route('/v1/transcribe/media', methods=['POST'])
+@v1_media_transcribe_bp.route('/v1/media/transcribe', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",

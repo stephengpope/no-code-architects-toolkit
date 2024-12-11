@@ -387,7 +387,11 @@ def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, v
         position_tag = f"{{\\pos({base_x},{base_y})}}"
         
         # One dialogue event for all lines
-        ass_content += f"Dialogue: 0,{format_ass_time(segment_words[0]['start'])},{format_ass_time(segment_words[-1]['end'])},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{karaoke_text}{{\\c}}\n"
+        word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
+        line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
+        
+        # Use both colors in dialogue lines
+        ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{karaoke_text}{{\\c{line_color}}}\n"
 
     return ass_content
 
@@ -461,7 +465,7 @@ def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None,
                             highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
                         else:
                             # Other words in their original color
-                            highlighted_words.append(w)
+                            highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
                     highlighted_lines.append(' '.join(highlighted_words))
                 else:
                     # Other lines remain unchanged
@@ -499,6 +503,7 @@ def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None,
     position = style_options.get('position', 'middle_center')
     base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
     position_tag = f"{{\\pos({base_x},{base_y})}}"
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
 
     for segment in transcription_result['segments']:
         words = segment.get('words', [])
@@ -556,7 +561,7 @@ def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None,
             # Add dialogue event
             start_time = format_ass_time(word_info['start'])
             end_time = format_ass_time(word_info['end'])
-            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{full_text}\n"
+            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}\n"
 
     return ass_content
 
@@ -582,6 +587,8 @@ def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=No
     position_str = style_options.get('position', 'middle_center')
     base_x, base_y = calculate_position(position_str, video_resolution[0], video_resolution[1],
                               style_options.get('x'), style_options.get('y'))
+
+    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
 
     for segment in transcription_result['segments']:
         words = segment.get('words', [])
@@ -611,7 +618,7 @@ def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=No
                 start_time = format_ass_time(word_info['start'])
                 end_time = format_ass_time(word_info['end'])
                 
-                ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{word}\n"
+                ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{word}\n"
 
     return ass_content
 

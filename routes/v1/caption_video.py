@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
             "properties": {
                 "line_color": {"type": "string"},
                 "word_color": {"type": "string"},
-                "outline_color": {"type": "string"},  # Added outline_color
+                "outline_color": {"type": "string"},
                 "box_color": {"type": "string"},
                 "all_caps": {"type": "boolean"},
                 "max_words_per_line": {"type": "integer"},

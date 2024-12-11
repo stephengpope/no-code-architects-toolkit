@@ -136,15 +136,17 @@ def create_app():
     # version 1.0
     from routes.v1.ffmpeg.compose import v1_ffmpeg_compose_bp
     from routes.v1.media.transcribe import v1_media_transcribe_bp
+    from routes.v1.video.concatenate import v1_video_concatenate_bp
+    from routes.v1.caption_video import v1_caption_bp
     from routes.v1.toolkit.test import v1_toolkit_test_bp
     from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
-    from routes.v1.caption_video import v1_caption_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
+    app.register_blueprint(v1_video_concatenate_bp)
+    app.register_blueprint(v1_caption_bp)
     app.register_blueprint(v1_toolkit_test_bp)
     app.register_blueprint(v1_toolkit_auth_bp)
-    app.register_blueprint(v1_caption_bp)
 
     return app
 

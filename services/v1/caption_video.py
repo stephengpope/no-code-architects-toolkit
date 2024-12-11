@@ -103,29 +103,16 @@ def format_ass_time(seconds):
     return f"{hours}:{minutes:02}:{secs:02}.{centiseconds:02}"
 
 def calculate_position(position, video_width, video_height, x=None, y=None):
-    """
-    Calculate the (x, y) coordinates based on the position string and video resolution.
-    If x and y are provided, they override the position settings.
-
-    Positions are expected to be in the format 'vertical_horizontal', e.g., 'top_left'.
-    """
+    # Use custom coordinates if provided
     if x is not None and y is not None:
-        logger.info(f"Using custom coordinates: x={x}, y={y}")
         return int(x), int(y)
-
-    mapping = {
-        "bottom_left": (100, video_height - 100),
-        "bottom_center": (video_width // 2, video_height - 100),
-        "bottom_right": (video_width - 100, video_height - 100),
-        "middle_left": (100, video_height // 2),
-        "middle_center": (video_width // 2, video_height // 2),
-        "middle_right": (video_width - 100, video_height // 2),
-        "top_left": (100, 100),
-        "top_center": (video_width // 2, 100),
-        "top_right": (video_width - 100, 100)
-    }
-
-    return mapping.get(position.lower(), (video_width // 2, video_height // 2))  # Default to 'middle_center'
+    
+    # Use alignment-based position if specified
+    if position in POSITION_ALIGNMENT_MAP:
+        return mapping.get(position.lower(), (video_width // 2, video_height // 2))
+    
+    # Default to center
+    return video_width // 2, video_height // 2
 
 def process_subtitle_text(text, replace_dict, all_caps, max_words_per_line):
     """Apply text transformations based on style options."""
@@ -265,12 +252,29 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
 
 def srt_to_ass_classic(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS classic style."""
-    if settings is None:
-        settings = {}
-    if replace_dict is None:
-        replace_dict = {}
+    # Common settings to check in all style functions
+    style_settings = {
+        'line_color': '#FFFFFF',  # Default white
+        'word_color': '#FFFF00',  # Default yellow
+        'box_color': '#000000',   # Default black
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,        # Will be calculated from resolution if None
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'x': None,
+        'y': None,
+        'alignment': 'middle_center'
+    }
 
-    style_options = settings.copy()
+    style_options = settings.copy() if settings else {}
+    for key, default in style_settings.items():
+        if key not in style_options:
+            style_options[key] = default
 
     ass_header = generate_ass_header(style_options, video_resolution, style_type='classic')
     if isinstance(ass_header, dict) and 'error' in ass_header:
@@ -298,18 +302,38 @@ def srt_to_ass_classic(transcription_result, settings=None, replace_dict=None, v
             processed_text = process_subtitle_text(line, replace_dict, all_caps, max_words_per_line)
             y_coord = base_y + (line_number * line_height)
             position_tag = f"{{\\pos({base_x},{y_coord})}}"
-            ass_content += f"Dialogue: 0,{format_ass_time(segment['start'])},{format_ass_time(segment['end'])},Default,,0,0,0,,{position_tag}{processed_text}\n"
+            start_time = format_ass_time(segment['start'])
+            end_time = format_ass_time(segment['end'])
+            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{processed_text}\n"
 
     return ass_content
 
 def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS karaoke style with proper handling of max_words_per_line."""
-    if settings is None:
-        settings = {}
-    if replace_dict is None:
-        replace_dict = {}
+    # Common settings to check in all style functions
+    style_settings = {
+        'line_color': '#FFFFFF',  # Default white
+        'word_color': '#FFFF00',  # Default yellow
+        'box_color': '#000000',   # Default black
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,        # Will be calculated from resolution if None
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'x': None,
+        'y': None,
+        'alignment': 'middle_center'
+    }
 
-    style_options = settings.copy()
+    style_options = settings.copy() if settings else {}
+    for key, default in style_settings.items():
+        if key not in style_options:
+            style_options[key] = default
+
     ass_header = generate_ass_header(style_options, video_resolution, style_type='karaoke')
     if isinstance(ass_header, dict) and 'error' in ass_header:
         return ass_header
@@ -325,6 +349,7 @@ def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, v
     base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
     
     word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))  # Add this line
     font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
     line_height = int(font_size * 1.2)
 
@@ -386,23 +411,40 @@ def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, v
         karaoke_text = '\\N'.join(lines_content)
         position_tag = f"{{\\pos({base_x},{base_y})}}"
         
-        # One dialogue event for all lines
-        word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
-        line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
-        
-        # Use both colors in dialogue lines
+        # Before adding the dialogue line, initialize times
+        start_time = format_ass_time(segment_words[0]['start'])
+        end_time = format_ass_time(segment_words[-1]['end'])
+
         ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{karaoke_text}{{\\c{line_color}}}\n"
 
     return ass_content
 
 def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS format with highlight style."""
-    if settings is None:
-        settings = {}
-    if replace_dict is None:
-        replace_dict = {}
+    # Common settings to check in all style functions
+    style_settings = {
+        'line_color': '#FFFFFF',  # Default white
+        'word_color': '#FFFF00',  # Default yellow
+        'box_color': '#000000',   # Default black
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,        # Will be calculated from resolution if None
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'x': None,
+        'y': None,
+        'alignment': 'middle_center'
+    }
 
-    style_options = settings.copy()
+    style_options = settings.copy() if settings else {}
+    for key, default in style_settings.items():
+        if key not in style_options:
+            style_options[key] = default
+
     ass_header = generate_ass_header(style_options, video_resolution, style_type='highlight')
     if isinstance(ass_header, dict) and 'error' in ass_header:
         return ass_header
@@ -477,18 +519,37 @@ def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None,
             # Add dialogue event
             start_time = format_ass_time(word_info['start'])
             end_time = format_ass_time(word_info['end'])
-            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{full_text}\n"
+
+            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}\n"
 
     return ass_content
 
 def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS format with an underline style."""
-    if settings is None:
-        settings = {}
-    if replace_dict is None:
-        replace_dict = {}
+    # Common settings to check in all style functions
+    style_settings = {
+        'line_color': '#FFFFFF',  # Default white
+        'word_color': '#FFFF00',  # Default yellow
+        'box_color': '#000000',   # Default black
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,        # Will be calculated from resolution if None
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'x': None,
+        'y': None,
+        'alignment': 'middle_center'
+    }
 
-    style_options = settings.copy()
+    style_options = settings.copy() if settings else {}
+    for key, default in style_settings.items():
+        if key not in style_options:
+            style_options[key] = default
+
     ass_header = generate_ass_header(style_options, video_resolution, style_type='underline')
     if isinstance(ass_header, dict) and 'error' in ass_header:
         return ass_header
@@ -561,18 +622,37 @@ def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None,
             # Add dialogue event
             start_time = format_ass_time(word_info['start'])
             end_time = format_ass_time(word_info['end'])
+
             ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}\n"
 
     return ass_content
 
 def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
     """Convert transcription result to ASS format with one word displayed at a time."""
-    if settings is None:
-        settings = {}
-    if replace_dict is None:
-        replace_dict = {}
+    # Common settings to check in all style functions
+    style_settings = {
+        'line_color': '#FFFFFF',  # Default white
+        'word_color': '#FFFF00',  # Default yellow
+        'box_color': '#000000',   # Default black
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,        # Will be calculated from resolution if None
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'x': None,
+        'y': None,
+        'alignment': 'middle_center'
+    }
 
-    style_options = settings.copy()
+    style_options = settings.copy() if settings else {}
+    for key, default in style_settings.items():
+        if key not in style_options:
+            style_options[key] = default
+
     ass_header = generate_ass_header(style_options, video_resolution, style_type='word_by_word')
     if isinstance(ass_header, dict) and 'error' in ass_header:
         return ass_header
@@ -684,7 +764,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
         # Early Font Availability Check
         font_family = style_options.get('font_family', 'Arial')
         available_fonts = get_available_fonts()
-        if font_family not in available_fonts:
+        if (font_family not in available_fonts):
             logger.warning(f"Font '{font_family}' not found. Available fonts: {', '.join(available_fonts)}")
             return {'error': f"Font '{font_family}' not available.", 'available_fonts': available_fonts}
 

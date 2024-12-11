@@ -105,11 +105,12 @@ def format_ass_time(seconds):
 def calculate_position(position, video_width, video_height, x=None, y=None):
     # Use custom coordinates if provided
     if x is not None and y is not None:
+        logger.info(f"Using custom coordinates: x={x}, y={y}")
         return int(x), int(y)
     
-    # Use alignment-based position if specified
+    # Fix mapping reference
     if position in POSITION_ALIGNMENT_MAP:
-        return mapping.get(position.lower(), (video_width // 2, video_height // 2))
+        return POSITION_ALIGNMENT_MAP.get(position.lower(), (video_width // 2, video_height // 2))
     
     # Default to center
     return video_width // 2, video_height // 2
@@ -257,15 +258,18 @@ def srt_to_ass_classic(transcription_result, settings=None, replace_dict=None, v
         'line_color': '#FFFFFF',  # Default white
         'word_color': '#FFFF00',  # Default yellow
         'box_color': '#000000',   # Default black
+        'outline_color': '#000000',
         'all_caps': False,
         'max_words_per_line': 0,
         'font_size': None,        # Will be calculated from resolution if None
+        'font_family': 'Arial',
         'bold': False,
         'italic': False,
         'underline': False,
         'strikeout': False,
         'outline_width': 2,
         'shadow_offset': 0,
+        'border_style': 1,
         'x': None,
         'y': None,
         'alignment': 'middle_center'
@@ -315,15 +319,18 @@ def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, v
         'line_color': '#FFFFFF',  # Default white
         'word_color': '#FFFF00',  # Default yellow
         'box_color': '#000000',   # Default black
+        'outline_color': '#000000',
         'all_caps': False,
         'max_words_per_line': 0,
         'font_size': None,        # Will be calculated from resolution if None
+        'font_family': 'Arial',
         'bold': False,
         'italic': False,
         'underline': False,
         'strikeout': False,
         'outline_width': 2,
         'shadow_offset': 0,
+        'border_style': 1,
         'x': None,
         'y': None,
         'alignment': 'middle_center'
@@ -356,8 +363,6 @@ def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, v
     # Calculate base position and spacing
     font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
     line_height = int(font_size * 1.2)
-    base_x = video_resolution[0] // 2  # Center horizontally
-    base_y = video_resolution[1] // 2  # Start at vertical center
 
     for segment in transcription_result['segments']:
         words = segment.get('words', [])
@@ -426,15 +431,18 @@ def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None,
         'line_color': '#FFFFFF',  # Default white
         'word_color': '#FFFF00',  # Default yellow
         'box_color': '#000000',   # Default black
+        'outline_color': '#000000',
         'all_caps': False,
         'max_words_per_line': 0,
         'font_size': None,        # Will be calculated from resolution if None
+        'font_family': 'Arial',
         'bold': False,
         'italic': False,
         'underline': False,
         'strikeout': False,
         'outline_width': 2,
         'shadow_offset': 0,
+        'border_style': 1,
         'x': None,
         'y': None,
         'alignment': 'middle_center'
@@ -503,11 +511,9 @@ def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None,
                     highlighted_words = []
                     for w_idx, w in enumerate(line):
                         if w_idx == word_index_in_line:
-                            # This is the current word - highlight it
                             highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
                         else:
-                            # Other words in their original color
-                            highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
+                            highlighted_words.append(w)  # Use default line color, remove extra color tags
                     highlighted_lines.append(' '.join(highlighted_words))
                 else:
                     # Other lines remain unchanged
@@ -531,15 +537,18 @@ def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None,
         'line_color': '#FFFFFF',  # Default white
         'word_color': '#FFFF00',  # Default yellow
         'box_color': '#000000',   # Default black
+        'outline_color': '#000000',
         'all_caps': False,
         'max_words_per_line': 0,
         'font_size': None,        # Will be calculated from resolution if None
+        'font_family': 'Arial',
         'bold': False,
         'italic': False,
         'underline': False,
         'strikeout': False,
         'outline_width': 2,
         'shadow_offset': 0,
+        'border_style': 1,
         'x': None,
         'y': None,
         'alignment': 'middle_center'
@@ -634,15 +643,18 @@ def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=No
         'line_color': '#FFFFFF',  # Default white
         'word_color': '#FFFF00',  # Default yellow
         'box_color': '#000000',   # Default black
+        'outline_color': '#000000',
         'all_caps': False,
         'max_words_per_line': 0,
         'font_size': None,        # Will be calculated from resolution if None
+        'font_family': 'Arial',
         'bold': False,
         'italic': False,
         'underline': False,
         'strikeout': False,
         'outline_width': 2,
         'shadow_offset': 0,
+        'border_style': 1,
         'x': None,
         'y': None,
         'alignment': 'middle_center'
@@ -668,6 +680,8 @@ def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=No
     base_x, base_y = calculate_position(position_str, video_resolution[0], video_resolution[1],
                               style_options.get('x'), style_options.get('y'))
 
+    # Add line_color initialization
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
     word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
 
     for segment in transcription_result['segments']:

@@ -45,6 +45,10 @@ logger = logging.getLogger(__name__)
                 "style": {"type": "string"},
                 "border_style": {"type": "string"},
                 "outline_width": {"type": "integer"},
+                "x": {"type": "integer"},
+                "y": {"type": "integer"},
+                "spacing": {"type": "integer"},
+                "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
             },
             "additionalProperties": False

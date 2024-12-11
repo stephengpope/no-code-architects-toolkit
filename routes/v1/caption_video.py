@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
                 "y": {"type": "integer"},            # Added
                 "position": {
                     "type": "string",
-                    "enum": ["top", "middle", "bottom"]
+                    "enum": ["bottom_left", "bottom_center", "bottom_right","middle_left", "middle_center", "middle_right","top_left", "top_center", "top_right"]
                 },
                 "alignment": {
                     "type": "string",

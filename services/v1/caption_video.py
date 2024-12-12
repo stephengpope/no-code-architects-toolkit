@@ -512,7 +512,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
         style_options = {k.replace('-', '_'): v for k, v in settings.items()}
 
         if not isinstance(replace, list):
-            logger.error(f"Job {job_id}: 'replace' should be a list of dicts.")
+            logger.error(f"Job {job_id}: 'replace' should be a list of objects with 'find' and 'replace' keys.")
             return {"error": "'replace' should be a list of objects with 'find' and 'replace' keys."}
 
         replace_dict = {}
@@ -523,9 +523,10 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
                 logger.warning(f"Job {job_id}: Invalid replace item {item}. Skipping.")
 
         if 'highlight_color' in style_options:
-            logger.warning(f"Job {job_id}: 'highlight_color' deprecated, merging into 'word_color'.")
+            logger.warning(f"Job {job_id}: 'highlight_color' is deprecated and merged into 'word_color'.")
             style_options['word_color'] = style_options.pop('highlight_color')
 
+        # Early font check
         font_family = style_options.get('font_family', 'Arial')
         available_fonts = get_available_fonts()
         if font_family not in available_fonts:
@@ -534,11 +535,18 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
 
         logger.info(f"Job {job_id}: Font '{font_family}' is available.")
 
-        video_path = download_file(video_url, STORAGE_PATH)
+        # Attempt to download file
+        try:
+            video_path = download_file(video_url, STORAGE_PATH)
+        except Exception as e:
+            logger.error(f"Job {job_id}: Error downloading file from {video_url}: {str(e)}", exc_info=True)
+            # Return only error message, no available_fonts since this is not font-related
+            return {"error": str(e)}
+
         logger.info(f"Job {job_id}: Video downloaded to {video_path}")
 
         video_resolution = get_video_resolution(video_path)
-        logger.info(f"Job {job_id}: Video resolution detected: {video_resolution[0]}x{video_resolution[1]}")
+        logger.info(f"Job {job_id}: Video resolution detected as {video_resolution[0]}x{video_resolution[1]}")
 
         style_type = style_options.get('style', 'classic').lower()
 
@@ -556,11 +564,14 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
             subtitle_content = process_subtitle_events(transcription_result, style_type, style_options, replace_dict, video_resolution)
             subtitle_type = 'ass'
 
+        # Check for errors in subtitle_content
         if isinstance(subtitle_content, dict) and 'error' in subtitle_content:
             logger.error(f"Job {job_id}: {subtitle_content['error']}")
-            available_fonts = subtitle_content.get('available_fonts', [])
-            error_message = subtitle_content.get('error', 'Unknown font error.')
-            return {"error": error_message, "available_fonts": available_fonts}
+            # Only include available_fonts if it's a font-related error
+            if 'available_fonts' in subtitle_content:
+                return {"error": subtitle_content['error'], "available_fonts": subtitle_content.get('available_fonts', [])}
+            else:
+                return {"error": subtitle_content['error']}
 
         subtitle_filename = f"{job_id}.{subtitle_type}"
         subtitle_path = os.path.join(STORAGE_PATH, subtitle_filename)

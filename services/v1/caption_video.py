@@ -145,35 +145,52 @@ def determine_alignment_code(position_str, alignment_str, x, y):
     """
     Determine the final \an alignment code based on x,y, position, and alignment.
     """
+    logger.info(f"[determine_alignment_code] Inputs: position_str={position_str}, alignment_str={alignment_str}, x={x}, y={y}")
+
     horizontal_map = {
         'left': 1,
         'center': 2,
         'right': 3
     }
 
+    # If x and y are provided, they take absolute precedence
     if x is not None and y is not None:
-        # x,y provided: ignore position, default vertical = middle row (4–6)
-        vertical_code = 4  # middle-left as base
-        horiz_code = horizontal_map.get(alignment_str, 2)  # default center if not given
+        logger.info("[determine_alignment_code] x and y provided, ignoring position and using alignment only.")
+        vertical_code = 4  # Middle row (4–6)
+        horiz_code = horizontal_map.get(alignment_str, 2)  # default to center if no alignment
         an_code = vertical_code + (horiz_code - 1)
+        logger.info(f"[determine_alignment_code] Calculated an_code={an_code} using vertical_code={vertical_code}, horiz_code={horiz_code}")
+        logger.info(f"[determine_alignment_code] Returning (an_code={an_code}, use_pos=True)")
         return an_code, True
 
-    # No x,y: use position
+    # No x,y: use position and possibly alignment
     base_code = POSITION_ALIGNMENT_MAP.get(position_str.lower(), 5)  # default middle_center
+    logger.info(f"[determine_alignment_code] No x,y provided. Base code from position '{position_str}' is {base_code}")
+
     if alignment_str in horizontal_map:
-        # Derive vertical from base_code
-        if base_code in [7,8,9]:
-            vertical_base = 7
-        elif base_code in [4,5,6]:
-            vertical_base = 4
+        logger.info(f"[determine_alignment_code] alignment_str='{alignment_str}' found in horizontal_map. Adjusting horizontal alignment.")
+        # Determine vertical row based on base_code
+        if base_code in [7, 8, 9]:
+            vertical_base = 7  # top row
+            logger.info("[determine_alignment_code] Position is in top row.")
+        elif base_code in [4, 5, 6]:
+            vertical_base = 4  # middle row
+            logger.info("[determine_alignment_code] Position is in middle row.")
         else:
-            vertical_base = 1
+            vertical_base = 1  # bottom row
+            logger.info("[determine_alignment_code] Position is in bottom row.")
+
         horiz_code = horizontal_map[alignment_str]
         an_code = vertical_base + (horiz_code - 1)
+        logger.info(f"[determine_alignment_code] Calculated an_code={an_code} using vertical_base={vertical_base}, horiz_code={horiz_code}")
     else:
         # No alignment given, use base_code as is
+        logger.info("[determine_alignment_code] No alignment_str provided or not in horizontal_map, using base_code directly.")
         an_code = base_code
+
+    logger.info(f"[determine_alignment_code] Returning (an_code={an_code}, use_pos=False)")
     return an_code, False
+
 
 def create_style_line(style_options, video_resolution):
     """
@@ -574,7 +591,10 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
             return {"error": "'settings' should be a dictionary."}
 
         # Normalize settings keys by replacing hyphens with underscores
-        style_options = {k.replace('-', '_'): v for k, v in settings.items()}
+        style_options = {}
+        for k, v in settings.items():
+            k = k.replace('-', '_')  # Replace hyphens with underscores
+            style_options[k] = v
 
         # Ensure 'replace' is a list of dicts with 'find' and 'replace' keys
         if not isinstance(replace, list):

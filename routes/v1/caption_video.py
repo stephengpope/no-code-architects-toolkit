@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "video_url": {"type": "string", "format": "uri"},
-        "captions": {"type": "string"},  # Renamed from "caption"
+        "captions": {"type": "string"},
         "settings": {
             "type": "object",
             "properties": {
@@ -26,11 +26,15 @@ logger = logging.getLogger(__name__)
                 "box_color": {"type": "string"},
                 "all_caps": {"type": "boolean"},
                 "max_words_per_line": {"type": "integer"},
-                "x": {"type": "integer"},            # Added
-                "y": {"type": "integer"},            # Added
+                "x": {"type": "integer"},
+                "y": {"type": "integer"},
                 "position": {
                     "type": "string",
-                    "enum": ["bottom_left", "bottom_center", "bottom_right","middle_left", "middle_center", "middle_right","top_left", "top_center", "top_right"]
+                    "enum": [
+                        "bottom_left", "bottom_center", "bottom_right",
+                        "middle_left", "middle_center", "middle_right",
+                        "top_left", "top_center", "top_right"
+                    ]
                 },
                 "alignment": {
                     "type": "string",
@@ -44,19 +48,17 @@ logger = logging.getLogger(__name__)
                 "strikeout": {"type": "boolean"},
                 "style": {
                     "type": "string",
-                    "enum": ["classic", "karaoke", "highlight","underline", "word_by_word"]
-                    },
+                    "enum": ["classic", "karaoke", "highlight", "underline", "word_by_word"]
+                },
                 "border_style": {"type": "string"},
                 "outline_width": {"type": "integer"},
-                "x": {"type": "integer"},
-                "y": {"type": "integer"},
                 "spacing": {"type": "integer"},
                 "angle": {"type": "integer"},
                 "shadow_offset": {"type": "integer"}
             },
             "additionalProperties": False
         },
-        "replace": {  # Moved to main payload
+        "replace": {
             "type": "array",
             "items": {
                 "type": "object",
@@ -69,7 +71,7 @@ logger = logging.getLogger(__name__)
         },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "language": {"type": "string"}  # Optional: Specify language if needed
+        "language": {"type": "string"}
     },
     "required": ["video_url"],
     "additionalProperties": False
@@ -77,38 +79,28 @@ logger = logging.getLogger(__name__)
 @queue_task_wrapper(bypass_queue=False)
 def caption_video_v1(job_id, data):
     video_url = data['video_url']
-    captions = data.get('captions')  # Renamed from "caption"
-    settings = data.get('settings', {})  # Renamed from "options" and default to dict
-    replace = data.get('replace', [])  # Moved to main payload
+    captions = data.get('captions')
+    settings = data.get('settings', {})
+    replace = data.get('replace', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')
-    language = data.get('language', 'auto')  # Default to 'auto' if not provided
+    language = data.get('language', 'auto')
 
     logger.info(f"Job {job_id}: Received v1 captioning request for {video_url}")
     logger.info(f"Job {job_id}: Settings received: {settings}")
     logger.info(f"Job {job_id}: Replace rules received: {replace}")
 
     try:
-        # Combine 'position' and 'alignment' into a single 'position' string
-        vertical_position = settings.get('position', 'middle')
-        horizontal_alignment = settings.get('alignment', 'center')
-        combined_position = f"{vertical_position}_{horizontal_alignment}"
-
-        # Update settings with the combined position
-        settings['position'] = combined_position
-
-        # Remove the separate 'alignment' key to prevent confusion
-        if 'alignment' in settings:
-            del settings['alignment']
-
-        logger.info(f"Job {job_id}: Combined position set to '{combined_position}'")
-
+        # Do NOT combine position and alignment. Keep them separate.
+        # Just pass settings directly to process_captioning_v1.
+        # This ensures position and alignment remain independent keys.
+        
         # Process video with the enhanced v1 service
         output = process_captioning_v1(video_url, captions, settings, replace, job_id, language)
         
         if isinstance(output, dict) and 'error' in output:
             # Processing error occurred (e.g., unavailable font)
-            return {"error": output['error'], "available_fonts": output.get('available_fonts', [])}, "/v1/caption-video", 400  # Return error response with HTTP 400
+            return {"error": output['error'], "available_fonts": output.get('available_fonts', [])}, "/v1/caption-video", 400
 
         # If processing was successful, output is the file path
         output_path = output
@@ -138,7 +130,6 @@ def caption_video_v1(job_id, data):
             except Exception as e:
                 logger.error(f"Job {job_id}: Failed to send webhook notification - {str(e)}")
 
-        # Return a tuple with content, endpoint, and status code
         return {"output_url": cloud_url}, "/v1/caption-video", 200
 
     except Exception as e:

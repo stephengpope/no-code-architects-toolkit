@@ -49,8 +49,8 @@ def match_fonts():
             # Remove duplicates from font_name and sort them alphabetically
             unique_font_names = sorted(list(set(unique_font_names)))
             
-            for font_name in unique_font_names:
-                print(font_name)
+            # for font_name in unique_font_names:
+            #     print(font_name)
         else:
             logger.error(f"Error matching fonts: {result.stderr}")
     except Exception as e:

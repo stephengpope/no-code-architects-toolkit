@@ -515,6 +515,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
             logger.error(f"Job {job_id}: 'replace' should be a list of objects with 'find' and 'replace' keys.")
             return {"error": "'replace' should be a list of objects with 'find' and 'replace' keys."}
 
+        # Convert 'replace' to a dict
         replace_dict = {}
         for item in replace:
             if 'find' in item and 'replace' in item:
@@ -522,31 +523,33 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
             else:
                 logger.warning(f"Job {job_id}: Invalid replace item {item}. Skipping.")
 
+        # Handle highlight_color -> word_color
         if 'highlight_color' in style_options:
-            logger.warning(f"Job {job_id}: 'highlight_color' is deprecated and merged into 'word_color'.")
+            logger.warning(f"Job {job_id}: 'highlight_color' is deprecated. Using 'word_color' instead.")
             style_options['word_color'] = style_options.pop('highlight_color')
 
-        # Early font check
+        # Check font availability
         font_family = style_options.get('font_family', 'Arial')
         available_fonts = get_available_fonts()
         if font_family not in available_fonts:
             logger.warning(f"Font '{font_family}' not found.")
-            return {'error': f"Font '{font_family}' not available.", 'available_fonts': available_fonts}
+            # Return font error with available_fonts
+            return {"error": f"Font '{font_family}' not available.", "available_fonts": available_fonts}
 
         logger.info(f"Job {job_id}: Font '{font_family}' is available.")
 
-        # Attempt to download file
+        # Download the video
         try:
             video_path = download_file(video_url, STORAGE_PATH)
         except Exception as e:
-            logger.error(f"Job {job_id}: Error downloading file from {video_url}: {str(e)}", exc_info=True)
-            # Return only error message, no available_fonts since this is not font-related
+            logger.error(f"Job {job_id}: Video download error: {str(e)}")
+            # For non-font errors, do NOT include available_fonts
             return {"error": str(e)}
 
         logger.info(f"Job {job_id}: Video downloaded to {video_path}")
 
         video_resolution = get_video_resolution(video_path)
-        logger.info(f"Job {job_id}: Video resolution detected as {video_resolution[0]}x{video_resolution[1]}")
+        logger.info(f"Job {job_id}: Video resolution detected = {video_resolution[0]}x{video_resolution[1]}")
 
         style_type = style_options.get('style', 'classic').lower()
 
@@ -564,21 +567,24 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
             subtitle_content = process_subtitle_events(transcription_result, style_type, style_options, replace_dict, video_resolution)
             subtitle_type = 'ass'
 
-        # Check for errors in subtitle_content
         if isinstance(subtitle_content, dict) and 'error' in subtitle_content:
             logger.error(f"Job {job_id}: {subtitle_content['error']}")
-            # Only include available_fonts if it's a font-related error
+            # Only include available_fonts if actually a font error scenario
             if 'available_fonts' in subtitle_content:
+                # This scenario only occurs if style_line creation failed due to font issues
                 return {"error": subtitle_content['error'], "available_fonts": subtitle_content.get('available_fonts', [])}
             else:
+                # For all other errors, just return the error without available_fonts
                 return {"error": subtitle_content['error']}
 
+        # Save the subtitle file
         subtitle_filename = f"{job_id}.{subtitle_type}"
         subtitle_path = os.path.join(STORAGE_PATH, subtitle_filename)
         with open(subtitle_path, 'w', encoding='utf-8') as f:
             f.write(subtitle_content)
         logger.info(f"Job {job_id}: Subtitle file saved to {subtitle_path}")
 
+        # Prepare output
         output_filename = f"{job_id}_captioned.mp4"
         output_path = os.path.join(STORAGE_PATH, output_filename)
 
@@ -588,7 +594,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
                 vf=f"subtitles='{subtitle_path}'",
                 acodec='copy'
             ).run(overwrite_output=True)
-            logger.info(f"Job {job_id}: FFmpeg processing completed. Output saved to {output_path}")
+            logger.info(f"Job {job_id}: FFmpeg completed. Output saved to {output_path}")
         except ffmpeg.Error as e:
             stderr_output = e.stderr.decode('utf8') if e.stderr else 'Unknown error'
             logger.error(f"Job {job_id}: FFmpeg error: {stderr_output}")

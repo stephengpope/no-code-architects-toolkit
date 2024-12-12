@@ -99,8 +99,13 @@ def caption_video_v1(job_id, data):
         output = process_captioning_v1(video_url, captions, settings, replace, job_id, language)
         
         if isinstance(output, dict) and 'error' in output:
-            # Processing error occurred (e.g., unavailable font)
-            return {"error": output['error'], "available_fonts": output.get('available_fonts', [])}, "/v1/caption-video", 400
+            # Check if this is a font-related error by checking for 'available_fonts' key
+            if 'available_fonts' in output:
+                # Font error scenario
+                return {"error": output['error'], "available_fonts": output['available_fonts']}, "/v1/caption-video", 400
+            else:
+                # Non-font error scenario, do not return available_fonts
+                return {"error": output['error']}, "/v1/caption-video", 400
 
         # If processing was successful, output is the file path
         output_path = output

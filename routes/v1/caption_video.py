@@ -42,7 +42,10 @@ logger = logging.getLogger(__name__)
                 "italic": {"type": "boolean"},
                 "underline": {"type": "boolean"},
                 "strikeout": {"type": "boolean"},
-                "style": {"type": "string"},
+                "style": {
+                    "type": "string",
+                    "enum": ["classic", "karaoke", "highlight","underline", "word_by_word"]
+                    },
                 "border_style": {"type": "string"},
                 "outline_width": {"type": "integer"},
                 "x": {"type": "integer"},

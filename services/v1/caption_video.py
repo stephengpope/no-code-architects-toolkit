@@ -16,7 +16,6 @@ formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(messag
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-# Storage path
 STORAGE_PATH = "/tmp/"
 
 # Mapping of position strings to ASS alignment numbers
@@ -103,16 +102,10 @@ def format_ass_time(seconds):
     return f"{hours}:{minutes:02}:{secs:02}.{centiseconds:02}"
 
 def calculate_position(position, video_width, video_height, x=None, y=None):
-    # Use custom coordinates if provided
+    # If x and y are provided, we use them directly. Otherwise, we just return center by default.
     if x is not None and y is not None:
         logger.info(f"Using custom coordinates: x={x}, y={y}")
         return int(x), int(y)
-    
-    # Fix mapping reference
-    if position in POSITION_ALIGNMENT_MAP:
-        return POSITION_ALIGNMENT_MAP.get(position.lower(), (video_width // 2, video_height // 2))
-    
-    # Default to center
     return video_width // 2, video_height // 2
 
 def process_subtitle_text(text, replace_dict, all_caps, max_words_per_line):
@@ -144,23 +137,48 @@ def split_lines(text, max_words_per_line):
     """Split text into multiple lines based on max_words_per_line."""
     if max_words_per_line <= 0:
         return [text]
-    
     words = text.split()
     lines = [' '.join(words[i:i + max_words_per_line]) for i in range(0, len(words), max_words_per_line)]
     return lines
 
-def create_style_line(style_options, video_resolution, is_karaoke=False, style_type='classic'):
+def determine_alignment_code(position_str, alignment_str, x, y):
+    """
+    Determine the final \an alignment code based on x,y, position, and alignment.
+    """
+    horizontal_map = {
+        'left': 1,
+        'center': 2,
+        'right': 3
+    }
+
+    if x is not None and y is not None:
+        # x,y provided: ignore position, default vertical = middle row (4–6)
+        vertical_code = 4  # middle-left as base
+        horiz_code = horizontal_map.get(alignment_str, 2)  # default center if not given
+        an_code = vertical_code + (horiz_code - 1)
+        return an_code, True
+
+    # No x,y: use position
+    base_code = POSITION_ALIGNMENT_MAP.get(position_str.lower(), 5)  # default middle_center
+    if alignment_str in horizontal_map:
+        # Derive vertical from base_code
+        if base_code in [7,8,9]:
+            vertical_base = 7
+        elif base_code in [4,5,6]:
+            vertical_base = 4
+        else:
+            vertical_base = 1
+        horiz_code = horizontal_map[alignment_str]
+        an_code = vertical_base + (horiz_code - 1)
+    else:
+        # No alignment given, use base_code as is
+        an_code = base_code
+    return an_code, False
+
+def create_style_line(style_options, video_resolution):
     """
     Create the style line for ASS subtitles based on style_options.
-
-    Parameters:
-        style_options (dict): Dictionary containing style settings.
-        video_resolution (tuple): Tuple of (width, height) of the video.
-        is_karaoke (bool): Whether to create a karaoke style.
-        style_type (str): Type of the style ('classic', 'karaoke', 'highlight', 'underline', 'word_by_word').
-
-    Returns:
-        str or dict: ASS style line string or error dictionary if font is unavailable.
+    Includes SecondaryColour after PrimaryColour.
     """
     font_family = style_options.get('font_family', 'Arial')
     available_fonts = get_available_fonts()
@@ -170,7 +188,8 @@ def create_style_line(style_options, video_resolution, is_karaoke=False, style_t
 
     # Convert colors to ASS format
     line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
-    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
+    # Use line_color as secondary_color for simplicity
+    secondary_color = line_color
     outline_color = rgb_to_ass_color(style_options.get('outline_color', '#000000'))
     box_color = rgb_to_ass_color(style_options.get('box_color', '#000000'))
 
@@ -184,56 +203,28 @@ def create_style_line(style_options, video_resolution, is_karaoke=False, style_t
     scale_y = style_options.get('scale_y', '100')
     spacing = style_options.get('spacing', '0')
     angle = style_options.get('angle', '0')
-    border_style = style_options.get('border_style', '1')  # 1: outline+shadow, 3: opaque box
+    border_style = style_options.get('border_style', '1')
     outline_width = style_options.get('outline_width', '2')
     shadow_offset = style_options.get('shadow_offset', '0')
 
-    # Margins
     margin_l = style_options.get('margin_l', '20')
     margin_r = style_options.get('margin_r', '20')
     margin_v = style_options.get('margin_v', '20')
 
-    # Alignment based on position
+    # position sets a default alignment for the style
     position = style_options.get('position', 'middle_center')
     alignment = POSITION_ALIGNMENT_MAP.get(position.lower(), 5)
 
-    # Base style line
-    style_line = "Style: Default"
-    style_line += f",{font_family}"
-    style_line += f",{font_size}"
-    style_line += f",{line_color}"
-    style_line += f",{outline_color}"
-    style_line += f",{box_color}"
-    style_line += f",{bold}"
-    style_line += f",{italic}"
-    style_line += f",{underline}"
-    style_line += f",{strikeout}"
-    style_line += f",{scale_x}"
-    style_line += f",{scale_y}"
-    style_line += f",{spacing}"
-    style_line += f",{angle}"
-    style_line += f",{border_style}"
-    style_line += f",{outline_width}"
-    style_line += f",{shadow_offset}"
-    style_line += f",{alignment}"
-    style_line += f",{margin_l}"
-    style_line += f",{margin_r}"
-    style_line += f",{margin_v}"
-    style_line += ",0"  # Encoding
+    style_line = (f"Style: Default,{font_family},{font_size},{line_color},{secondary_color},"
+                  f"{outline_color},{box_color},{bold},{italic},{underline},{strikeout},"
+                  f"{scale_x},{scale_y},{spacing},{angle},{border_style},{outline_width},"
+                  f"{shadow_offset},{alignment},{margin_l},{margin_r},{margin_v},0")
 
     return style_line
 
-def generate_ass_header(style_options, video_resolution, style_type='classic'):
+def generate_ass_header(style_options, video_resolution):
     """
     Generate the ASS file header with styles.
-
-    Parameters:
-        style_options (dict): Dictionary containing style settings.
-        video_resolution (tuple): Tuple of (width, height) of the video.
-        style_type (str): Type of the style ('classic', 'karaoke', etc.).
-
-    Returns:
-        str or dict: The ASS file header or an error dictionary.
     """
     ass_header = f"""[Script Info]
 ScriptType: v4.00+
@@ -242,508 +233,337 @@ PlayResY: {video_resolution[1]}
 ScaledBorderAndShadow: yes
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 """
-    style_line = create_style_line(style_options, video_resolution, style_type=style_type)
+    style_line = create_style_line(style_options, video_resolution)
     if isinstance(style_line, dict) and 'error' in style_line:
         return style_line
 
     ass_header += style_line + "\n\n[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n"
     return ass_header
 
-def srt_to_ass_classic(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
-    """Convert transcription result to ASS classic style."""
-    # Common settings to check in all style functions
-    style_settings = {
-        'line_color': '#FFFFFF',  # Default white
-        'word_color': '#FFFF00',  # Default yellow
-        'box_color': '#000000',   # Default black
-        'outline_color': '#000000',
-        'all_caps': False,
-        'max_words_per_line': 0,
-        'font_size': None,        # Will be calculated from resolution if None
-        'font_family': 'Arial',
-        'bold': False,
-        'italic': False,
-        'underline': False,
-        'strikeout': False,
-        'outline_width': 2,
-        'shadow_offset': 0,
-        'border_style': 1,
-        'x': None,
-        'y': None,
-        'alignment': 'middle_center'
-    }
-
-    style_options = settings.copy() if settings else {}
-    for key, default in style_settings.items():
-        if key not in style_options:
-            style_options[key] = default
-
-    ass_header = generate_ass_header(style_options, video_resolution, style_type='classic')
-    if isinstance(ass_header, dict) and 'error' in ass_header:
-        return ass_header
-
-    ass_content = ass_header
-
+def handle_classic(transcription_result, style_options, replace_dict, video_resolution):
     max_words_per_line = int(style_options.get('max_words_per_line', 0))
     all_caps = style_options.get('all_caps', False)
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+    font_size = style_options['font_size']
 
-    # Calculate (x, y) based on position or x and y
+    position_str = style_options.get('position', 'middle_center')
+    alignment_str = style_options.get('alignment', None)
     x = style_options.get('x')
     y = style_options.get('y')
-    position = style_options.get('position', 'middle_center')
-    base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
 
-    # Define line height
-    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
+    logger.info(f"[Classic] position={position_str}, alignment={alignment_str}, x={x}, y={y}")
+    an_code, use_pos = determine_alignment_code(position_str, alignment_str, x, y)
+    logger.info(f"[Classic] an_code={an_code}, use_pos={use_pos}")
+
     line_height = int(font_size * 1.2)
+    events = []
 
     for segment in transcription_result['segments']:
         text = segment['text'].strip().replace('\n', ' ')
         lines = split_lines(text, max_words_per_line)
         for line_number, line in enumerate(lines):
             processed_text = process_subtitle_text(line, replace_dict, all_caps, max_words_per_line)
-            y_coord = base_y + (line_number * line_height)
-            position_tag = f"{{\\pos({base_x},{y_coord})}}"
+            if use_pos:
+                line_y = y + (line_number * line_height) if y is not None else (line_number * line_height)
+                position_tag = f"{{\\an{an_code}\\pos({x},{line_y})}}"
+            else:
+                position_tag = f"{{\\an{an_code}}}"
             start_time = format_ass_time(segment['start'])
             end_time = format_ass_time(segment['end'])
-            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{processed_text}\n"
+            events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{processed_text}")
+    return "\n".join(events)
 
-    return ass_content
-
-def srt_to_ass_karaoke(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
-    """Convert transcription result to ASS karaoke style with proper handling of max_words_per_line."""
-    # Common settings to check in all style functions
-    style_settings = {
-        'line_color': '#FFFFFF',  # Default white
-        'word_color': '#FFFF00',  # Default yellow
-        'box_color': '#000000',   # Default black
-        'outline_color': '#000000',
-        'all_caps': False,
-        'max_words_per_line': 0,
-        'font_size': None,        # Will be calculated from resolution if None
-        'font_family': 'Arial',
-        'bold': False,
-        'italic': False,
-        'underline': False,
-        'strikeout': False,
-        'outline_width': 2,
-        'shadow_offset': 0,
-        'border_style': 1,
-        'x': None,
-        'y': None,
-        'alignment': 'middle_center'
-    }
-
-    style_options = settings.copy() if settings else {}
-    for key, default in style_settings.items():
-        if key not in style_options:
-            style_options[key] = default
-
-    ass_header = generate_ass_header(style_options, video_resolution, style_type='karaoke')
-    if isinstance(ass_header, dict) and 'error' in ass_header:
-        return ass_header
-
-    ass_content = ass_header
+def handle_karaoke(transcription_result, style_options, replace_dict, video_resolution):
     max_words_per_line = int(style_options.get('max_words_per_line', 0))
     all_caps = style_options.get('all_caps', False)
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+    font_size = style_options['font_size']
 
-    # Base position
+    position_str = style_options.get('position', 'middle_center')
+    alignment_str = style_options.get('alignment', None)
     x = style_options.get('x')
     y = style_options.get('y')
-    position = style_options.get('position', 'middle_center')
-    base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
-    
-    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
-    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))  # Add this line
-    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
-    line_height = int(font_size * 1.2)
 
-    # Calculate base position and spacing
-    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
+    logger.info(f"[Karaoke] position={position_str}, alignment={alignment_str}, x={x}, y={y}")
+    an_code, use_pos = determine_alignment_code(position_str, alignment_str, x, y)
+    logger.info(f"[Karaoke] an_code={an_code}, use_pos={use_pos}")
+
+    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
     line_height = int(font_size * 1.2)
+    events = []
 
     for segment in transcription_result['segments']:
         words = segment.get('words', [])
         if not words:
             continue
 
-        # Group words for this segment
-        segment_words = []
-        for word_info in words:
-            word = word_info.get('word', '').strip().replace('\n', ' ')
-            if word:
-                segment_words.append(word_info)
-
-        if not segment_words:
-            continue
-
-        # Split into lines but keep as one dialogue event
-        lines_content = []
         if max_words_per_line > 0:
+            lines_content = []
             current_line = []
             current_line_words = 0
-            
-            for word_info in segment_words:
-                word = word_info.get('word', '').strip().replace('\n', ' ')
-                word = process_subtitle_text(word, replace_dict, all_caps, max_words_per_line=0)
-                duration_cs = int(round((word_info['end'] - word_info['start']) * 100))
+            for w_info in words:
+                word = w_info.get('word', '').strip().replace('\n', ' ')
+                word = process_subtitle_text(word, replace_dict, all_caps, 0)
+                duration_cs = int(round((w_info['end'] - w_info['start']) * 100))
                 highlighted_word = f"{{\\k{duration_cs}}}{word} "
-                
                 current_line.append(highlighted_word)
                 current_line_words += 1
-                
                 if current_line_words >= max_words_per_line:
                     lines_content.append(''.join(current_line).strip())
                     current_line = []
                     current_line_words = 0
-                    
             if current_line:
                 lines_content.append(''.join(current_line).strip())
         else:
-            # Single line karaoke
             line_content = []
-            for word_info in segment_words:
-                word = word_info.get('word', '').strip().replace('\n', ' ')
-                word = process_subtitle_text(word, replace_dict, all_caps, max_words_per_line=0)
-                duration_cs = int(round((word_info['end'] - word_info['start']) * 100))
+            for w_info in words:
+                word = w_info.get('word', '').strip().replace('\n', ' ')
+                word = process_subtitle_text(word, replace_dict, all_caps, 0)
+                duration_cs = int(round((w_info['end'] - w_info['start']) * 100))
                 highlighted_word = f"{{\\k{duration_cs}}}{word} "
                 line_content.append(highlighted_word)
             lines_content = [''.join(line_content).strip()]
 
-        # Join lines with \N and create single dialogue event
-        karaoke_text = '\\N'.join(lines_content)
-        position_tag = f"{{\\pos({base_x},{base_y})}}"
-        
-        # Before adding the dialogue line, initialize times
-        start_time = format_ass_time(segment_words[0]['start'])
-        end_time = format_ass_time(segment_words[-1]['end'])
-
-        ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{karaoke_text}{{\\c{line_color}}}\n"
-
-    return ass_content
-
-def srt_to_ass_highlight(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
-    """Convert transcription result to ASS format with highlight style."""
-    # Common settings to check in all style functions
-    style_settings = {
-        'line_color': '#FFFFFF',  # Default white
-        'word_color': '#FFFF00',  # Default yellow
-        'box_color': '#000000',   # Default black
-        'outline_color': '#000000',
-        'all_caps': False,
-        'max_words_per_line': 0,
-        'font_size': None,        # Will be calculated from resolution if None
-        'font_family': 'Arial',
-        'bold': False,
-        'italic': False,
-        'underline': False,
-        'strikeout': False,
-        'outline_width': 2,
-        'shadow_offset': 0,
-        'border_style': 1,
-        'x': None,
-        'y': None,
-        'alignment': 'middle_center'
-    }
-
-    style_options = settings.copy() if settings else {}
-    for key, default in style_settings.items():
-        if key not in style_options:
-            style_options[key] = default
-
-    ass_header = generate_ass_header(style_options, video_resolution, style_type='highlight')
-    if isinstance(ass_header, dict) and 'error' in ass_header:
-        return ass_header
-
-    ass_content = ass_header
-    max_words_per_line = int(style_options.get('max_words_per_line', 0))
-    all_caps = style_options.get('all_caps', False)
-
-    # Base position
-    x = style_options.get('x')
-    y = style_options.get('y')
-    position = style_options.get('position', 'middle_center')
-    base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
-    position_tag = f"{{\\pos({base_x},{base_y})}}"
-
-    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
-    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
-
-    for segment in transcription_result['segments']:
-        words = segment.get('words', [])
-        if not words:
-            continue
-
-        # Group words and process text
-        segment_words = []
-        processed_words = []
-        for word_info in words:
-            word = word_info.get('word', '').strip().replace('\n', ' ')
-            if word:
-                processed_word = process_subtitle_text(word, replace_dict, all_caps, max_words_per_line=0)
-                segment_words.append(word_info)
-                processed_words.append(processed_word)
-
-        if not segment_words:
-            continue
-
-        # Split into lines
-        lines = []
-        if max_words_per_line > 0:
-            for i in range(0, len(processed_words), max_words_per_line):
-                lines.append(processed_words[i:i + max_words_per_line])
+        dialogue_text = '\\N'.join(lines_content)
+        if use_pos:
+            position_tag = f"{{\\an{an_code}\\pos({x},{y})}}"
         else:
-            lines = [processed_words]
+            position_tag = f"{{\\an{an_code}}}"
 
-        # Process each word timing
-        for i, word_info in enumerate(segment_words):
-            # Find which line and position the word is in
-            word_line_index = i // max_words_per_line if max_words_per_line > 0 else 0
-            word_index_in_line = i % max_words_per_line if max_words_per_line > 0 else i
+        start_time = format_ass_time(words[0]['start'])
+        end_time = format_ass_time(words[-1]['end'])
+        events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{dialogue_text}")
+    return "\n".join(events)
 
-            # Create highlighted version of all lines
-            highlighted_lines = []
-            for line_idx, line in enumerate(lines):
-                if line_idx == word_line_index:
-                    # This is the line containing the current word
-                    highlighted_words = []
-                    for w_idx, w in enumerate(line):
-                        if w_idx == word_index_in_line:
-                            highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
-                        else:
-                            highlighted_words.append(w)  # Use default line color, remove extra color tags
-                    highlighted_lines.append(' '.join(highlighted_words))
-                else:
-                    # Other lines remain unchanged
-                    highlighted_lines.append(' '.join(line))
-
-            # Join lines with \N
-            full_text = '\\N'.join(highlighted_lines)
-
-            # Add dialogue event
-            start_time = format_ass_time(word_info['start'])
-            end_time = format_ass_time(word_info['end'])
-
-            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}\n"
-
-    return ass_content
-
-def srt_to_ass_underline(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
-    """Convert transcription result to ASS format with an underline style."""
-    # Common settings to check in all style functions
-    style_settings = {
-        'line_color': '#FFFFFF',  # Default white
-        'word_color': '#FFFF00',  # Default yellow
-        'box_color': '#000000',   # Default black
-        'outline_color': '#000000',
-        'all_caps': False,
-        'max_words_per_line': 0,
-        'font_size': None,        # Will be calculated from resolution if None
-        'font_family': 'Arial',
-        'bold': False,
-        'italic': False,
-        'underline': False,
-        'strikeout': False,
-        'outline_width': 2,
-        'shadow_offset': 0,
-        'border_style': 1,
-        'x': None,
-        'y': None,
-        'alignment': 'middle_center'
-    }
-
-    style_options = settings.copy() if settings else {}
-    for key, default in style_settings.items():
-        if key not in style_options:
-            style_options[key] = default
-
-    ass_header = generate_ass_header(style_options, video_resolution, style_type='underline')
-    if isinstance(ass_header, dict) and 'error' in ass_header:
-        return ass_header
-
-    ass_content = ass_header
+def handle_highlight(transcription_result, style_options, replace_dict, video_resolution):
     max_words_per_line = int(style_options.get('max_words_per_line', 0))
     all_caps = style_options.get('all_caps', False)
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+    font_size = style_options['font_size']
 
-    # Base position
-    x = style_options.get('x')
-    y = style_options.get('y')
-    position = style_options.get('position', 'middle_center')
-    base_x, base_y = calculate_position(position, video_resolution[0], video_resolution[1], x, y)
-    position_tag = f"{{\\pos({base_x},{base_y})}}"
-    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
-
-    for segment in transcription_result['segments']:
-        words = segment.get('words', [])
-        if not words:
-            continue
-
-        # Group words and process text
-        segment_words = []
-        processed_words = []
-        for word_info in words:
-            word = word_info.get('word', '').strip().replace('\n', ' ')
-            if word:
-                processed_word = process_subtitle_text(word, replace_dict, all_caps, max_words_per_line=0)
-                segment_words.append(word_info)
-                processed_words.append(processed_word)
-
-        if not segment_words:
-            continue
-
-        # Split into lines
-        lines = []
-        if max_words_per_line > 0:
-            for i in range(0, len(processed_words), max_words_per_line):
-                lines.append(processed_words[i:i + max_words_per_line])
-        else:
-            lines = [processed_words]
-
-        # Process each word timing
-        for i, word_info in enumerate(segment_words):
-            # Find which line and position the word is in
-            word_line_index = i // max_words_per_line if max_words_per_line > 0 else 0
-            word_index_in_line = i % max_words_per_line if max_words_per_line > 0 else i
-
-            # Create underlined version of all lines
-            underlined_lines = []
-            for line_idx, line in enumerate(lines):
-                if line_idx == word_line_index:
-                    # This is the line containing the current word
-                    words_in_line = []
-                    for w_idx, w in enumerate(line):
-                        if w_idx == word_index_in_line:
-                            # This is the current word - underline it
-                            words_in_line.append(f"{{\\u1}}{w}{{\\u0}}")
-                        else:
-                            # Other words without underline
-                            words_in_line.append(w)
-                    underlined_lines.append(' '.join(words_in_line))
-                else:
-                    # Other lines remain unchanged
-                    underlined_lines.append(' '.join(line))
-
-            # Join lines with \N
-            full_text = '\\N'.join(underlined_lines)
-
-            # Add dialogue event
-            start_time = format_ass_time(word_info['start'])
-            end_time = format_ass_time(word_info['end'])
-
-            ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}\n"
-
-    return ass_content
-
-def srt_to_ass_word_by_word(transcription_result, settings=None, replace_dict=None, video_resolution=(384, 288)):
-    """Convert transcription result to ASS format with one word displayed at a time."""
-    # Common settings to check in all style functions
-    style_settings = {
-        'line_color': '#FFFFFF',  # Default white
-        'word_color': '#FFFF00',  # Default yellow
-        'box_color': '#000000',   # Default black
-        'outline_color': '#000000',
-        'all_caps': False,
-        'max_words_per_line': 0,
-        'font_size': None,        # Will be calculated from resolution if None
-        'font_family': 'Arial',
-        'bold': False,
-        'italic': False,
-        'underline': False,
-        'strikeout': False,
-        'outline_width': 2,
-        'shadow_offset': 0,
-        'border_style': 1,
-        'x': None,
-        'y': None,
-        'alignment': 'middle_center'
-    }
-
-    style_options = settings.copy() if settings else {}
-    for key, default in style_settings.items():
-        if key not in style_options:
-            style_options[key] = default
-
-    ass_header = generate_ass_header(style_options, video_resolution, style_type='word_by_word')
-    if isinstance(ass_header, dict) and 'error' in ass_header:
-        return ass_header
-
-    ass_content = ass_header
-    max_words_per_line = int(style_options.get('max_words_per_line', 0))
-    all_caps = style_options.get('all_caps', False)
-
-    # Calculate base position and spacing
-    font_size = style_options.get('font_size', int(video_resolution[1] * 0.05))
-    line_height = int(font_size * 1.2)
     position_str = style_options.get('position', 'middle_center')
-    base_x, base_y = calculate_position(position_str, video_resolution[0], video_resolution[1],
-                              style_options.get('x'), style_options.get('y'))
+    alignment_str = style_options.get('alignment', None)
+    x = style_options.get('x')
+    y = style_options.get('y')
 
-    # Add line_color initialization
-    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
+    logger.info(f"[Highlight] position={position_str}, alignment={alignment_str}, x={x}, y={y}")
+    an_code, use_pos = determine_alignment_code(position_str, alignment_str, x, y)
+    logger.info(f"[Highlight] an_code={an_code}, use_pos={use_pos}")
+
     word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
+    events = []
+
+    for segment in transcription_result['segments']:
+        words = segment.get('words', [])
+        if not words:
+            continue
+        processed_words = []
+        for w_info in words:
+            w = w_info.get('word', '').strip().replace('\n', ' ')
+            w = process_subtitle_text(w, replace_dict, all_caps, 0)
+            if w:
+                processed_words.append((w, w_info['start'], w_info['end']))
+
+        if not processed_words:
+            continue
+
+        if max_words_per_line > 0:
+            line_sets = [processed_words[i:i+max_words_per_line] for i in range(0, len(processed_words), max_words_per_line)]
+        else:
+            line_sets = [processed_words]
+
+        for line_set in line_sets:
+            for idx, (word, w_start, w_end) in enumerate(line_set):
+                highlighted_lines = []
+                line_words = []
+                for w_idx, (w_text, _, _) in enumerate(line_set):
+                    if w_idx == idx:
+                        line_words.append(f"{{\\c{word_color}}}{w_text}{{\\c{line_color}}}")
+                    else:
+                        line_words.append(w_text)
+                highlighted_lines.append(' '.join(line_words))
+                full_text = '\\N'.join(highlighted_lines)
+
+                if use_pos:
+                    position_tag = f"{{\\an{an_code}\\pos({x},{y})}}"
+                else:
+                    position_tag = f"{{\\an{an_code}}}"
+
+                start_time = format_ass_time(w_start)
+                end_time = format_ass_time(w_end)
+                events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}")
+    return "\n".join(events)
+
+def handle_underline(transcription_result, style_options, replace_dict, video_resolution):
+    max_words_per_line = int(style_options.get('max_words_per_line', 0))
+    all_caps = style_options.get('all_caps', False)
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+    font_size = style_options['font_size']
+
+    position_str = style_options.get('position', 'middle_center')
+    alignment_str = style_options.get('alignment', None)
+    x = style_options.get('x')
+    y = style_options.get('y')
+
+    logger.info(f"[Underline] position={position_str}, alignment={alignment_str}, x={x}, y={y}")
+    an_code, use_pos = determine_alignment_code(position_str, alignment_str, x, y)
+    logger.info(f"[Underline] an_code={an_code}, use_pos={use_pos}")
+
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
+    events = []
 
     for segment in transcription_result['segments']:
         words = segment.get('words', [])
         if not words:
             continue
 
-        # Group words for max_words_per_line
-        grouped_words = []
+        processed_words = []
+        for w_info in words:
+            w = w_info.get('word', '').strip().replace('\n', ' ')
+            w = process_subtitle_text(w, replace_dict, all_caps, 0)
+            if w:
+                processed_words.append((w, w_info['start'], w_info['end']))
+
+        if not processed_words:
+            continue
+
         if max_words_per_line > 0:
-            for i in range(0, len(words), max_words_per_line):
-                grouped_words.append(words[i:i + max_words_per_line])
+            line_sets = [processed_words[i:i+max_words_per_line] for i in range(0, len(processed_words), max_words_per_line)]
         else:
-            grouped_words = [words]  # Single group if no line limit
+            line_sets = [processed_words]
 
-        # Process each group of words
+        for line_set in line_sets:
+            for idx, (word, w_start, w_end) in enumerate(line_set):
+                underlined_lines = []
+                line_words = []
+                for w_idx, (w_text, _, _) in enumerate(line_set):
+                    if w_idx == idx:
+                        line_words.append(f"{{\\u1}}{w_text}{{\\u0}}")
+                    else:
+                        line_words.append(w_text)
+                underlined_lines.append(' '.join(line_words))
+                full_text = '\\N'.join(underlined_lines)
+
+                if use_pos:
+                    position_tag = f"{{\\an{an_code}\\pos({x},{y})}}"
+                else:
+                    position_tag = f"{{\\an{an_code}}}"
+
+                start_time = format_ass_time(w_start)
+                end_time = format_ass_time(w_end)
+                events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}")
+    return "\n".join(events)
+
+def handle_word_by_word(transcription_result, style_options, replace_dict, video_resolution):
+    max_words_per_line = int(style_options.get('max_words_per_line', 0))
+    all_caps = style_options.get('all_caps', False)
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+    font_size = style_options['font_size']
+
+    position_str = style_options.get('position', 'middle_center')
+    alignment_str = style_options.get('alignment', None)
+    x = style_options.get('x')
+    y = style_options.get('y')
+
+    logger.info(f"[Word-by-Word] position={position_str}, alignment={alignment_str}, x={x}, y={y}")
+    an_code, use_pos = determine_alignment_code(position_str, alignment_str, x, y)
+    logger.info(f"[Word-by-Word] an_code={an_code}, use_pos={use_pos}")
+
+    line_color = rgb_to_ass_color(style_options.get('line_color', '#FFFFFF'))
+    word_color = rgb_to_ass_color(style_options.get('word_color', '#FFFF00'))
+    line_height = int(font_size * 1.2)
+    events = []
+
+    for segment in transcription_result['segments']:
+        words = segment.get('words', [])
+        if not words:
+            continue
+
+        if max_words_per_line > 0:
+            grouped_words = [words[i:i+max_words_per_line] for i in range(0, len(words), max_words_per_line)]
+        else:
+            grouped_words = [words]
+
         for line_num, word_group in enumerate(grouped_words):
-            y_coord = base_y + (line_num * line_height)
-            position_tag = f"{{\\pos({base_x},{y_coord})}}"
-
-            # Process each word in the group
-            for word_info in word_group:
-                word = word_info.get('word', '').strip().replace('\n', ' ')
-                if not word:
+            for w_info in word_group:
+                w = w_info.get('word', '').strip().replace('\n', ' ')
+                if not w:
                     continue
-                
-                word = process_subtitle_text(word, replace_dict, all_caps, max_words_per_line=0)
-                start_time = format_ass_time(word_info['start'])
-                end_time = format_ass_time(word_info['end'])
-                
-                ass_content += f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{word}\n"
+                w = process_subtitle_text(w, replace_dict, all_caps, 0)
+                start_time = format_ass_time(w_info['start'])
+                end_time = format_ass_time(w_info['end'])
 
-    return ass_content
+                if use_pos:
+                    y_coord = y + (line_num * line_height) if y is not None else (line_num * line_height)
+                    position_tag = f"{{\\an{an_code}\\pos({x},{y_coord})}}"
+                else:
+                    position_tag = f"{{\\an{an_code}}}"
+
+                events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{word_color}}}{w}")
+    return "\n".join(events)
+
+STYLE_HANDLERS = {
+    'classic': handle_classic,
+    'karaoke': handle_karaoke,
+    'highlight': handle_highlight,
+    'underline': handle_underline,
+    'word_by_word': handle_word_by_word
+}
+
+def srt_to_ass(transcription_result, style_type, settings, replace_dict, video_resolution):
+    """
+    Convert transcription result to ASS format based on specified style type.
+    """
+    default_style_settings = {
+        'line_color': '#FFFFFF',
+        'word_color': '#FFFF00',
+        'box_color': '#000000',
+        'outline_color': '#000000',
+        'all_caps': False,
+        'max_words_per_line': 0,
+        'font_size': None,
+        'font_family': 'Arial',
+        'bold': False,
+        'italic': False,
+        'underline': False,
+        'strikeout': False,
+        'outline_width': 2,
+        'shadow_offset': 0,
+        'border_style': 1,
+        'x': None,
+        'y': None,
+        'position': 'middle_center',
+        'alignment': None
+    }
+    style_options = {**default_style_settings, **settings}
+
+    # Ensure font_size is numeric if None
+    if style_options['font_size'] is None:
+        style_options['font_size'] = int(video_resolution[1] * 0.05)
+
+    ass_header = generate_ass_header(style_options, video_resolution)
+    if isinstance(ass_header, dict) and 'error' in ass_header:
+        return ass_header
+
+    handler = STYLE_HANDLERS.get(style_type.lower())
+    if not handler:
+        logger.warning(f"Unknown style '{style_type}'. Defaulting to 'classic'.")
+        handler = handle_classic
+
+    dialogue_lines = handler(transcription_result, style_options, replace_dict, video_resolution)
+
+    return ass_header + dialogue_lines + "\n"
 
 def process_subtitle_events(transcription_result, style_type, settings, replace_dict, video_resolution):
-    """
-    Process transcription result into ASS subtitle content based on the selected style.
-
-    Parameters:
-        transcription_result (dict): The transcription result containing segments and words.
-        style_type (str): The type of subtitle style ('classic', 'karaoke', 'highlight', 'underline', 'word_by_word').
-        settings (dict): Style settings.
-        replace_dict (dict): Dictionary for text replacements.
-        video_resolution (tuple): (width, height) of the video.
-
-    Returns:
-        str or dict: The ASS subtitle content or an error dictionary.
-    """
-    style_functions = {
-        'classic': srt_to_ass_classic,
-        'karaoke': srt_to_ass_karaoke,
-        'highlight': srt_to_ass_highlight,
-        'underline': srt_to_ass_underline,
-        'word_by_word': srt_to_ass_word_by_word
-    }
-
-    func = style_functions.get(style_type.lower())
-    if not func:
-        logger.warning(f"Unknown style '{style_type}'. Defaulting to 'classic'.")
-        func = srt_to_ass_classic
-
-    return func(transcription_result, settings=settings, replace_dict=replace_dict, video_resolution=video_resolution)
+    return srt_to_ass(transcription_result, style_type, settings, replace_dict, video_resolution)
 
 def process_captioning_v1(video_url, captions, settings, replace, job_id, language='auto'):
     """Enhanced v1 captioning process with transcription fallback and multiple styles."""
@@ -772,20 +592,18 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
         # Handle deprecated 'highlight_color' by merging it into 'word_color'
         if 'highlight_color' in style_options:
             logger.warning(f"Job {job_id}: 'highlight_color' is deprecated and has been merged into 'word_color'. Using 'word_color' instead.")
-            # Override 'word_color' with 'highlight_color' if needed
             style_options['word_color'] = style_options.pop('highlight_color')
 
         # Early Font Availability Check
         font_family = style_options.get('font_family', 'Arial')
         available_fonts = get_available_fonts()
-        if (font_family not in available_fonts):
+        if font_family not in available_fonts:
             logger.warning(f"Font '{font_family}' not found. Available fonts: {', '.join(available_fonts)}")
             return {'error': f"Font '{font_family}' not available.", 'available_fonts': available_fonts}
 
         logger.info(f"Job {job_id}: Font '{font_family}' is available.")
 
         # Proceed with downloading and processing the video
-        # Download video
         video_path = download_file(video_url, STORAGE_PATH)
         logger.info(f"Job {job_id}: Video downloaded to {video_path}")
 
@@ -845,11 +663,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
         except ffmpeg.Error as e:
             stderr_output = e.stderr.decode('utf8') if e.stderr else 'Unknown error'
             logger.error(f"Job {job_id}: FFmpeg error: {stderr_output}")
-            raise
-
-        # Optionally, clean up temporary files
-        # os.remove(video_path)
-        # os.remove(subtitle_path)
+            return {"error": f"FFmpeg error: {stderr_output}"}
 
         return output_path
 

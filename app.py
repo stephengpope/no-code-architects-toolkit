@@ -138,10 +138,7 @@ def create_app():
     from routes.v1.media.transcribe import v1_media_transcribe_bp
     from routes.v1.media.transform.media_to_mp3 import v1_media_transform_mp3_bp
     from routes.v1.video.concatenate import v1_video_concatenate_bp
-<<<<<<< HEAD
-=======
     from routes.v1.video.caption_video import v1_video_caption_bp
->>>>>>> v1-caption-video
     from routes.v1.image.transform.image_to_video import v1_image_transform_video_bp
     from routes.v1.toolkit.test import v1_toolkit_test_bp
     from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
@@ -151,10 +148,7 @@ def create_app():
     app.register_blueprint(v1_media_transcribe_bp)
     app.register_blueprint(v1_media_transform_mp3_bp)
     app.register_blueprint(v1_video_concatenate_bp)
-<<<<<<< HEAD
-=======
     app.register_blueprint(v1_video_caption_bp)
->>>>>>> v1-caption-video
     app.register_blueprint(v1_image_transform_video_bp)
     app.register_blueprint(v1_toolkit_test_bp)
     app.register_blueprint(v1_toolkit_auth_bp)

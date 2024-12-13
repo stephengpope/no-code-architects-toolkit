@@ -1,16 +1,16 @@
 from flask import Blueprint, jsonify
 from app_utils import validate_payload, queue_task_wrapper
 import logging
-from services.v1.caption_video import process_captioning_v1
+from services.v1.video.caption_video import process_captioning_v1
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 import os
 import requests  # Ensure requests is imported for webhook handling
 
-v1_caption_bp = Blueprint('v1_caption', __name__)
+v1_video_caption_bp = Blueprint('v1_video/caption', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_caption_bp.route('/v1/caption-video', methods=['POST'])
+@v1_video_caption_bp.route('/v1/video/caption', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
@@ -23,7 +23,6 @@ logger = logging.getLogger(__name__)
                 "line_color": {"type": "string"},
                 "word_color": {"type": "string"},
                 "outline_color": {"type": "string"},
-                "box_color": {"type": "string"},
                 "all_caps": {"type": "boolean"},
                 "max_words_per_line": {"type": "integer"},
                 "x": {"type": "integer"},
@@ -50,7 +49,6 @@ logger = logging.getLogger(__name__)
                     "type": "string",
                     "enum": ["classic", "karaoke", "highlight", "underline", "word_by_word"]
                 },
-                "border_style": {"type": "string"},
                 "outline_width": {"type": "integer"},
                 "spacing": {"type": "integer"},
                 "angle": {"type": "integer"},
@@ -105,7 +103,7 @@ def caption_video_v1(job_id, data):
                 return {"error": output['error'], "available_fonts": output['available_fonts']}, "/v1/caption-video", 400
             else:
                 # Non-font error scenario, do not return available_fonts
-                return {"error": output['error']}, "/v1/caption-video", 400
+                return {"error": output['error']}, "/v1/video/caption", 400
 
         # If processing was successful, output is the file path
         output_path = output
@@ -119,24 +117,8 @@ def caption_video_v1(job_id, data):
         os.remove(output_path)
         logger.info(f"Job {job_id}: Cleaned up local output file")
 
-        # Optionally, send a webhook notification
-        if webhook_url:
-            payload = {
-                "job_id": job_id,
-                "status": "completed",
-                "output_url": cloud_url
-            }
-            try:
-                response = requests.post(webhook_url, json=payload)
-                if response.status_code == 200:
-                    logger.info(f"Job {job_id}: Webhook notification sent successfully")
-                else:
-                    logger.warning(f"Job {job_id}: Webhook notification failed with status code {response.status_code}")
-            except Exception as e:
-                logger.error(f"Job {job_id}: Failed to send webhook notification - {str(e)}")
-
-        return {"output_url": cloud_url}, "/v1/caption-video", 200
+        return cloud_url, "/v1/video/caption", 200
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error during captioning process - {str(e)}", exc_info=True)
-        return {"error": str(e)}, "/v1/caption-video", 500
+        return {"error": str(e)}, "/v1/video/caption", 500

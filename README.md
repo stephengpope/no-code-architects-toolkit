@@ -3,11 +3,9 @@
 
 # No-Code Architects Toolkit
 
-Are you tired of wasting thousands of dollars on API subscriptions to support all your automations?
+Tired of wasting thousands of dollars on API subscriptions to support all your automations? What if there was a free alternative?
 
-What if there was a free alternative?
-
-The No-Code Architects Toolkit is a robust media processing API built with Flask, providing services like audio conversion, video manipulation, transcriptions, translations, captioning, and cloud file management on Google Drive, S3, GCP Storage, Dropbox. This toolkit is designed for easy deployment via Docker, Google Run Platform (GCP), Digital Ocean or any Docker host.
+The No-Code Architects Toolkit API processes different types of media. It is built using Flask. The API can convert audio files. It can manipulate video files. It creates transcriptions of content. It translates content between languages. It adds captions to videos. The API manages files across multiple cloud services. These services include Google Drive, Amazon S3, Google Cloud Storage, and Dropbox. You can deploy this toolkit in several ways. It works with Docker. It runs on Google Cloud Platform. It functions on Digital Ocean. You can use it with any system that hosts Docker.
 
 Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2Video, PDF(dot)co, Placid and OCodeKit.
 

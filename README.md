@@ -9,6 +9,10 @@ The No-Code Architects Toolkit API processes different types of media. It is bui
 
 Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2Video, PDF(dot)co, Placid and OCodeKit.
 
+## No-Code Architects Community
+
+Join a supportive community and get tech support inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**.
+
 ---
 
 ## Features of the No-Code Architects Toolkit API

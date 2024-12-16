@@ -108,7 +108,7 @@ The following environment variables are necessary for the application to functio
 
 ## Installation Instructions
 
-Watch these **[detailed video instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
+Watch these **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
 
 - **Docker Image**: stephengpope/no-code-architects-toolkit:latest
 

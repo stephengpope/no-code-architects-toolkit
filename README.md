@@ -11,7 +11,9 @@ Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2V
 
 ## 👥 No-Code Architects Community
 
-Want help? Join a supportive community and get dedicated tech support inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**.
+Want help?
+
+Join a supportive community and get dedicated tech support inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**.
 
 ---
 
@@ -106,18 +108,109 @@ The following environment variables are necessary for the application to functio
 
 ---
 
-## Installation Instructions
+## 🎥 Video Installation Instructions
 
 Watch these **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
 
 - **Docker Image**: stephengpope/no-code-architects-toolkit:latest
 
----
-
 ### Resources
 
 - **[Postman Template](https://bit.ly/49Gkh61)**
 - **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** 
+
+---
+
+# **Installing the NCA Toolkit API on Google Cloud Platform (GCP)**
+
+This guide walks you through the steps to install the NCA Toolkit API on GCP.
+
+---
+
+## **Prerequisites**
+- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don’t already have one.
+  - New users receive $300 in free credits.
+- Basic knowledge of GCP services such as Cloud Run and Cloud Storage.
+- A terminal or code editor for managing files.
+
+---
+
+## **Step 1: Create a Google Cloud Project**
+1. Log into the [GCP Console](https://console.cloud.google.com/).
+2. Click on the **Project Selector** in the top navigation bar and select **New Project**.
+3. Enter a project name, such as `NCA Toolkit Project`.
+4. Click **Create**.
+
+---
+
+## **Step 2: Enable Required APIs**
+Enable the following APIs:
+- **Cloud Storage API**
+- **Cloud Storage JSON API**
+- **Cloud Run API**
+
+### **How to Enable APIs:**
+1. In the GCP Console, navigate to **APIs & Services** > **Enable APIs and Services**.
+2. Search for each API, click on it, and enable it.
+
+---
+
+## **Step 3: Create a Service Account**
+1. Navigate to **IAM & Admin** > **Service Accounts** in the GCP Console.
+2. Click **+ Create Service Account**.
+   - Enter a name (e.g., `NCA Toolkit Service Account`).
+3. Assign the following roles to the service account:
+   - **Storage Admin**
+   - **Viewer**
+4. Click **Done** to create the service account.
+5. Open the service account details and navigate to the **Keys** tab.
+   - Click **Add Key** > **Create New Key**.
+   - Choose **JSON** format, download the file, and store it securely.
+
+---
+
+## **Step 4: Create a Cloud Storage Bucket**
+1. Navigate to **Storage** > **Buckets** in the GCP Console.
+2. Click **+ Create Bucket**.
+   - Choose a unique bucket name (e.g., `nca-toolkit-bucket`).
+   - Leave default settings, but:
+     - Uncheck **Enforce public access prevention**.
+     - Set **Access Control** to **Uniform**.
+3. Click **Create** to finish.
+4. Go to the bucket permissions, and add **allUsers** as a principal with the role:
+   - **Storage Object Viewer**.
+5. Save changes.
+
+---
+
+## **Step 5: Deploy the Toolkit on Cloud Run**
+1. Navigate to **Cloud Run** in the GCP Console.
+2. Click **Create Service** and configure the deployment:
+   - **Container Image URL**: Use the toolkit's Docker Hub image URL (refer to the GitHub repository).
+   - **Allow unauthenticated invocations**.
+   - **CPU Allocation**: Set to **Always Allocated**.
+   - **Memory and CPU**: Allocate **16 GB memory** and **4 CPUs**.
+
+3. Under **Variables & Secrets**, set the following environment variables:
+   - `API_KEY`: Set a secure key (e.g., `Test123`).
+   - `GCP_BUCKET_NAME`: Your Cloud Storage bucket name (e.g., `nca-toolkit-bucket`).
+   - `GCP_SA_CREDENTIALS`: Paste the contents of the JSON file downloaded in **Step 3**.
+
+4. Save the settings and deploy the service.
+
+---
+
+## **Step 6: Test the Deployment**
+
+1. Install **[Postman Template](https://bit.ly/49Gkh61)** on your computer.
+2. Import the API example requests from the NCA Toolkit GitHub repository.
+3. Configure two environment variables in Postman:
+   - `base_url`: Your deployed Cloud Run service URL.
+   - `x-api-key`: The API key you configured in **Step 5**.
+4. Use the example requests to validate that the API is functioning correctly.
+5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to learn more.
+
+By following these steps, your NCA Toolkit API should be successfully deployed on Google Cloud Platform.
 
 ---
 

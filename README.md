@@ -118,7 +118,7 @@ The following environment variables are necessary for the application to functio
 
 ---
 
-# **Installing the NCA Toolkit API on Google Cloud Platform (GCP)**
+# **Installing on the Google Cloud Platform (GCP)**
 
 ## 🎥 Video Instructions
 

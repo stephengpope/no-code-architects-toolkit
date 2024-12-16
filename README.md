@@ -13,13 +13,6 @@ Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2V
 
 ## Features of the No-Code Architects Toolkit API
 
-### General
-- Simplifies media and data processing tasks with a variety of endpoints.
-- Supports secure authentication and seamless integration with Google Drive and cloud storage.
-- Customizable FFmpeg-based media manipulation.
-
----
-
 ### Core Features
 #### 1. **Authentication**
    - Endpoint: `/v1/toolkit/authenticate`

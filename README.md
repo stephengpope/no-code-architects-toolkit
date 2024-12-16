@@ -11,9 +11,7 @@ Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2V
 
 ## 👥 No-Code Architects Community
 
-Want help?
-
-Join a supportive community and get dedicated tech support inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**.
+Want help? Join a supportive community and get dedicated tech support inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**.
 
 The ONLY community where you learn to leverage AI automation and content to grow your business (and streamline your biz).
 

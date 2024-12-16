@@ -145,7 +145,7 @@ Each feature is supported by robust payload validation and detailed API document
 - Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 
 - Missing any required variables will result in errors during runtime.
 
-### Run the Docker Container**:
+### Run the Docker Container:
 
    ```bash
    docker run -d -p 8080:8080 \
@@ -157,7 +157,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
-# **Installing on the Google Cloud Platform (GCP)**
+# Installing on the Google Cloud Platform (GCP)
 
 ## 🎥 Video Instructions
 

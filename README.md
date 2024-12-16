@@ -1,7 +1,9 @@
 
 ![Original Logo Symbol](https://github.com/user-attachments/assets/75173cf4-2502-4710-998b-6b81740ae1bd)
 
-# No-Code Architects Toolkit by Stephen G. Pope
+# No-Code Architects Toolkit API 
+
+Created by Stephen G. Pope.
 
 Tired of wasting thousands of dollars on API subscriptions to support all your automations? What if there was a free alternative?
 

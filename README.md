@@ -122,7 +122,7 @@ The following environment variables are necessary for the application to functio
 
 ## 🎥 Video Instructions
 
-Watch this **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
+Watch **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
 
 - Use the **Docker Image** below:
 

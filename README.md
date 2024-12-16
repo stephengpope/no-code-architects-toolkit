@@ -111,7 +111,7 @@ Follow these steps to set up the No-Code Architects Toolkit API. For a detailed 
 ### Resources
 
 - **Docker Image**: stephengpope/no-code-architects-toolkit:latest
-- **Postman Template**: [https://bit.ly/49Gkh61](https://bit.ly/49Gkh61)
+- **[Postman Template](https://bit.ly/49Gkh61)**
 - **NCA Toolkit API GPT**: [https://bit.ly/4feDDk4](https://bit.ly/4feDDk4)
 
 ---

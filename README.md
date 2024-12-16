@@ -79,7 +79,7 @@ Each feature is supported by robust payload validation and detailed API document
 - **Description**: Transforms media files into MP3 format, supporting advanced options for encoding like bit rate and sample rate configuration.
 - **Documentation Link**: [Media Transform to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transform/media_to_mp3.md)
 
-#### 7. `/v1/audio/transcribe`
+#### 7. `/v1/media/transcribe`
 - **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
 - **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transcribe.md)
 

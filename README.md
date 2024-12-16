@@ -220,24 +220,30 @@ Enable the following APIs:
 - **Minimum Instances**: `0` (to minimize cost during idle times).
 - **Maximum Instances**: `5` (adjustable based on expected load).
 
-### 6. Add Environment Variables
+### 6. Use Second-Generation Servers
+- Scroll to **Platform Version** and select **Second Generation**.
+- Second-generation servers offer better performance and feature support for advanced use cases.
+
+### 7. Add Environment Variables
 - Add the following environment variables:
-  - `API_KEY`: Your API key (e.g., `Test123`).
-  - `GCP_BUCKET_NAME`: The name of your Cloud Storage bucket.
-  - `GCP_SA_CREDENTIALS`: The JSON key of your service account.
-    - Paste the **entire contents** of the downloaded JSON key file into this field.
-    - Ensure:
-      - Proper JSON formatting.
-      - No leading or trailing spaces.
+- `API_KEY`: Your API key (e.g., `Test123`).
+- `GCP_BUCKET_NAME`: The name of your Cloud Storage bucket.
+- `GCP_SA_CREDENTIALS`: The JSON key of your service account.
+  - Paste the **entire contents** of the downloaded JSON key file into this field.
+  - Ensure:
+    - Proper JSON formatting.
+    - No leading or trailing spaces.
 
-### 7. Configure Advanced Settings
+### 8. Configure Advanced Settings
 - Set the **Container Port**: Default to `8080`.
-- **Request Timeout**: `300 seconds`.
-- **Concurrency**: Set to `1` to allocate one request per instance.
+- **Request Timeout**: `300 seconds` (to handle long-running requests).
+- Enable **Startup Boost** to improve performance for the first request after a cold start.
 
-### 8. Deploy the Service
+### 9. Deploy the Service
 - Verify all settings and click **Create**.
 - The deployment process might take a few minutes. Once completed, a green checkmark should appear in the Cloud Run dashboard.
+
+By following these steps, the NCA Toolkit will be successfully deployed and accessible via Google Cloud Run with second-generation servers for optimal performance.
 
 ---
 

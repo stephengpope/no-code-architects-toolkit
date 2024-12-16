@@ -59,7 +59,7 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 #### 4. `/v1/code/execute/python`
 - **Description**: Executes Python code on the server in a controlled environment. Useful for scripting, prototyping, or dynamically running Python scripts with secure execution.
-- **Documentation Link**: [Execute Python Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/code/execute/execute_python.md)
+- **Documentation Link**: [Execute Python Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)
 
 ---
 
@@ -87,11 +87,11 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 #### 8. `/v1/test`
 - **Description**: A basic endpoint to verify the availability and functionality of the API. Useful for initial setup and connection tests.
-- **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/test.md)
+- **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
 
 #### 9. `/v1/authenticate`
 - **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
-- **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/authenticate.md)
+- **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
 
 Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 

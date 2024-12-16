@@ -3,11 +3,9 @@
 
 # No-Code Architects Toolkit API 
 
-Created by Stephen G. Pope.
-
 Tired of wasting thousands of dollars on API subscriptions to support all your automations? What if there was a free alternative?
 
-The No-Code Architects Toolkit API processes different types of media. It is built in Python using Flask.
+The 100% FREE No-Code Architects Toolkit API processes different types of media. It is built in Python using Flask.
 
 The API can convert audio files. It can manipulate video files. It creates transcriptions of content. It translates content between languages. It adds captions to videos.
 

@@ -19,7 +19,7 @@ Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2V
 
 Want help? Join a supportive community and get dedicated tech support.
 
-The ONLY community where you learn to leverage AI automation and content to grow your business (and streamline your biz).
+Join the ONLY community where you learn to leverage AI automation and content to grow your business (and streamline your biz).
 
 Who's this for?
 - Coaches and consultants
@@ -27,7 +27,7 @@ Who's this for?
 - SMMA & Content agencies
 - SaaS Startup Founders
 
-Get courses, community, support daily calls and more.
+Get courses, community, support, daily calls and more.
 
 Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)** today!
 

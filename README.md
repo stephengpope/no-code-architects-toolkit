@@ -1,7 +1,7 @@
 
 ![Original Logo Symbol](https://github.com/user-attachments/assets/75173cf4-2502-4710-998b-6b81740ae1bd)
 
-# No-Code Architects Toolkit
+# No-Code Architects Toolkit by Stephen G. Pope
 
 Tired of wasting thousands of dollars on API subscriptions to support all your automations? What if there was a free alternative?
 
@@ -118,22 +118,20 @@ The following environment variables are necessary for the application to functio
 
 ---
 
+# **Installing the NCA Toolkit API on Google Cloud Platform (GCP)**
+
 ## 🎥 Video Installation Instructions
 
 Watch these **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
 
 - **Docker Image**: stephengpope/no-code-architects-toolkit:latest
 
-### Resources
+### Mentioned Resources
 
 - **[Postman Template](https://bit.ly/49Gkh61)**
 - **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** 
 
----
-
-# **Installing the NCA Toolkit API on Google Cloud Platform (GCP)**
-
-This guide walks you through the steps to install the NCA Toolkit API on GCP.
+Or use the guide below walks you through the steps to install the NCA Toolkit API on GCP.
 
 ---
 

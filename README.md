@@ -5,7 +5,11 @@
 
 Tired of wasting thousands of dollars on API subscriptions to support all your automations? What if there was a free alternative?
 
-The No-Code Architects Toolkit API processes different types of media. It is built using Flask. The API can convert audio files. It can manipulate video files. It creates transcriptions of content. It translates content between languages. It adds captions to videos. The API manages files across multiple cloud services like Google Drive, Amazon S3, Google Cloud Storage, and Dropbox. You can deploy this toolkit in several ways. It works with Docker. It runs on Google Cloud Platform. It functions on Digital Ocean. You can use it with any system that hosts Docker.
+The No-Code Architects Toolkit API processes different types of media. It is built in Python using Flask.
+
+The API can convert audio files. It can manipulate video files. It creates transcriptions of content. It translates content between languages. It adds captions to videos.
+
+The API manages files across multiple cloud services like Google Drive, Amazon S3, Google Cloud Storage, and Dropbox. You can deploy this toolkit in several ways. It works with Docker. It runs on Google Cloud Platform. It functions on Digital Ocean. You can use it with any system that hosts Docker.
 
 Easily replace services like ChatGPT Whisper, Cloud Convert, Createomate, JSON2Video, PDF(dot)co, Placid and OCodeKit.
 

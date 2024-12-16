@@ -1,43 +1,50 @@
-# `/v1/code/execute/python` API Documentation
+# Execute Python Code Endpoint
 
-## Overview
-This endpoint allows users to execute Python code on the server. The code is executed in a secure, sandboxed environment with a configurable timeout. The endpoint returns the output (stdout, stderr) and the return value of the executed code.
+## 1. Overview
 
-## Endpoint
+The `/v1/code/execute/python` endpoint allows users to execute Python code on the server. This endpoint is part of the version 1 API and is registered in the main `app.py` file. It is designed to provide a secure and controlled environment for executing Python code, with features like input validation, timeout handling, and output capturing.
+
+## 2. Endpoint
+
 **URL Path:** `/v1/code/execute/python`
 **HTTP Method:** `POST`
 
-## Request
+## 3. Request
 
 ### Headers
-- `Authorization` (required): Bearer token for authentication.
+
+- `x-api-key` (required): The API key for authentication.
 
 ### Body Parameters
-- `code` (string, required): The Python code to be executed.
-- `timeout` (integer, optional): The maximum execution time in seconds, between 1 and 300. Default is 30 seconds.
-- `webhook_url` (string, optional): A URL to receive a webhook notification upon completion.
-- `id` (string, optional): A unique identifier for the execution request.
 
-### Example Request
+- `code` (required, string): The Python code to be executed.
+- `timeout` (optional, integer): The maximum execution time in seconds, between 1 and 300. Default is 30 seconds.
+- `webhook_url` (optional, string): The URL to send the execution results to as a webhook.
+- `id` (optional, string): An identifier for the request.
+
+#### Example Request
 
 ```json
 {
     "code": "print('Hello, World!')",
-    "timeout": 10
+    "timeout": 10,
+    "webhook_url": "https://example.com/webhook",
+    "id": "request-123"
 }
 ```
 
 ```bash
 curl -X POST \
-     -H "Authorization: Bearer <token>" \
+     -H "x-api-key: YOUR_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"code": "print('Hello, World!')", "timeout": 10}' \
-     https://api.example.com/v1/code/execute/python
+     -d '{"code": "print('Hello, World!')", "timeout": 10, "webhook_url": "https://example.com/webhook", "id": "request-123"}' \
+     http://localhost:8080/v1/code/execute/python
 ```
 
-## Response
+## 4. Response
 
 ### Success Response
+
 **Status Code:** `200 OK`
 
 ```json
@@ -50,12 +57,13 @@ curl -X POST \
 ```
 
 ### Error Responses
+
 **Status Code:** `400 Bad Request`
 
 ```json
 {
-    "error": "Execution failed",
-    "stdout": "",
+    "error": "Error message",
+    "stdout": "Output from the executed code",
     "exit_code": 1
 }
 ```
@@ -72,28 +80,34 @@ curl -X POST \
 
 ```json
 {
-    "error": "Failed to parse execution result"
+    "error": "Failed to parse execution result",
+    "stdout": "Output from the executed code",
+    "stderr": "Error output from the executed code",
+    "exit_code": 1
 }
 ```
 
-## Error Handling
-- Missing or invalid `code` parameter: `400 Bad Request`
-- Execution timeout: `408 Request Timeout`
-- Execution failure or error: `400 Bad Request` with error details
-- Internal server error: `500 Internal Server Error`
+## 5. Error Handling
 
-## Usage Notes
-- The executed code runs in a sandboxed environment, so it cannot access external resources or make system calls.
-- The `timeout` parameter can be used to limit the execution time and prevent long-running or infinite loops.
-- The `webhook_url` and `id` parameters are optional and can be used for tracking and notification purposes.
+- Missing or invalid parameters will result in a `400 Bad Request` error.
+- If the execution times out, a `408 Request Timeout` error is returned.
+- Any other execution errors or server-side errors will result in a `500 Internal Server Error`.
+- The main application context handles errors related to the task queue, such as reaching the maximum queue length (`429 Too Many Requests`).
 
-## Common Issues
-- Code that takes too long to execute may be terminated due to the timeout.
-- Code that attempts to access external resources or make system calls will fail.
-- Large output (stdout, stderr) may be truncated or cause performance issues.
+## 6. Usage Notes
 
-## Best Practices
-- Keep the executed code concise and focused on the specific task.
-- Use the `timeout` parameter to prevent long-running or infinite loops.
-- Validate and sanitize user input to prevent code injection attacks.
-- Monitor and limit the usage of this endpoint to prevent abuse or resource exhaustion.
+- The executed code runs in a sandboxed environment, with limited access to system resources.
+- The code's output (both stdout and stderr) is captured and returned in the response.
+- If a `webhook_url` is provided, the execution results will be sent to that URL as a webhook.
+
+## 7. Common Issues
+
+- Executing code that takes too long or consumes too many resources may result in a timeout or server error.
+- Code that attempts to access restricted system resources or perform unauthorized operations may fail or produce unexpected results.
+
+## 8. Best Practices
+
+- Always validate and sanitize user input before executing code.
+- Set an appropriate timeout value based on the expected execution time of the code.
+- Monitor the server's resource usage and adjust the maximum queue length or other limits as needed.
+- Implement additional security measures, such as code sandboxing or whitelisting, to prevent malicious code execution.

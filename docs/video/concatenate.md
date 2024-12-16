@@ -1,24 +1,29 @@
-# `/v1/video/concatenate` API Documentation
+# Video Concatenation Endpoint
 
-## Overview
-This endpoint allows users to combine multiple video files into a single video file. The endpoint accepts a list of video URLs, an optional webhook URL for receiving notifications, and an optional ID for the request. The combined video file is then uploaded to cloud storage, and the cloud URL of the combined video is returned in the response.
+## 1. Overview
 
-## Endpoint
+The `/v1/video/concatenate` endpoint is part of the Flask API application and is responsible for combining multiple video files into a single video file. This endpoint fits into the overall API structure as a part of the `v1` blueprint, which is dedicated to handling version 1 of the API.
+
+## 2. Endpoint
+
 **URL Path:** `/v1/video/concatenate`
 **HTTP Method:** `POST`
 
-## Request
+## 3. Request
 
 ### Headers
-- `Authorization` (Required): Bearer token for authentication.
+
+- `x-api-key` (required): The API key for authentication.
 
 ### Body Parameters
-- `video_urls` (Required, Array of Objects): A list of video URLs to be combined.
-  - `video_url` (Required, String): The URL of the video file.
-- `webhook_url` (Optional, String): The URL to which a notification will be sent after the video combination process is completed.
-- `id` (Optional, String): An identifier for the request.
 
-### Example Request
+The request body must be a JSON object with the following properties:
+
+- `video_urls` (required, array of objects): An array of video URLs to be combined. Each object in the array must have a `video_url` property (string, URI format) containing the URL of the video file.
+- `webhook_url` (optional, string, URI format): The URL to which the webhook notification will be sent upon completion of the video combination process.
+- `id` (optional, string): An identifier for the request.
+
+#### Example Request
 
 ```json
 {
@@ -38,7 +43,7 @@ This endpoint allows users to combine multiple video files into a single video f
 ```bash
 curl -X POST \
   https://api.example.com/v1/video/concatenate \
-  -H 'Authorization: Bearer <token>' \
+  -H 'x-api-key: YOUR_API_KEY' \
   -H 'Content-Type: application/json' \
   -d '{
     "video_urls": [
@@ -54,41 +59,91 @@ curl -X POST \
   }'
 ```
 
-## Response
+## 4. Response
 
 ### Success Response
+
 **Status Code:** `200 OK`
 
+**Response Body:**
+
 ```json
 {
-  "data": "https://cloud.example.com/combined-video.mp4"
+  "code": 200,
+  "id": "request-123",
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "response": "https://example.com/combined-video.mp4",
+  "message": "success",
+  "run_time": 10.234,
+  "queue_time": 0.0,
+  "total_time": 10.234,
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 0,
+  "build_number": "1.0.0"
 }
 ```
+
+The response contains the URL of the combined video file uploaded to cloud storage.
 
 ### Error Responses
+
 **Status Code:** `500 Internal Server Error`
+
+**Response Body:**
 
 ```json
 {
-  "error": "Error message describing the issue"
+  "code": 500,
+  "id": "request-123",
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "Error message describing the issue",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 0,
+  "build_number": "1.0.0"
 }
 ```
 
-## Error Handling
-- If there is an error during the video combination process, a `500 Internal Server Error` status code is returned, along with an error message describing the issue.
-- If any required parameters are missing or invalid, a `400 Bad Request` status code is returned, along with an error message describing the issue.
+**Status Code:** `429 Too Many Requests`
 
-## Usage Notes
-- The video combination process may take some time, depending on the size and number of video files being combined.
-- The `webhook_url` parameter is optional and can be used to receive a notification when the video combination process is completed.
-- The `id` parameter is optional and can be used to identify the request for tracking purposes.
+**Response Body:**
 
-## Common Issues
-- Providing invalid or inaccessible video URLs.
-- Providing a large number of video files, which may cause the video combination process to take a long time or fail due to resource constraints.
+```json
+{
+  "code": 429,
+  "id": "request-123",
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "MAX_QUEUE_LENGTH (10) reached",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 10,
+  "build_number": "1.0.0"
+}
+```
 
-## Best Practices
-- Ensure that the video URLs provided are accessible and valid.
-- Consider providing a `webhook_url` to receive notifications about the status of the video combination process.
-- Provide an `id` parameter to easily identify and track the request.
-- Handle errors gracefully and provide appropriate error messages to users.
+## 5. Error Handling
+
+- Missing or invalid `video_urls` parameter: Returns a `400 Bad Request` error.
+- Invalid `webhook_url` format: Returns a `400 Bad Request` error.
+- Error during the video combination process: Returns a `500 Internal Server Error` with the error message.
+- If the maximum queue length is reached (determined by the `MAX_QUEUE_LENGTH` environment variable), the endpoint returns a `429 Too Many Requests` error.
+
+## 6. Usage Notes
+
+- The `video_urls` parameter must contain at least one video URL.
+- The `webhook_url` parameter is optional and can be used to receive a notification when the video combination process is complete.
+- The `id` parameter is optional and can be used to identify the request.
+
+## 7. Common Issues
+
+- Providing invalid video URLs or URLs that are not accessible.
+- Attempting to combine video files with incompatible codecs or formats.
+- Reaching the maximum queue length, which can cause requests to be rejected with a `429 Too Many Requests` error.
+
+## 8. Best Practices
+
+- Ensure that the provided video URLs are valid and accessible.
+- Consider the video file formats and codecs when combining videos to avoid compatibility issues.
+- Monitor the queue length and adjust the `MAX_QUEUE_LENGTH` environment variable as needed to prevent the queue from becoming overloaded.
+- Implement error handling and retries for failed requests.

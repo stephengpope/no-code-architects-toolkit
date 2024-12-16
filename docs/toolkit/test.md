@@ -1,62 +1,87 @@
-# `/v1/toolkit/test` API Documentation
+# NCA Toolkit Test API Endpoint
 
-## Overview
-This endpoint is used to test the setup and functionality of the NCA Toolkit API. It creates a temporary file, uploads it to cloud storage, and returns the URL of the uploaded file.
+## 1. Overview
 
-## Endpoint
-- URL Path: `/v1/toolkit/test`
-- HTTP Method: `GET`
+The `/v1/toolkit/test` endpoint is a part of the NCA Toolkit API and is designed to test the API setup. It creates a temporary file, uploads it to cloud storage, and then returns the upload URL. This endpoint serves as a simple test to ensure that the API is correctly installed and configured.
 
-## Request
+## 2. Endpoint
+
+**URL Path:** `/v1/toolkit/test`
+**HTTP Method:** `GET`
+
+## 3. Request
 
 ### Headers
-- Authentication header (provided by the `@authenticate` decorator)
+
+- `x-api-key` (required): The API key for authentication.
 
 ### Body Parameters
+
 This endpoint does not require any request body parameters.
 
 ### Example Request
-```
+
+```bash
 curl -X GET \
   https://api.example.com/v1/toolkit/test \
-  -H 'Authorization: Bearer <access_token>'
+  -H 'x-api-key: YOUR_API_KEY'
 ```
 
-## Response
+## 4. Response
 
 ### Success Response
-- Status Code: `200 OK`
-- Example JSON Response:
+
+**Status Code:** `200 OK`
+
+**Example JSON Response:**
+
 ```json
 {
-  "data": "https://cloud.example.com/success.txt",
-  "endpoint": "/v1/toolkit/test"
+  "response": "https://cloud.example.com/success.txt",
+  "endpoint": "/v1/toolkit/test",
+  "code": 200
 }
 ```
 
 ### Error Responses
-- Status Code: `500 Internal Server Error`
-- Example JSON Response:
+
+**Status Code:** `401 Unauthorized`
+
+**Example JSON Response:**
+
 ```json
 {
-  "error": "Error message",
-  "endpoint": "/v1/toolkit/test"
+  "message": "Invalid or missing API key",
+  "code": 401
 }
 ```
 
-## Error Handling
-If an exception occurs during the execution of the endpoint, a `500 Internal Server Error` status code is returned, along with the error message as the response body.
+**Status Code:** `500 Internal Server Error`
 
-## Usage Notes
-- This endpoint is primarily used for testing and verification purposes.
-- It requires authentication, which is handled by the `@authenticate` decorator.
-- The task is queued for asynchronous execution using the `@queue_task_wrapper` decorator.
+**Example JSON Response:**
 
-## Common Issues
-- Authentication issues: Ensure that a valid access token is provided in the `Authorization` header.
-- Cloud storage connectivity issues: If the cloud storage service is unavailable or encounters an error, the endpoint may fail to upload the file and return an error.
+```json
+{
+  "message": "An error occurred while testing the API setup",
+  "code": 500
+}
+```
 
-## Best Practices
-- Use this endpoint during the initial setup and deployment of the NCA Toolkit API to verify that the API is functioning correctly.
-- Monitor the logs for any errors or exceptions that may occur during the execution of this endpoint.
-- Ensure that the necessary permissions and configurations are in place for the API to access the cloud storage service.
+## 5. Error Handling
+
+- **Missing or Invalid API Key:** If the `x-api-key` header is missing or invalid, the endpoint will return a `401 Unauthorized` status code with an appropriate error message.
+- **Internal Server Error:** If an unexpected error occurs during the execution of the endpoint, it will return a `500 Internal Server Error` status code with an error message.
+
+## 6. Usage Notes
+
+This endpoint is primarily used for testing purposes and does not require any specific input parameters. It can be called to verify that the API is correctly installed and configured.
+
+## 7. Common Issues
+
+- Incorrect API key: Ensure that the provided `x-api-key` header value is valid and has the necessary permissions.
+- Network connectivity issues: Make sure that the API server is accessible and that there are no network connectivity problems.
+
+## 8. Best Practices
+
+- Use this endpoint as a part of your API testing and monitoring processes to ensure that the API is functioning correctly.
+- Regularly rotate and update your API keys to maintain security.

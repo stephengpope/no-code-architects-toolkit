@@ -1,55 +1,78 @@
-# `/v1/toolkit/authenticate` API Documentation
+# Authenticate Endpoint
 
-## Overview
-This endpoint is used to authenticate a client by verifying the provided API key. It serves as a gatekeeper for accessing other protected endpoints within the application.
+## 1. Overview
 
-## Endpoint
-- URL Path: `/v1/toolkit/authenticate`
-- HTTP Method: `GET`
+The `/v1/toolkit/authenticate` endpoint is a part of the `v1_toolkit_auth` blueprint and is responsible for authenticating requests to the API. It checks if the provided API key matches the expected value, and if so, grants access to the API. This endpoint is essential for securing the API and ensuring that only authorized clients can access the available resources.
 
-## Request
+## 2. Endpoint
+
+```
+GET /v1/toolkit/authenticate
+```
+
+## 3. Request
 
 ### Headers
+
 - `X-API-Key` (required): The API key used for authentication.
 
 ### Body Parameters
+
 This endpoint does not require any request body parameters.
 
 ### Example Request
-```
-curl -X GET \
-  https://your-api-domain.com/v1/toolkit/authenticate \
-  -H 'X-API-Key: your_api_key'
+
+```bash
+curl -X GET -H "X-API-Key: YOUR_API_KEY" http://localhost:8080/v1/toolkit/authenticate
 ```
 
-## Response
+## 4. Response
 
 ### Success Response
-- Status Code: `200 OK`
-- Response Body:
+
+**Status Code:** 200 OK
+
+**Response Body:**
+
 ```json
-"Authorized"
+{
+  "message": "Authorized",
+  "endpoint": "/authenticate",
+  "code": 200
+}
 ```
 
 ### Error Responses
-- Status Code: `401 Unauthorized`
-- Response Body:
+
+**Status Code:** 401 Unauthorized
+
+**Response Body:**
+
 ```json
-"Unauthorized"
+{
+  "message": "Unauthorized",
+  "endpoint": "/authenticate",
+  "code": 401
+}
 ```
 
-## Error Handling
-If the provided `X-API-Key` header does not match the expected API key, the endpoint will return a `401 Unauthorized` status code with the response body `"Unauthorized"`.
+## 5. Error Handling
 
-## Usage Notes
-- This endpoint should be called before accessing any protected endpoints to ensure the client is authenticated.
-- The API key should be kept secure and not shared with unauthorized parties.
+- If the provided `X-API-Key` header does not match the expected `API_KEY` value, the endpoint will return a 401 Unauthorized response.
+- The main application context (`app.py`) includes error handling for the queue length. If the maximum queue length (`MAX_QUEUE_LENGTH`) is reached, the endpoint will return a 429 Too Many Requests response.
 
-## Common Issues
-- Providing an incorrect or invalid API key will result in an `Unauthorized` response.
-- Forgetting to include the `X-API-Key` header will also result in an `Unauthorized` response.
+## 6. Usage Notes
 
-## Best Practices
-- Use a secure method to store and retrieve the API key, such as environment variables or a secure key management system.
-- Regularly rotate the API key to enhance security.
-- Implement rate limiting or other security measures to prevent brute-force attacks on the authentication endpoint.
+- This endpoint should be called before making any other requests to the API to ensure that the client is authenticated.
+- The `X-API-Key` header must be included in all subsequent requests to the API.
+
+## 7. Common Issues
+
+- Forgetting to include the `X-API-Key` header in the request.
+- Using an incorrect or expired API key.
+
+## 8. Best Practices
+
+- Keep the API key secure and avoid exposing it in client-side code or publicly accessible repositories.
+- Consider implementing additional security measures, such as rate limiting or IP whitelisting, to further secure the API.
+- Regularly rotate the API key to mitigate the risk of unauthorized access.

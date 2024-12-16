@@ -1,7 +1,7 @@
 # `/v1/video/caption` API Documentation
 
 ## Overview
-This endpoint allows users to caption a video by providing a video URL and optional settings. The captioning process is handled asynchronously, and the captioned video is uploaded to cloud storage upon completion.
+This endpoint allows users to submit a video URL and optional captions, settings, and replacement rules to generate a captioned video with customized styling and text replacement. The captioned video is then uploaded to cloud storage, and the cloud URL is returned.
 
 ## Endpoint
 **URL Path:** `/v1/video/caption`
@@ -15,23 +15,23 @@ This endpoint allows users to caption a video by providing a video URL and optio
 ### Body Parameters
 - `video_url` (required, string): The URL of the video to be captioned.
 - `captions` (optional, string): The captions to be applied to the video.
-- `settings` (optional, object): An object containing various settings for the captioning process.
+- `settings` (optional, object): An object containing various settings for customizing the captions' appearance and behavior.
   - `line_color` (optional, string): The color of the caption lines.
   - `word_color` (optional, string): The color of the caption words.
   - `outline_color` (optional, string): The color of the caption outline.
-  - `all_caps` (optional, boolean): Whether to display captions in all capital letters.
-  - `max_words_per_line` (optional, integer): The maximum number of words per caption line.
-  - `x` (optional, integer): The x-coordinate position of the captions.
-  - `y` (optional, integer): The y-coordinate position of the captions.
-  - `position` (optional, string): The position of the captions on the video (e.g., "bottom_left", "middle_center", etc.).
-  - `alignment` (optional, string): The alignment of the captions (e.g., "left", "center", "right").
+  - `all_caps` (optional, boolean): Whether to display the captions in all capital letters.
+  - `max_words_per_line` (optional, integer): The maximum number of words per line in the captions.
+  - `x` (optional, integer): The horizontal position of the captions.
+  - `y` (optional, integer): The vertical position of the captions.
+  - `position` (optional, string): The position of the captions on the video (e.g., `bottom_left`, `middle_center`, `top_right`).
+  - `alignment` (optional, string): The alignment of the captions (e.g., `left`, `center`, `right`).
   - `font_family` (optional, string): The font family for the captions.
   - `font_size` (optional, integer): The font size for the captions.
-  - `bold` (optional, boolean): Whether to display captions in bold.
-  - `italic` (optional, boolean): Whether to display captions in italic.
+  - `bold` (optional, boolean): Whether to display the captions in bold.
+  - `italic` (optional, boolean): Whether to display the captions in italic.
   - `underline` (optional, boolean): Whether to underline the captions.
   - `strikeout` (optional, boolean): Whether to strike out the captions.
-  - `style` (optional, string): The style of the captions (e.g., "classic", "karaoke", "highlight", etc.).
+  - `style` (optional, string): The style of the captions (e.g., `classic`, `karaoke`, `highlight`, `underline`, `word_by_word`).
   - `outline_width` (optional, integer): The width of the caption outline.
   - `spacing` (optional, integer): The spacing between caption lines.
   - `angle` (optional, integer): The angle of the captions.
@@ -41,7 +41,7 @@ This endpoint allows users to caption a video by providing a video URL and optio
   - `replace` (required, string): The replacement text.
 - `webhook_url` (optional, string): The URL to receive a webhook notification upon completion.
 - `id` (optional, string): An identifier for the captioning job.
-- `language` (optional, string): The language of the captions (default is "auto").
+- `language` (optional, string): The language of the captions (default: `auto`).
 
 ### Example Request
 
@@ -52,22 +52,22 @@ This endpoint allows users to caption a video by providing a video URL and optio
   "settings": {
     "line_color": "#FFFFFF",
     "word_color": "#000000",
-    "outline_color": "#000000",
+    "outline_color": "#CCCCCC",
     "all_caps": false,
     "max_words_per_line": 10,
-    "x": 50,
-    "y": 100,
+    "x": 20,
+    "y": 40,
     "position": "bottom_left",
-    "alignment": "left",
+    "alignment": "center",
     "font_family": "Arial",
     "font_size": 24,
-    "bold": false,
+    "bold": true,
     "italic": false,
     "underline": false,
     "strikeout": false,
     "style": "classic",
     "outline_width": 2,
-    "spacing": 10,
+    "spacing": 4,
     "angle": 0,
     "shadow_offset": 2
   },
@@ -94,22 +94,22 @@ curl -X POST \
     "settings": {
       "line_color": "#FFFFFF",
       "word_color": "#000000",
-      "outline_color": "#000000",
+      "outline_color": "#CCCCCC",
       "all_caps": false,
       "max_words_per_line": 10,
-      "x": 50,
-      "y": 100,
+      "x": 20,
+      "y": 40,
       "position": "bottom_left",
-      "alignment": "left",
+      "alignment": "center",
       "font_family": "Arial",
       "font_size": 24,
-      "bold": false,
+      "bold": true,
       "italic": false,
       "underline": false,
       "strikeout": false,
       "style": "classic",
       "outline_width": 2,
-      "spacing": 10,
+      "spacing": 4,
       "angle": 0,
       "shadow_offset": 2
     },
@@ -128,23 +128,19 @@ curl -X POST \
 ## Response
 
 ### Success Response
-
 **Status Code:** `200 OK`
 
 **Response Body:**
-
 ```json
 {
-  "cloud_url": "https://storage.example.com/captioned_video.mp4"
+  "cloud_url": "https://example.com/captioned_video.mp4"
 }
 ```
 
 ### Error Responses
-
 **Status Code:** `400 Bad Request`
 
 **Response Body (Font Error):**
-
 ```json
 {
   "error": "Invalid font family specified. Please choose from the available fonts.",
@@ -157,7 +153,6 @@ curl -X POST \
 ```
 
 **Response Body (Non-Font Error):**
-
 ```json
 {
   "error": "Invalid video URL provided."
@@ -167,7 +162,6 @@ curl -X POST \
 **Status Code:** `500 Internal Server Error`
 
 **Response Body:**
-
 ```json
 {
   "error": "An unexpected error occurred during the captioning process."
@@ -175,23 +169,28 @@ curl -X POST \
 ```
 
 ## Error Handling
-- Missing or invalid `video_url` parameter: `400 Bad Request`
-- Invalid settings or replace rules: `400 Bad Request`
-- Font-related errors: `400 Bad Request` with a list of available fonts
-- Other errors during the captioning process: `500 Internal Server Error`
+- Missing or invalid `video_url` parameter: `400 Bad Request` with an error message.
+- Invalid settings or replace rules: `400 Bad Request` with an error message.
+- Font-related errors: `400 Bad Request` with an error message and a list of available fonts.
+- Unexpected errors during the captioning process: `500 Internal Server Error` with an error message.
 
 ## Usage Notes
-- The captioning process is handled asynchronously, and the response will contain the URL of the captioned video once it's available in cloud storage.
-- If a `webhook_url` is provided, a notification will be sent to that URL upon completion of the captioning process.
-- The `id` parameter can be used to track the captioning job.
+- The `video_url` parameter is required, and the video must be accessible and in a supported format.
+- The `captions` parameter is optional, and if not provided, the service will attempt to generate captions automatically.
+- The `settings` parameter allows for customization of the captions' appearance and behavior.
+- The `replace` parameter allows for text replacement in the captions.
+- The `webhook_url` parameter is optional and can be used to receive a notification when the captioning process is complete.
+- The `id` parameter is optional and can be used to identify the captioning job.
+- The `language` parameter is optional and specifies the language of the captions. If not provided, the service will attempt to detect the language automatically.
 
 ## Common Issues
-- Providing an invalid or inaccessible video URL.
+- Providing an invalid or inaccessible `video_url`.
 - Specifying invalid or unsupported settings or replace rules.
-- Encountering font-related issues, such as using an unsupported font family.
+- Encountering font-related issues due to unsupported or invalid font families.
 
 ## Best Practices
 - Validate the `video_url` parameter before submitting the request.
-- Use the `settings` and `replace` parameters judiciously to ensure optimal captioning results.
-- Monitor the response for any errors or warnings, and handle them accordingly.
-- Implement retry mechanisms for failed requests or temporary errors.
+- Test the captioning process with different settings and replace rules to ensure the desired output.
+- Monitor the response for any errors or warnings and handle them accordingly.
+- Consider using the `webhook_url` parameter to receive notifications and handle the captioned video asynchronously.
+- Ensure that the provided captions and replace rules are accurate and appropriate for the video content.

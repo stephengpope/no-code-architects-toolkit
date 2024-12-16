@@ -5,26 +5,31 @@ import requests
 from pathlib import Path
 
 # The prompt template to send to Claude
-CLAUDE_PROMPT = '''I am providing you with a Python file containing API endpoint definitions. Please read through the code, identify each endpoint, and generate detailed documentation for each in Markdown format as follows:
-1. Overview: Describe the purpose of the endpoint.
-2. Endpoint: Specify the URL path and HTTP method.
-3. Request:
-   - Headers: List any required headers, such as authentication headers.
-   - Body Parameters: List the required and optional parameters, including the parameter type and purpose.
-   - Example Request: Provide a sample request payload and a sample curl command.
-4. Response:
-   - Success Response: Show the status code, and provide an example JSON response for a successful request.
-   - Error Responses: Include examples of common error status codes, with example JSON responses for each.
-5. Error Handling: Describe common errors, like missing or invalid parameters, and indicate which status codes they produce.
-6. Usage Notes: Any additional notes on using the endpoint effectively.
-7. Common Issues: List any common issues a user might encounter.
-8. Best Practices: Any recommended best practices for this endpoint.
-Format the documentation with markdown headings, bullet points, and code blocks, and ensure it matches the following example structure:
-# `/example-endpoint` API Documentation
-## Overview
-[Description of the endpoint's purpose]
+CLAUDE_PROMPT = '''
 
-Here is the Python file to analyze:
+    I am providing you with a Python file containing API endpoint definitions.
+    
+    Please read through the code and analyze the endpoint then I'll have you generate detailed documentation in Markdown format as follows:
+    1. Overview: Describe the purpose of the endpoint.
+    2. Endpoint: Specify the URL path and HTTP method.
+    3. Request:
+    - Headers: List any required headers, such as authentication headers.
+    - Body Parameters: List the required and optional parameters, including the parameter type and purpose.
+    - specifically study the validate_payload directive in the routes files to build the documentation
+    - Example Request: Provide a sample request payload and a sample curl command.
+    4. Response:
+    - Success Response: Show the status code, and provide an example JSON response for a successful request.
+    - Error Responses: Include examples of common error status codes, with example JSON responses for each.
+    5. Error Handling: Describe common errors, like missing or invalid parameters, and indicate which status codes they produce.
+    6. Usage Notes: Any additional notes on using the endpoint effectively.
+    7. Common Issues: List any common issues a user might encounter.
+    8. Best Practices: Any recommended best practices for this endpoint.
+    Format the documentation with markdown headings, bullet points, and code blocks, and ensure it matches the following example structure:
+    # `/example-endpoint` API Documentation
+    ## Overview
+    [Description of the endpoint's purpose]
+
+    Here is the Python file to analyze:
 
 {file_content}
 '''

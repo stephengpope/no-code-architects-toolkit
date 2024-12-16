@@ -1,7 +1,7 @@
 # `/v1/toolkit/test` API Documentation
 
 ## Overview
-This endpoint is used to test the setup of the NCA Toolkit API. It creates a temporary file, uploads it to cloud storage, and returns the upload URL.
+This endpoint is used to test the setup and functionality of the NCA Toolkit API. It creates a temporary file, uploads it to cloud storage, and returns the URL of the uploaded file.
 
 ## Endpoint
 - URL Path: `/v1/toolkit/test`
@@ -10,16 +10,16 @@ This endpoint is used to test the setup of the NCA Toolkit API. It creates a tem
 ## Request
 
 ### Headers
-- This endpoint requires authentication. The `authenticate` decorator is used to handle authentication.
+- Authentication header (provided by the `@authenticate` decorator)
 
 ### Body Parameters
-- This endpoint does not require any request body parameters.
+This endpoint does not require any request body parameters.
 
 ### Example Request
 ```
 curl -X GET \
-  http://your-api-url.com/v1/toolkit/test \
-  -H 'Authorization: Bearer your-access-token'
+  https://api.example.com/v1/toolkit/test \
+  -H 'Authorization: Bearer <access_token>'
 ```
 
 ## Response
@@ -29,7 +29,8 @@ curl -X GET \
 - Example JSON Response:
 ```json
 {
-  "upload_url": "https://cloud-storage.com/success.txt"
+  "data": "https://cloud.example.com/success.txt",
+  "endpoint": "/v1/toolkit/test"
 }
 ```
 
@@ -38,23 +39,24 @@ curl -X GET \
 - Example JSON Response:
 ```json
 {
-  "error": "Error message describing the exception"
+  "error": "Error message",
+  "endpoint": "/v1/toolkit/test"
 }
 ```
 
 ## Error Handling
-If an exception occurs during the execution of this endpoint, it will return a `500 Internal Server Error` status code with the error message as the response body.
+If an exception occurs during the execution of the endpoint, a `500 Internal Server Error` status code is returned, along with the error message as the response body.
 
 ## Usage Notes
-- This endpoint is primarily used for testing purposes to ensure the NCA Toolkit API is set up correctly.
-- It creates a temporary file, uploads it to cloud storage, and returns the upload URL.
-- The temporary file is deleted after successful upload.
+- This endpoint is primarily used for testing and verification purposes.
+- It requires authentication, which is handled by the `@authenticate` decorator.
+- The task is queued for asynchronous execution using the `@queue_task_wrapper` decorator.
 
 ## Common Issues
-- Authentication issues: Ensure that the correct authentication token is provided in the request headers.
-- Cloud storage connectivity issues: If there are issues with the cloud storage service, the file upload may fail, causing an exception.
+- Authentication issues: Ensure that a valid access token is provided in the `Authorization` header.
+- Cloud storage connectivity issues: If the cloud storage service is unavailable or encounters an error, the endpoint may fail to upload the file and return an error.
 
 ## Best Practices
-- Use this endpoint during the initial setup and testing phase of the NCA Toolkit API.
-- Regularly test the API setup to ensure it remains functional and catch any potential issues early.
-- Monitor logs for any errors or exceptions related to this endpoint.
+- Use this endpoint during the initial setup and deployment of the NCA Toolkit API to verify that the API is functioning correctly.
+- Monitor the logs for any errors or exceptions that may occur during the execution of this endpoint.
+- Ensure that the necessary permissions and configurations are in place for the API to access the cloud storage service.

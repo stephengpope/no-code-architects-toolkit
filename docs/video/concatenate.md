@@ -1,7 +1,7 @@
 # `/v1/video/concatenate` API Documentation
 
 ## Overview
-This endpoint is used to combine multiple video files into a single video file. It accepts a list of video URLs, an optional webhook URL, and an optional ID. The combined video file is then uploaded to cloud storage, and the cloud URL of the combined video is returned.
+This endpoint allows users to combine multiple video files into a single video file. The endpoint accepts a list of video URLs, an optional webhook URL for receiving notifications, and an optional ID for the request. The combined video file is then uploaded to cloud storage, and the cloud URL of the combined video is returned in the response.
 
 ## Endpoint
 **URL Path:** `/v1/video/concatenate`
@@ -10,13 +10,13 @@ This endpoint is used to combine multiple video files into a single video file. 
 ## Request
 
 ### Headers
-- `Authorization` (required): Authentication header containing a valid token.
+- `Authorization` (Required): Bearer token for authentication.
 
 ### Body Parameters
-- `video_urls` (required, array of objects): A list of video URLs to be combined.
-  - `video_url` (required, string): The URL of the video file.
-- `webhook_url` (optional, string): The URL to which a webhook notification will be sent after the video combination process is complete.
-- `id` (optional, string): An identifier for the request.
+- `video_urls` (Required, Array of Objects): A list of video URLs to be combined.
+  - `video_url` (Required, String): The URL of the video file.
+- `webhook_url` (Optional, String): The URL to which a notification will be sent after the video combination process is completed.
+- `id` (Optional, String): An identifier for the request.
 
 ### Example Request
 
@@ -66,47 +66,29 @@ curl -X POST \
 ```
 
 ### Error Responses
-**Status Code:** `400 Bad Request`
-
-```json
-{
-  "error": "Invalid request payload"
-}
-```
-
-**Status Code:** `401 Unauthorized`
-
-```json
-{
-  "error": "Authentication failed"
-}
-```
-
 **Status Code:** `500 Internal Server Error`
 
 ```json
 {
-  "error": "An error occurred during video combination process"
+  "error": "Error message describing the issue"
 }
 ```
 
 ## Error Handling
-- Missing or invalid request parameters will result in a `400 Bad Request` error.
-- Authentication failures will result in a `401 Unauthorized` error.
-- Any other errors during the video combination process will result in a `500 Internal Server Error`.
+- If there is an error during the video combination process, a `500 Internal Server Error` status code is returned, along with an error message describing the issue.
+- If any required parameters are missing or invalid, a `400 Bad Request` status code is returned, along with an error message describing the issue.
 
 ## Usage Notes
-- The video combination process may take some time, depending on the number and size of the video files.
-- If a webhook URL is provided, a notification will be sent to that URL after the video combination process is complete.
-- The combined video file will be uploaded to cloud storage, and the cloud URL will be returned in the response.
+- The video combination process may take some time, depending on the size and number of video files being combined.
+- The `webhook_url` parameter is optional and can be used to receive a notification when the video combination process is completed.
+- The `id` parameter is optional and can be used to identify the request for tracking purposes.
 
 ## Common Issues
-- Providing invalid video URLs or unsupported video formats.
-- Authentication failures due to expired or invalid tokens.
-- Network or server issues that may cause the video combination process to fail.
+- Providing invalid or inaccessible video URLs.
+- Providing a large number of video files, which may cause the video combination process to take a long time or fail due to resource constraints.
 
 ## Best Practices
-- Validate the video URLs and formats before sending the request.
-- Use a valid and up-to-date authentication token.
-- Implement retry mechanisms and error handling in your client application.
-- Monitor the webhook notifications for updates on the video combination process.
+- Ensure that the video URLs provided are accessible and valid.
+- Consider providing a `webhook_url` to receive notifications about the status of the video combination process.
+- Provide an `id` parameter to easily identify and track the request.
+- Handle errors gracefully and provide appropriate error messages to users.

@@ -35,60 +35,63 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ## Features of the No-Code Architects Toolkit API
 
-### Core Features
-#### 1. **Authentication**
-   - Endpoint: `/v1/toolkit/authenticate`
-   - Verify API key access for authorized operations.
+### Advanced Media Manipulation
 
-#### 2. **Testing Connectivity**
-   - Endpoint: `/v1/toolkit/test`
-   - Confirms API setup by creating and uploading a test file.
-
----
-
-### Media Transformation
-#### 3. **Convert Media to MP3**
-   - Endpoint: `/v1/media/transform/mp3`
-   - Converts audio and video files into MP3 format with optional bitrate customization.
-
-#### 4. **Transcribe Media**
-   - Endpoint: `/v1/media/transcribe`
-   - Generates transcriptions or translations from media files.
-   - Options for text, subtitles, and word-level timestamps.
+#### 1. `/v1/ffmpeg/compose`
+- **Description**: Provides a flexible way to compose and manipulate media files using FFmpeg. Supports complex media operations like transcoding, concatenation, and filtering.
+- **Documentation Link**: [FFmpeg Compose Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/compose.md)
 
 ---
 
 ### Video Processing
-#### 5. **Combine Videos**
-   - Endpoint: `/v1/video/concatenate`
-   - Merges multiple video files into one output.
 
-#### 6. **Add Captions**
-   - Endpoint: `/v1/video/caption`
-   - Adds customizable captions to videos with detailed formatting options.
+#### 2. `/v1/video/caption`
+- **Description**: Adds captions to a video file, including options for font, position, and styling. It also supports automated language detection and custom replacements in captions.
+- **Documentation Link**: [Video Caption Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)
 
----
-
-### Image Processing
-#### 7. **Convert Image to Video**
-   - Endpoint: `/v1/image/transform/video`
-   - Creates videos from images, with support for length, frame rate, and zoom effects.
-
----
-
-### Advanced Media Manipulation
-#### 8. **Flexible Media Composition**
-   - Endpoint: `/v1/ffmpeg/compose`
-   - Allows custom FFmpeg command structures for complex media tasks.
+#### 3. `/v1/video/concatenate`
+- **Description**: Combines multiple video files into a single video file. The input files are concatenated in the specified order, and the final video is uploaded to cloud storage.
+- **Documentation Link**: [Video Concatenate Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/video/concatenate.md)
 
 ---
 
 ### Code Execution
-#### 9. **Execute Python Code**
-   - Endpoint: `/v1/code/execute/python`
-   - Runs Python scripts securely with configurable timeouts.
+
+#### 4. `/v1/code/execute/python`
+- **Description**: Executes Python code on the server in a controlled environment. Useful for scripting, prototyping, or dynamically running Python scripts with secure execution.
+- **Documentation Link**: [Execute Python Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/code/execute/execute_python.md)
 
 ---
+
+### Image Processing
+
+#### 5. `/v1/image/transform/video`
+- **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
+- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/image/transform/image_to_video.md)
+
+---
+
+### Media Transformation
+
+#### 6. `/v1/media/transform/mp3`
+- **Description**: Transforms media files into MP3 format, supporting advanced options for encoding like bit rate and sample rate configuration.
+- **Documentation Link**: [Media Transform to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/media/transform/mp3.md)
+
+#### 7. `/v1/audio/transcribe`
+- **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
+- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/build/docs/audio/transcribe.md)
+
+---
+
+### Core Features
+
+#### 8. `/v1/test`
+- **Description**: A basic endpoint to verify the availability and functionality of the API. Useful for initial setup and connection tests.
+- **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/test.md)
+
+#### 9. `/v1/authenticate`
+- **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
+- **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/authenticate.md)
 
 Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 

@@ -51,7 +51,7 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 #### 3. `/v1/video/concatenate`
 - **Description**: Combines multiple video files into a single video file. The input files are concatenated in the specified order, and the final video is uploaded to cloud storage.
-- **Documentation Link**: [Video Concatenate Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/video/concatenate.md)
+- **Documentation Link**: [Video Concatenate Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)
 
 ---
 
@@ -67,7 +67,7 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 #### 5. `/v1/image/transform/video`
 - **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
-- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/image/transform/image_to_video.md)
+- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/transform/image_to_video.md)
 
 ---
 
@@ -75,11 +75,11 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 #### 6. `/v1/media/transform/mp3`
 - **Description**: Transforms media files into MP3 format, supporting advanced options for encoding like bit rate and sample rate configuration.
-- **Documentation Link**: [Media Transform to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/main/build/docs/media/transform/mp3.md)
+- **Documentation Link**: [Media Transform to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transform/media_to_mp3.md)
 
 #### 7. `/v1/audio/transcribe`
 - **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
-- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/build/docs/audio/transcribe.md)
+- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transcribe.md)
 
 ---
 

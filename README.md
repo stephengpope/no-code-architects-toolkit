@@ -191,20 +191,48 @@ Enable the following APIs:
 
 ---
 
-## **Step 5: Deploy the Toolkit on Cloud Run**
-1. Navigate to **Cloud Run** in the GCP Console.
-2. Click **Create Service** and configure the deployment:
-   - **Container Image URL**: Use the toolkit's Docker Hub image URL (refer to the GitHub repository).
-   - **Allow unauthenticated invocations**.
-   - **CPU Allocation**: Set to **Always Allocated**.
-   - **Memory and CPU**: Allocate **16 GB memory** and **4 CPUs**.
+## **Step 5: Deploy on Google Cloud Run**
 
-3. Under **Variables & Secrets**, set the following environment variables:
-   - `API_KEY`: Set a secure key (e.g., `Test123`).
-   - `GCP_BUCKET_NAME`: Your Cloud Storage bucket name (e.g., `nca-toolkit-bucket`).
-   - `GCP_SA_CREDENTIALS`: Paste the contents of the JSON file downloaded in **Step 3**.
+### 1. Navigate to Cloud Run
+- Open the **Cloud Run** service in the **Google Cloud Console**.
 
-4. Save the settings and deploy the service.
+### 2. Create a New Service
+- Click **Create Service**.
+- Under **Deploy one revision from an existing container image**, specify:
+  ```
+  stephengpope/no-code-architects-toolkit:latest
+  ```
+
+### 3. Allow Unauthenticated Invocations
+- Check the box to **allow unauthenticated invocations**.
+
+### 4. Configure Resource Allocation
+- Set **Memory**: `16 GB`.
+- Set **CPU**: `4 CPUs`.
+- Set **CPU Allocation**: **Always Allocated**.
+
+### 5. Adjust Scaling Settings
+- **Minimum Instances**: `0` (to minimize cost during idle times).
+- **Maximum Instances**: `5` (adjustable based on expected load).
+
+### 6. Add Environment Variables
+- Add the following environment variables:
+  - `API_KEY`: Your API key (e.g., `Test123`).
+  - `GCP_BUCKET_NAME`: The name of your Cloud Storage bucket.
+  - `GCP_SA_CREDENTIALS`: The JSON key of your service account.
+    - Paste the **entire contents** of the downloaded JSON key file into this field.
+    - Ensure:
+      - Proper JSON formatting.
+      - No leading or trailing spaces.
+
+### 7. Configure Advanced Settings
+- Set the **Container Port**: Default to `8080`.
+- **Request Timeout**: `300 seconds`.
+- **Concurrency**: Set to `1` to allocate one request per instance.
+
+### 8. Deploy the Service
+- Verify all settings and click **Create**.
+- The deployment process might take a few minutes. Once completed, a green checkmark should appear in the Cloud Run dashboard.
 
 ---
 

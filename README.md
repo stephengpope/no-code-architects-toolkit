@@ -7,23 +7,71 @@ The No-Code Architects Toolkit is a robust media processing API built with Flask
 
 ---
 
-## Features
+## Features of the No-Code Architects Toolkit API
 
-- **Convert Media to MP3**: Convert various media files to MP3 format.
-- **Combine Multiple Videos**: Merge multiple videos into one seamless file.
-- **Transcribe Media**: Transcribe audio directly from media files.
-- **Add Captions to Videos**: Insert captions to videos using SRT or ASS files.
-- **Upload Files to Google Drive**: Securely upload files to a Google Drive folder.
-- **Audio Mixing**: Integrate audio files with video for a fully synced experience.
-- **Keyframe Extraction**: Extract keyframes from video files for thumbnails or previews.
+### General
+- Simplifies media and data processing tasks with a variety of endpoints.
+- Supports secure authentication and seamless integration with Google Drive and cloud storage.
+- Customizable FFmpeg-based media manipulation.
 
 ---
 
-## Prerequisites
+### Core Features
+#### 1. **Authentication**
+   - Endpoint: `/v1/toolkit/authenticate`
+   - Verify API key access for authorized operations.
 
-- **Google Cloud Platform (GCP) Account**: For using Google Cloud Storage and Google Drive.
-- **Docker**: For running the application locally or in any containerized environment.
-- **Google Cloud SDK**: For managing GCP resources, downloadable from [Google Cloud SDK](https://cloud.google.com/sdk).
+#### 2. **Testing Connectivity**
+   - Endpoint: `/v1/toolkit/test`
+   - Confirms API setup by creating and uploading a test file.
+
+---
+
+### Media Transformation
+#### 3. **Convert Media to MP3**
+   - Endpoint: `/v1/media/transform/mp3`
+   - Converts audio and video files into MP3 format with optional bitrate customization.
+
+#### 4. **Transcribe Media**
+   - Endpoint: `/v1/media/transcribe`
+   - Generates transcriptions or translations from media files.
+   - Options for text, subtitles, and word-level timestamps.
+
+---
+
+### Video Processing
+#### 5. **Combine Videos**
+   - Endpoint: `/v1/video/concatenate`
+   - Merges multiple video files into one output.
+
+#### 6. **Add Captions**
+   - Endpoint: `/v1/video/caption`
+   - Adds customizable captions to videos with detailed formatting options.
+
+---
+
+### Image Processing
+#### 7. **Convert Image to Video**
+   - Endpoint: `/v1/image/transform/video`
+   - Creates videos from images, with support for length, frame rate, and zoom effects.
+
+---
+
+### Advanced Media Manipulation
+#### 8. **Flexible Media Composition**
+   - Endpoint: `/v1/ffmpeg/compose`
+   - Allows custom FFmpeg command structures for complex media tasks.
+
+---
+
+### Code Execution
+#### 9. **Execute Python Code**
+   - Endpoint: `/v1/code/execute/python`
+   - Runs Python scripts securely with configurable timeouts.
+
+---
+
+Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 
 ---
 
@@ -33,9 +81,7 @@ The following environment variables are necessary for the application to functio
 
 - `API_KEY`: A secure API key for authenticating requests.
 - `GCP_SA_CREDENTIALS`: Service account credentials in JSON format for Google Cloud Platform access.
-- `GDRIVE_USER`: The Google Drive user email associated with the service.
 - `GCP_BUCKET_NAME`: The name of the Google Cloud Storage bucket used for storage.
-- `GDRIVE_FOLDER_ID`: The Google Drive folder ID where files will be uploaded.
 
 ---
 
@@ -44,7 +90,7 @@ The following environment variables are necessary for the application to functio
 1. **Build the Docker Image**:
 
    ```bash
-   docker build -t media-processing-api .
+   docker build -t no-code-architects-toolkit .
    ```
 
 2. **Run the Docker Container**:
@@ -53,30 +99,9 @@ The following environment variables are necessary for the application to functio
    docker run -d -p 8080:8080 \
      -e API_KEY=your_api_key \
      -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
-     -e GDRIVE_USER=your_gdrive_user@example.com \
      -e GCP_BUCKET_NAME=your_gcs_bucket_name \
-     media-processing-api
+     no-code-architects-toolkit
    ```
-
----
-
-## API Documentation
-
-The following API endpoints are available. Detailed documentation for each endpoint is in the `docs` folder:
-
-1. **[Transcribe Media v1](docs/v1/transcribe-media.md)** - Transcribes media audio.
-2. **[FFmpeg Compose v1](docs/v1/ffmpeg-compose.md)** - Custom media composition using FFmpeg.
-3. **[Authenticate](docs/authenticate.md)** - Verifies API key for access.
-4. **[Media to MP3](docs/media-to-mp3.md)** - Converts media files to MP3.
-5. **[Transcribe Media](docs/transcribe-media.md)** - Transcribes media audio.
-6. **[Image to Video](docs/image-to-video.md)** - Converts images into a video.
-7. **[Caption Video](docs/caption-video.md)** - Adds captions to videos.
-8. **[Combine Videos](docs/combine-videos.md)** - Merges multiple videos.
-9. **[Audio Mixing](docs/audio-mixing.md)** - Mixes audio into video files.
-10. **[Google Drive Upload](docs/gdrive-upload.md)** - Uploads files to Google Drive.
-11. **[Extract Keyframes](docs/extract-keyframes.md)** - Extracts video keyframes.
-
-Refer to each linked file for comprehensive examples, request/response structures, and usage notes.
 
 ---
 

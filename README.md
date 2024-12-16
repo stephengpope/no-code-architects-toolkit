@@ -18,10 +18,10 @@ Join a supportive community and get dedicated tech support inside the **[No-Code
 The ONLY community where you learn to leverage AI automation and content to grow your business (and streamline your biz).
 
 Who's this for?
-➡️ Coaches and consultants
-➡️ AI Automation agencies
-➡️ SMMA & Content agencies
-➡️ SaaS Startup Founders
+- AI Automation agencies
+- SMMA & Content agencies
+- SaaS Startup Founders
+- Coaches and consultants
 
 Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**
 

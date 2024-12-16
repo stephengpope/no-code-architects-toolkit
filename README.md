@@ -35,6 +35,8 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ## Features of the No-Code Architects Toolkit API
 
+Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
+
 ### Advanced Media Manipulation
 
 #### 1. `/v1/ffmpeg/compose`
@@ -92,8 +94,6 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 #### 9. `/v1/authenticate`
 - **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
 - **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
-
-Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 
 ---
 

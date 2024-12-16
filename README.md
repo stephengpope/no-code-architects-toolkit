@@ -7,7 +7,7 @@ Tired of wasting thousands of dollars on API subscriptions to support all your a
 
 The 100% FREE No-Code Architects Toolkit API processes different types of media. It is built in Python using Flask.
 
-## What can it do?
+## What Can It Do?
 
 The API can convert audio files. It creates transcriptions of content. It translates content between languages. It adds captions to videos. It can do very complicated media processing for content creation. The API can also manage files across multiple cloud services like Google Drive, Amazon S3, Google Cloud Storage, and Dropbox.
 

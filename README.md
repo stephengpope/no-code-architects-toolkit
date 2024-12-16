@@ -109,16 +109,13 @@ The following environment variables are necessary for the application to functio
 
 Follow these steps to set up the No-Code Architects Toolkit API. For a detailed walkthrough, watch the [video installation instructions](https://youtu.be/6bC93sek9v8).
 
-```https://hub.docker.com/r/stephengpope/no-code-architects-toolkit```
-
 ---
 
 ### Resources
 
-- **Docker Image**: [stephengpope/no-code-architects-toolkit:latest](https://hub.docker.com/r/stephengpope/no-code-architects-toolkit)
+- **Docker Image**: stephengpope/no-code-architects-toolkit:latest
 - **Postman Template**: [https://bit.ly/49Gkh61](https://bit.ly/49Gkh61)
 - **NCA Toolkit API GPT**: [https://bit.ly/4feDDk4](https://bit.ly/4feDDk4)
-- **GitHub Repository**: [https://bit.ly/3DhFo2A](https://bit.ly/3DhFo2A)
 
 ---
 

@@ -120,13 +120,17 @@ The following environment variables are necessary for the application to functio
 
 # **Installing the NCA Toolkit API on Google Cloud Platform (GCP)**
 
-## 🎥 Video Installation Instructions
+## 🎥 Video Instructions
 
-Watch these **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
+Watch this **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
 
-- **Docker Image**: stephengpope/no-code-architects-toolkit:latest
+- Use the **Docker Image** below:
 
-### Mentioned Resources
+  ```
+  stephengpope/no-code-architects-toolkit:latest
+  ```
+
+### Video Resources
 
 - **[Postman Template](https://bit.ly/49Gkh61)**
 - **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** 
@@ -198,7 +202,8 @@ Enable the following APIs:
 
 ### 2. Create a New Service
 - Click **Create Service**.
-- Then **Deploy one revision from Docker using the contrainer below**:
+- Then **Deploy one revision from Docker Hub using the image below**:
+
   ```
   stephengpope/no-code-architects-toolkit:latest
   ```

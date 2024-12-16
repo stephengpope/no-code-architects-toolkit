@@ -198,7 +198,7 @@ Enable the following APIs:
 
 ### 2. Create a New Service
 - Click **Create Service**.
-- Under **Deploy one revision from an existing container image**, specify:
+- Then **Deploy one revision from Docker using the contrainer below**:
   ```
   stephengpope/no-code-architects-toolkit:latest
   ```

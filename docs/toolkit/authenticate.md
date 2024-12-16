@@ -1,20 +1,19 @@
-# Authenticate Endpoint
+# Authenticate Endpoint Documentation
 
 ## 1. Overview
 
-The `/v1/toolkit/authenticate` endpoint is a part of the `v1_toolkit_auth` blueprint and is responsible for authenticating requests to the API. It checks if the provided API key matches the expected value, and if so, grants access to the API. This endpoint is essential for securing the API and ensuring that only authorized clients can access the available resources.
+The `/v1/toolkit/authenticate` endpoint is a part of the `v1_toolkit_auth` blueprint in the Flask application. Its purpose is to authenticate requests by verifying the provided API key against a predefined value. This endpoint serves as a gatekeeper for accessing other protected endpoints within the API.
 
 ## 2. Endpoint
 
-```
-GET /v1/toolkit/authenticate
-```
+- **URL Path**: `/v1/toolkit/authenticate`
+- **HTTP Method**: `GET`
 
 ## 3. Request
 
 ### Headers
 
-- `X-API-Key` (required): The API key used for authentication.
+- `X-API-Key` (required): The API key to be verified for authentication.
 
 ### Body Parameters
 
@@ -30,49 +29,63 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" http://localhost:8080/v1/toolkit/authen
 
 ### Success Response
 
-**Status Code:** 200 OK
-
-**Response Body:**
+If the provided API key matches the predefined value (`API_KEY` environment variable), the endpoint will return a 200 OK status code with the following response:
 
 ```json
 {
-  "message": "Authorized",
+  "code": 200,
   "endpoint": "/authenticate",
-  "code": 200
+  "id": null,
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "success",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 0,
+  "response": "Authorized",
+  "run_time": 0.001,
+  "total_time": 0.001,
+  "build_number": "1.0.0"
 }
 ```
 
 ### Error Responses
 
-**Status Code:** 401 Unauthorized
-
-**Response Body:**
+If the provided API key does not match the predefined value, the endpoint will return a 401 Unauthorized status code with the following response:
 
 ```json
 {
-  "message": "Unauthorized",
+  "code": 401,
   "endpoint": "/authenticate",
-  "code": 401
+  "id": null,
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "Unauthorized",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 0,
+  "response": null,
+  "run_time": 0.001,
+  "total_time": 0.001,
+  "build_number": "1.0.0"
 }
 ```
 
 ## 5. Error Handling
 
-- If the provided `X-API-Key` header does not match the expected `API_KEY` value, the endpoint will return a 401 Unauthorized response.
-- The main application context (`app.py`) includes error handling for the queue length. If the maximum queue length (`MAX_QUEUE_LENGTH`) is reached, the endpoint will return a 429 Too Many Requests response.
+The main error that can occur with this endpoint is providing an invalid or missing API key. In such cases, the endpoint will return a 401 Unauthorized status code with an appropriate error message.
 
 ## 6. Usage Notes
 
-- This endpoint should be called before making any other requests to the API to ensure that the client is authenticated.
-- The `X-API-Key` header must be included in all subsequent requests to the API.
+- This endpoint is designed to be used as a gatekeeper for other protected endpoints within the API.
+- The API key must be provided in the `X-API-Key` header for every request to this endpoint.
+- The API key is typically a secret value that should be kept secure and not shared publicly.
 
 ## 7. Common Issues
 
 - Forgetting to include the `X-API-Key` header in the request.
-- Using an incorrect or expired API key.
+- Providing an incorrect or invalid API key.
 
 ## 8. Best Practices
 
-- Keep the API key secure and avoid exposing it in client-side code or publicly accessible repositories.
-- Consider implementing additional security measures, such as rate limiting or IP whitelisting, to further secure the API.
-- Regularly rotate the API key to mitigate the risk of unauthorized access.
+- Keep the API key secure and avoid storing it in plaintext or committing it to version control systems.
+- Consider implementing additional security measures, such as rate limiting or IP whitelisting, to further protect the authentication endpoint.
+- Regularly rotate or update the API key to enhance security.

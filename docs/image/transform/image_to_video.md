@@ -1,8 +1,8 @@
-# Image to Video Endpoint
+# Image to Video Endpoint Documentation
 
 ## 1. Overview
 
-The `/v1/image/transform/video` endpoint is a part of the Flask API application and is responsible for converting an image into a video file. This endpoint is registered in the `app.py` file under the `v1_image_transform_video_bp` blueprint.
+The `/v1/image/transform/video` endpoint is part of the Flask API application and is responsible for converting an image into a video file. This endpoint is registered in the `app.py` file under the `v1_image_transform_video_bp` blueprint, which is imported from the `routes.v1.image.transform.image_to_video` module.
 
 ## 2. Endpoint
 
@@ -19,12 +19,32 @@ The `/v1/image/transform/video` endpoint is a part of the Flask API application 
 
 The request body must be a JSON object with the following properties:
 
-- `image_url` (required, string): The URL of the image to be converted into a video.
-- `length` (optional, number): The desired length of the video in seconds. Default is 5 seconds. Minimum value is 1, and maximum value is 60.
-- `frame_rate` (optional, integer): The frame rate of the output video. Default is 30 frames per second. Minimum value is 15, and maximum value is 60.
-- `zoom_speed` (optional, number): The speed at which the image should zoom in or out during the video. Default is 3%. Minimum value is 0, and maximum value is 100.
-- `webhook_url` (optional, string): The URL to which a webhook notification should be sent upon completion of the video conversion.
-- `id` (optional, string): A unique identifier for the request.
+| Parameter   | Type   | Required | Description                                                  |
+|-------------|--------|----------|--------------------------------------------------------------|
+| `image_url` | string | Yes      | The URL of the image to be converted into a video.          |
+| `length`    | number | No       | The desired length of the video in seconds (default: 5).     |
+| `frame_rate`| integer| No       | The frame rate of the output video (default: 30).           |
+| `zoom_speed`| number | No       | The speed of the zoom effect (0-100, default: 3).           |
+| `webhook_url`| string| No       | The URL to receive a webhook notification upon completion.  |
+| `id`        | string | No       | An optional ID to associate with the request.               |
+
+The `validate_payload` decorator in the `routes` file enforces the following JSON schema for the request body:
+
+```json
+{
+    "type": "object",
+    "properties": {
+        "image_url": {"type": "string", "format": "uri"},
+        "length": {"type": "number", "minimum": 1, "maximum": 60},
+        "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
+        "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
+        "webhook_url": {"type": "string", "format": "uri"},
+        "id": {"type": "string"}
+    },
+    "required": ["image_url"],
+    "additionalProperties": False
+}
+```
 
 ### Example Request
 
@@ -35,7 +55,7 @@ The request body must be a JSON object with the following properties:
     "frame_rate": 24,
     "zoom_speed": 5,
     "webhook_url": "https://example.com/webhook",
-    "id": "unique-request-id"
+    "id": "request-123"
 }
 ```
 
@@ -43,7 +63,7 @@ The request body must be a JSON object with the following properties:
 curl -X POST \
      -H "x-api-key: YOUR_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"image_url": "https://example.com/image.jpg", "length": 10, "frame_rate": 24, "zoom_speed": 5, "webhook_url": "https://example.com/webhook", "id": "unique-request-id"}' \
+     -d '{"image_url": "https://example.com/image.jpg", "length": 10, "frame_rate": 24, "zoom_speed": 5, "webhook_url": "https://example.com/webhook", "id": "request-123"}' \
      http://your-api-url/v1/image/transform/video
 ```
 
@@ -51,76 +71,117 @@ curl -X POST \
 
 ### Success Response
 
-**Status Code:** `200 OK`
+Upon successful conversion, the endpoint returns a JSON response with the following structure:
 
 ```json
 {
+    "code": 200,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
     "response": "https://cloud-storage.example.com/converted-video.mp4",
-    "endpoint": "/v1/image/transform/video",
-    "code": 200
+    "message": "success",
+    "run_time": 5.123,
+    "queue_time": 0.456,
+    "total_time": 5.579,
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "queue_length": 0,
+    "build_number": "1.0.0"
 }
 ```
+
+The `response` field contains the URL of the converted video file uploaded to cloud storage.
 
 ### Error Responses
 
-**Status Code:** `400 Bad Request`
+- **400 Bad Request**
 
 ```json
 {
+    "code": 400,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
     "message": "Invalid request payload",
-    "endpoint": "/v1/image/transform/video",
-    "code": 400
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "queue_length": 0,
+    "build_number": "1.0.0"
 }
 ```
 
-**Status Code:** `401 Unauthorized`
+- **401 Unauthorized**
 
 ```json
 {
-    "message": "Missing or invalid API key",
-    "endpoint": "/v1/image/transform/video",
-    "code": 401
+    "code": 401,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "message": "Invalid API key",
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "queue_length": 0,
+    "build_number": "1.0.0"
 }
 ```
 
-**Status Code:** `500 Internal Server Error`
+- **429 Too Many Requests**
 
 ```json
 {
-    "message": "An error occurred while processing the request",
-    "endpoint": "/v1/image/transform/video",
-    "code": 500
+    "code": 429,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "message": "MAX_QUEUE_LENGTH (100) reached",
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "queue_length": 100,
+    "build_number": "1.0.0"
+}
+```
+
+- **500 Internal Server Error**
+
+```json
+{
+    "code": 500,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "message": "Error processing image to video: <error_message>",
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "queue_length": 0,
+    "build_number": "1.0.0"
 }
 ```
 
 ## 5. Error Handling
 
-The endpoint uses the `validate_payload` decorator to validate the request payload against a JSON schema. If the payload is invalid, a `400 Bad Request` error is returned.
-
-The `authenticate` decorator is used to verify the `x-api-key` header. If the API key is missing or invalid, a `401 Unauthorized` error is returned.
-
-If an exception occurs during the image-to-video conversion process, a `500 Internal Server Error` is returned, and the error is logged with the `logger.error` function.
-
-The main application context (`app.py`) includes error handling for the task queue. If the maximum queue length is reached, a `429 Too Many Requests` error is returned.
+- **Missing or invalid parameters**: If the request payload is missing required parameters or contains invalid values, the endpoint returns a 400 Bad Request error.
+- **Authentication error**: If the provided `x-api-key` header is missing or invalid, the endpoint returns a 401 Unauthorized error.
+- **Queue limit reached**: If the maximum queue length (`MAX_QUEUE_LENGTH`) is set and the queue size reaches that limit, the endpoint returns a 429 Too Many Requests error.
+- **Other errors**: Any other exceptions raised during the image-to-video conversion process will result in a 500 Internal Server Error response, with the error message included in the response body.
 
 ## 6. Usage Notes
 
 - The `image_url` parameter must be a valid URL pointing to an image file.
-- The `length` parameter specifies the duration of the output video in seconds.
-- The `frame_rate` parameter determines the number of frames per second in the output video.
-- The `zoom_speed` parameter controls the speed at which the image zooms in or out during the video. A value of 0 means no zooming, and a value of 100 means the image will zoom in or out at the maximum speed.
-- The `webhook_url` parameter is optional and can be used to receive a notification when the video conversion is complete.
-- The `id` parameter is optional and can be used to uniquely identify the request.
+- The `length` parameter specifies the duration of the output video in seconds and must be between 1 and 60.
+- The `frame_rate` parameter determines the frame rate of the output video and must be between 15 and 60 frames per second.
+- The `zoom_speed` parameter controls the speed of the zoom effect applied to the image during the video conversion. It is a value between 0 and 100, where 0 means no zoom, and 100 is the maximum zoom speed.
+- If the `webhook_url` parameter is provided, a webhook notification will be sent to the specified URL upon completion of the conversion process.
+- The `id` parameter is an optional identifier that can be associated with the request for tracking purposes.
 
 ## 7. Common Issues
 
 - Providing an invalid or inaccessible `image_url`.
-- Specifying invalid or out-of-range values for `length`, `frame_rate`, or `zoom_speed`.
-- Reaching the maximum queue length, which will result in a `429 Too Many Requests` error.
+- Setting the `length` parameter to an extremely high value, which may result in long processing times or resource exhaustion.
+- Specifying an unsupported image format.
+- Network or connectivity issues that may cause the image download or video upload to fail.
 
 ## 8. Best Practices
 
-- Validate the `image_url` parameter before sending the request to ensure it points to a valid and accessible image file.
-- Use appropriate values for `length`, `frame_rate`, and `zoom_speed` based on your requirements and the capabilities of your system.
-- Consider implementing rate limiting or queue management strategies to prevent overloading the server with too many requests.
-- Monitor the application logs for any errors or issues that may occur during the image-to-video conversion process.
+- Validate the `image_url` parameter before submitting the request to ensure it points to a valid and accessible image file.
+- Set reasonable values for the `length` and `frame_rate` parameters based on your requirements and available resources.
+- Consider using the `webhook_url` parameter to receive notifications about the conversion process, especially for long-running or asynchronous requests.
+- Implement proper error handling and retry mechanisms in your client application to handle potential failures or network issues.
+- Monitor the API logs for any errors or warnings related to the image-to-video conversion process.
+- Use the `id` parameter to associate requests with specific users, sessions, or other identifiers for better tracking and debugging.

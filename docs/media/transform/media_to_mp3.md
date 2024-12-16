@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The `/v1/media/transform/mp3` endpoint is a part of the API's media transformation functionality. It allows users to convert various media files (audio or video) to MP3 format. This endpoint fits into the overall API structure as a part of the `v1` namespace, specifically under the `media/transform` category.
+The `/v1/media/transform/mp3` endpoint is a part of the API's media transformation functionality. It allows users to convert various media files (audio or video) to MP3 format. This endpoint fits into the overall API structure as a part of the `v1` namespace, which is dedicated to the first version of the API.
 
 ## 2. Endpoint
 
@@ -18,57 +18,67 @@ POST /v1/media/transform/mp3
 
 ### Body Parameters
 
-The request body must be in JSON format and should include the following parameters:
-
 - `media_url` (required, string): The URL of the media file to be converted.
 - `webhook_url` (optional, string): The URL to receive a webhook notification upon completion.
 - `id` (optional, string): A unique identifier for the request.
-- `bitrate` (optional, string): The desired bitrate for the output MP3 file, specified in the format `<value>k` (e.g., `128k`). If not provided, the default bitrate of `128k` will be used.
+- `bitrate` (optional, string): The desired bitrate for the MP3 output, specified in the format `<value>k` (e.g., `128k`). If not provided, defaults to `128k`.
+
+The `validate_payload` directive in the routes file enforces the following JSON schema for the request body:
+
+```json
+{
+    "type": "object",
+    "properties": {
+        "media_url": {"type": "string", "format": "uri"},
+        "webhook_url": {"type": "string", "format": "uri"},
+        "id": {"type": "string"},
+        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"}
+    },
+    "required": ["media_url"],
+    "additionalProperties": False
+}
+```
 
 ### Example Request
 
 ```json
 {
-  "media_url": "https://example.com/video.mp4",
-  "webhook_url": "https://example.com/webhook",
-  "id": "unique-request-id",
-  "bitrate": "192k"
+    "media_url": "https://example.com/video.mp4",
+    "webhook_url": "https://example.com/webhook",
+    "id": "unique-request-id",
+    "bitrate": "192k"
 }
 ```
 
 ```bash
 curl -X POST \
-  https://api.example.com/v1/media/transform/mp3 \
-  -H 'x-api-key: YOUR_API_KEY' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "media_url": "https://example.com/video.mp4",
-    "webhook_url": "https://example.com/webhook",
-    "id": "unique-request-id",
-    "bitrate": "192k"
-  }'
+     -H "x-api-key: YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"media_url": "https://example.com/video.mp4", "webhook_url": "https://example.com/webhook", "id": "unique-request-id", "bitrate": "192k"}' \
+     https://your-api-endpoint.com/v1/media/transform/mp3
 ```
 
 ## 4. Response
 
 ### Success Response
 
-**Status Code:** 200 OK
+Upon successful conversion, the endpoint returns a JSON response with the following structure:
 
 ```json
 {
-  "code": 200,
-  "id": "unique-request-id",
-  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-  "response": "https://cloud.example.com/converted.mp3",
-  "message": "success",
-  "run_time": 12.345,
-  "queue_time": 0.123,
-  "total_time": 12.468,
-  "pid": 12345,
-  "queue_id": 1234567890,
-  "queue_length": 0,
-  "build_number": "1.0.0"
+    "endpoint": "/v1/media/transform/mp3",
+    "code": 200,
+    "id": "unique-request-id",
+    "job_id": "generated-job-id",
+    "response": "https://cloud-storage.com/converted-file.mp3",
+    "message": "success",
+    "pid": 12345,
+    "queue_id": 1234567890,
+    "run_time": 5.123,
+    "queue_time": 0.456,
+    "total_time": 5.579,
+    "queue_length": 0,
+    "build_number": "1.0.0"
 }
 ```
 
@@ -76,74 +86,46 @@ The `response` field contains the URL of the converted MP3 file uploaded to clou
 
 ### Error Responses
 
-**Status Code:** 400 Bad Request
+- **400 Bad Request**: Returned when the request payload is invalid or missing required parameters.
+- **401 Unauthorized**: Returned when the `x-api-key` header is missing or invalid.
+- **500 Internal Server Error**: Returned when an unexpected error occurs during the conversion process.
+
+Example error response:
 
 ```json
 {
-  "code": 400,
-  "id": "unique-request-id",
-  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-  "message": "Invalid request payload",
-  "pid": 12345,
-  "queue_id": 1234567890,
-  "queue_length": 0,
-  "build_number": "1.0.0"
-}
-```
-
-**Status Code:** 401 Unauthorized
-
-```json
-{
-  "code": 401,
-  "id": "unique-request-id",
-  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-  "message": "Missing or invalid API key",
-  "pid": 12345,
-  "queue_id": 1234567890,
-  "queue_length": 0,
-  "build_number": "1.0.0"
-}
-```
-
-**Status Code:** 500 Internal Server Error
-
-```json
-{
-  "code": 500,
-  "id": "unique-request-id",
-  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-  "message": "An error occurred during media conversion",
-  "pid": 12345,
-  "queue_id": 1234567890,
-  "queue_length": 0,
-  "build_number": "1.0.0"
+    "code": 400,
+    "message": "Invalid request payload: 'media_url' is a required property"
 }
 ```
 
 ## 5. Error Handling
 
-- **Missing or Invalid Parameters**: If the required `media_url` parameter is missing or invalid, or if any other provided parameters are invalid, the endpoint will return a 400 Bad Request error.
-- **Authentication Error**: If the `x-api-key` header is missing or invalid, the endpoint will return a 401 Unauthorized error.
-- **Internal Server Error**: If an unexpected error occurs during the media conversion process, the endpoint will return a 500 Internal Server Error.
-- **Queue Limit Reached**: If the maximum queue length (`MAX_QUEUE_LENGTH`) is set and the task queue has reached its limit, the endpoint will return a 429 Too Many Requests error.
+The endpoint handles the following common errors:
+
+- Missing or invalid `media_url` parameter: Returns a 400 Bad Request error.
+- Invalid `bitrate` parameter: Returns a 400 Bad Request error.
+- Authentication failure: Returns a 401 Unauthorized error.
+- Unexpected exceptions during the conversion process: Returns a 500 Internal Server Error error.
+
+Additionally, the main application context (`app.py`) includes error handling for queue overload. If the maximum queue length is reached, the endpoint returns a 429 Too Many Requests error.
 
 ## 6. Usage Notes
 
-- The `media_url` parameter should point to a valid media file (audio or video) that can be converted to MP3 format.
-- If the `webhook_url` parameter is provided, a webhook notification will be sent to the specified URL upon completion of the conversion process.
-- The `id` parameter can be used to uniquely identify the request, which can be helpful for tracking and logging purposes.
-- The `bitrate` parameter allows you to specify the desired bitrate for the output MP3 file. If not provided, the default bitrate of `128k` will be used.
+- The `media_url` parameter should point to a valid media file (audio or video) that can be processed by the conversion service.
+- The `webhook_url` parameter is optional and can be used to receive a notification when the conversion is complete.
+- The `id` parameter is optional and can be used to associate the request with a specific identifier.
+- The `bitrate` parameter is optional and defaults to `128k` if not provided.
 
 ## 7. Common Issues
 
 - Providing an invalid or inaccessible `media_url`.
-- Attempting to convert unsupported media formats.
-- Providing an invalid `bitrate` value (e.g., not following the `<value>k` format).
+- Specifying an invalid `bitrate` value (e.g., not following the `<value>k` format).
+- Reaching the maximum queue length, resulting in a 429 Too Many Requests error.
 
 ## 8. Best Practices
 
-- Always provide a valid `x-api-key` header for authentication.
-- Consider using the `webhook_url` parameter to receive notifications about the conversion process completion.
-- Ensure that the provided `media_url` is accessible and points to a valid media file.
-- If you need to convert multiple media files, consider using a queue or batch processing approach to avoid overwhelming the server with too many concurrent requests.
+- Validate the `media_url` parameter before sending the request to ensure it points to a valid and accessible media file.
+- Use the `id` parameter to associate requests with specific identifiers for better tracking and debugging.
+- Consider providing a `webhook_url` to receive notifications about the conversion status and the resulting file URL.
+- Monitor the queue length and adjust the `MAX_QUEUE_LENGTH` environment variable accordingly to prevent overloading the system.

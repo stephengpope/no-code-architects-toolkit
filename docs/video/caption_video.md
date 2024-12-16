@@ -2,33 +2,32 @@
 
 ## 1. Overview
 
-The `/v1/video/caption` endpoint is part of the Video API in version 1 of the application. It allows users to add captions to a video file, with various customization options for the caption appearance and behavior. This endpoint utilizes the enhanced `process_captioning_v1` service, which provides more advanced captioning capabilities compared to the previous version.
+The `/v1/video/caption` endpoint is part of the Video API and is responsible for adding captions to a video file. It accepts a video URL, caption text, and various styling options for the captions. The endpoint utilizes the `process_captioning_v1` service to generate a captioned video file, which is then uploaded to cloud storage, and the cloud URL is returned in the response.
 
 ## 2. Endpoint
 
-```
-POST /v1/video/caption
-```
+**URL:** `/v1/video/caption`
+**Method:** `POST`
 
 ## 3. Request
 
 ### Headers
 
-- `x-api-key` (required): The API key for authentication.
+- `x-api-key`: Required. The API key for authentication.
 
 ### Body Parameters
 
 The request body should be a JSON object with the following properties:
 
-- `video_url` (required, string): The URL of the video file to be captioned.
-- `captions` (optional, string): The caption text to be added to the video.
-- `settings` (optional, object): An object containing various settings for customizing the caption appearance and behavior. See the schema below for available options.
-- `replace` (optional, array): An array of objects with `find` and `replace` properties, specifying text replacements to be made in the captions.
-- `webhook_url` (optional, string): The URL to receive a webhook notification when the captioning process is complete.
-- `id` (optional, string): A unique identifier for the request.
-- `language` (optional, string): The language code for the captions (e.g., 'en', 'fr'). Defaults to 'auto'.
+- `video_url` (string, required): The URL of the video file to be captioned.
+- `captions` (string, optional): The caption text to be added to the video.
+- `settings` (object, optional): An object containing various styling options for the captions. See the schema below for available options.
+- `replace` (array, optional): An array of objects with `find` and `replace` properties, specifying text replacements to be made in the captions.
+- `webhook_url` (string, optional): A URL to receive a webhook notification when the captioning process is complete.
+- `id` (string, optional): An identifier for the request.
+- `language` (string, optional): The language code for the captions (e.g., "en", "fr"). Defaults to "auto".
 
-The `settings` object has the following schema:
+#### Settings Schema
 
 ```json
 {
@@ -90,7 +89,7 @@ The `settings` object has the following schema:
         "alignment": "left",
         "font_family": "Arial",
         "font_size": 24,
-        "bold": true,
+        "bold": false,
         "italic": false,
         "underline": false,
         "strikeout": false,
@@ -107,7 +106,7 @@ The `settings` object has the following schema:
         }
     ],
     "webhook_url": "https://example.com/webhook",
-    "id": "unique-request-id",
+    "id": "request-123",
     "language": "en"
 }
 ```
@@ -132,7 +131,7 @@ curl -X POST \
         "alignment": "left",
         "font_family": "Arial",
         "font_size": 24,
-        "bold": true,
+        "bold": false,
         "italic": false,
         "underline": false,
         "strikeout": false,
@@ -149,7 +148,7 @@ curl -X POST \
         }
     ],
     "webhook_url": "https://example.com/webhook",
-    "id": "unique-request-id",
+    "id": "request-123",
     "language": "en"
 }'
 ```
@@ -158,86 +157,104 @@ curl -X POST \
 
 ### Success Response
 
-**Status Code:** 200 OK
+The response will be a JSON object with the following properties:
+
+- `code` (integer): The HTTP status code (200 for success).
+- `id` (string): The request identifier, if provided in the request.
+- `job_id` (string): A unique identifier for the job.
+- `response` (string): The cloud URL of the captioned video file.
+- `message` (string): A success message.
+- `pid` (integer): The process ID of the worker that processed the request.
+- `queue_id` (integer): The ID of the queue used for processing the request.
+- `run_time` (float): The time taken to process the request (in seconds).
+- `queue_time` (float): The time the request spent in the queue (in seconds).
+- `total_time` (float): The total time taken to process the request, including queue time (in seconds).
+- `queue_length` (integer): The current length of the processing queue.
+- `build_number` (string): The build number of the application.
 
 ```json
 {
-    "response": "https://cloud.example.com/captioned-video.mp4",
-    "endpoint": "/v1/video/caption",
     "code": 200,
-    "id": "unique-request-id",
-    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "id": "request-123",
+    "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "response": "https://storage.example.com/captioned-video.mp4",
     "message": "success",
-    "pid": 12345,
-    "queue_id": 6789,
+    "pid": 123,
+    "queue_id": 140567495862272,
     "run_time": 5.234,
-    "queue_time": 0.123,
-    "total_time": 5.357,
+    "queue_time": 0.012,
+    "total_time": 5.246,
     "queue_length": 0,
     "build_number": "1.0.0"
 }
 ```
-
-The response contains the URL of the captioned video file uploaded to cloud storage.
 
 ### Error Responses
 
-**Status Code:** 400 Bad Request
+#### 400 Bad Request
+
+Returned when there is an issue with the request payload, such as missing or invalid parameters.
 
 ```json
 {
-    "error": "Invalid video URL",
-    "endpoint": "/v1/video/caption",
     "code": 400,
-    "id": "unique-request-id",
-    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-    "message": "Invalid video URL",
-    "pid": 12345,
-    "queue_id": 6789,
-    "run_time": 0.001,
-    "queue_time": 0.0,
-    "total_time": 0.001,
+    "id": "request-123",
+    "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "message": "Invalid request payload",
+    "pid": 123,
+    "queue_id": 140567495862272,
     "queue_length": 0,
     "build_number": "1.0.0"
 }
 ```
 
-**Status Code:** 400 Bad Request (Font Error)
+#### 400 Font Error
+
+Returned when there is an issue with the requested font family.
 
 ```json
 {
-    "error": "Font 'CustomFont' is not available. Please choose from the available fonts.",
+    "error": "The requested font family 'InvalidFont' is not available. Please choose from the available fonts.",
     "available_fonts": ["Arial", "Times New Roman", "Courier New", ...],
-    "endpoint": "/v1/video/caption",
     "code": 400,
-    "id": "unique-request-id",
-    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-    "message": "Font 'CustomFont' is not available. Please choose from the available fonts.",
-    "pid": 12345,
-    "queue_id": 6789,
-    "run_time": 0.001,
-    "queue_time": 0.0,
-    "total_time": 0.001,
+    "id": "request-123",
+    "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "pid": 123,
+    "queue_id": 140567495862272,
     "queue_length": 0,
     "build_number": "1.0.0"
 }
 ```
 
-**Status Code:** 500 Internal Server Error
+#### 429 Too Many Requests
+
+Returned when the processing queue has reached its maximum length.
 
 ```json
 {
-    "error": "An unexpected error occurred during captioning process.",
-    "endpoint": "/v1/video/caption",
+    "code": 429,
+    "id": "request-123",
+    "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "message": "MAX_QUEUE_LENGTH (100) reached",
+    "pid": 123,
+    "queue_id": 140567495862272,
+    "queue_length": 100,
+    "build_number": "1.0.0"
+}
+```
+
+#### 500 Internal Server Error
+
+Returned when an unexpected error occurs during the captioning process.
+
+```json
+{
     "code": 500,
-    "id": "unique-request-id",
-    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-    "message": "An unexpected error occurred during captioning process.",
-    "pid": 12345,
-    "queue_id": 6789,
-    "run_time": 0.001,
-    "queue_time": 0.0,
-    "total_time": 0.001,
+    "id": "request-123",
+    "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+    "message": "An unexpected error occurred during the captioning process.",
+    "pid": 123,
+    "queue_id": 140567495862272,
     "queue_length": 0,
     "build_number": "1.0.0"
 }
@@ -247,33 +264,30 @@ The response contains the URL of the captioned video file uploaded to cloud stor
 
 The endpoint handles the following common errors:
 
-- **Missing or invalid parameters**: If required parameters are missing or have an invalid format, a 400 Bad Request error is returned with an appropriate error message.
-- **Font errors**: If the specified font is not available, a 400 Bad Request error is returned with a list of available fonts.
-- **Unexpected errors**: If an unexpected error occurs during the captioning process, a 500 Internal Server Error is returned with a generic error message.
-
-Additionally, the main application context (`app.py`) includes error handling for queue overload. If the maximum queue length (`MAX_QUEUE_LENGTH`) is set and the queue size reaches that limit, a 429 Too Many Requests error is returned with a message indicating that the queue is full.
+- **Missing or invalid parameters**: If any required parameters are missing or invalid, a 400 Bad Request error is returned.
+- **Font error**: If the requested font family is not available, a 400 Bad Request error is returned, along with a list of available fonts.
+- **Queue limit reached**: If the processing queue has reached its maximum length (determined by the `MAX_QUEUE_LENGTH` environment variable), a 429 Too Many Requests error is returned.
+- **Unexpected errors**: If an unexpected error occurs during the captioning process, a 500 Internal Server Error is returned.
 
 ## 6. Usage Notes
 
 - The `video_url` parameter is required, and it should be a valid URL pointing to a video file.
 - The `captions` parameter is optional. If not provided, the video will be processed without captions.
-- The `settings` parameter allows customizing various aspects of the caption appearance and behavior. Refer to the schema for available options.
-- The `replace` parameter allows specifying text replacements to be made in the captions.
+- The `settings` parameter allows you to customize the appearance and behavior of the captions. Refer to the settings schema for available options.
+- The `replace` parameter allows you to specify text replacements to be made in the captions.
 - The `webhook_url` parameter is optional. If provided, a webhook notification will be sent to the specified URL when the captioning process is complete.
-- The `id` parameter is optional and can be used to uniquely identify the request.
-- The `language` parameter is optional and specifies the language code for the captions. If not provided, it defaults to 'auto'.
+- The `id` parameter is optional and can be used to identify the request.
+- The `language` parameter is optional and specifies the language of the captions. If not provided, the language will be automatically detected.
 
 ## 7. Common Issues
 
-- Providing an invalid or inaccessible `video_url`.
-- Specifying invalid or unsupported values for the `settings` parameters.
-- Requesting an unavailable font family.
-- Exceeding the maximum queue length, if set.
+- **Invalid video URL**: Ensure that the `video_url` parameter points to a valid and accessible video file.
+- **Unsupported video format**: The captioning process may not support certain video formats. If you encounter issues, try converting the video to a more common format like MP4 or AVI.
+- **Font availability**: The captioning process may not have access to certain font families. If you encounter a font error, choose from the list of available fonts provided in the error response.
 
 ## 8. Best Practices
 
-- Validate the `video_url` parameter before sending the request to ensure it points to a valid and accessible video file.
-- Test the caption settings with sample videos to ensure the desired appearance and behavior.
-- Use the `replace` parameter judiciously to avoid unintended text replacements in the captions.
-- Monitor the queue length and adjust the `MAX_QUEUE_LENGTH` setting as needed to prevent queue overload.
-- Implement error handling and retry mechanisms in your client application to handle potential errors and failures.
+- **Validate input**: Always validate the input parameters to ensure they meet the expected format and requirements.
+- **Use webhooks**: Utilize the `webhook_url` parameter to receive notifications when the captioning process is complete, rather than polling for the result.
+- **Optimize settings**: Adjust the caption settings based on the video resolution and content to ensure readability and aesthetics.
+- **Test locally**: Before deploying to production, test the captioning process locally with various video files and settings to identify and resolve any issues.

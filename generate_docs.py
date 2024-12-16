@@ -44,23 +44,30 @@ CLAUDE_PROMPT = '''
     I am providing you with a Python file containing API endpoint definitions.
     
     First, here is the main application context from app.py that shows how the API is structured and handled:
-    
+
+** app.py below
+
 {app_context}
 
+** app.py DONE
+
     Now, please read through the following endpoint code and analyze it in the context of the main application:
-    
+
+**endpoint below
+
 {file_content}
 
     Please generate detailed documentation in Markdown format as follows:
+
     1. Overview: Describe the purpose of the endpoint and how it fits into the overall API structure shown in app.py.
     2. Endpoint: Specify the URL path and HTTP method.
     3. Request:
     - Headers: List any required headers, such as the x-api-key headers.
     - Body Parameters: List the required and optional parameters, including the parameter type and purpose.
-    - specifically study the validate_payload directive in the routes files to build the documentation
+    - Specifically study the validate_payload directive in the routes file to build the documentation
     - Example Request: Provide a sample request payload and a sample curl command.
     4. Response:
-    - Success Response: Show the status code, and provide an example JSON response for a successful request.
+    - Success Response: Reference the endpoint and general response from the app.py to show a full sample response from the api
     - Error Responses: Include examples of common error status codes, with example JSON responses for each.
     5. Error Handling: 
     - Describe common errors, like missing or invalid parameters, and indicate which status codes they produce

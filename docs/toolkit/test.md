@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The `/v1/toolkit/test` endpoint is a part of the NCA Toolkit API and is designed to test the API setup. It creates a temporary file, uploads it to cloud storage, and then returns the upload URL. This endpoint serves as a simple test to ensure that the API is correctly installed and configured.
+The `/v1/toolkit/test` endpoint is a part of the NCA Toolkit API and is designed to test the API setup. It creates a temporary file, uploads it to cloud storage, and then returns the upload URL. This endpoint serves as a simple test to ensure that the API is properly configured and functioning correctly.
 
 ## 2. Endpoint
 
@@ -31,57 +31,66 @@ curl -X GET \
 
 ### Success Response
 
-**Status Code:** `200 OK`
-
-**Example JSON Response:**
-
 ```json
 {
-  "response": "https://cloud.example.com/success.txt",
   "endpoint": "/v1/toolkit/test",
-  "code": 200
+  "code": 200,
+  "id": null,
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "response": "https://storage.example.com/success.txt",
+  "message": "success",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "run_time": 0.123,
+  "queue_time": 0.0,
+  "total_time": 0.123,
+  "queue_length": 0,
+  "build_number": "1.0.0"
 }
 ```
 
 ### Error Responses
 
-**Status Code:** `401 Unauthorized`
-
-**Example JSON Response:**
+**Status Code: 401 Unauthorized**
 
 ```json
 {
-  "message": "Invalid or missing API key",
-  "code": 401
+  "code": 401,
+  "message": "Unauthorized"
 }
 ```
 
-**Status Code:** `500 Internal Server Error`
-
-**Example JSON Response:**
+**Status Code: 500 Internal Server Error**
 
 ```json
 {
-  "message": "An error occurred while testing the API setup",
-  "code": 500
+  "code": 500,
+  "id": null,
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "Error message",
+  "pid": 12345,
+  "queue_id": 1234567890,
+  "queue_length": 0,
+  "build_number": "1.0.0"
 }
 ```
 
 ## 5. Error Handling
 
-- **Missing or Invalid API Key:** If the `x-api-key` header is missing or invalid, the endpoint will return a `401 Unauthorized` status code with an appropriate error message.
-- **Internal Server Error:** If an unexpected error occurs during the execution of the endpoint, it will return a `500 Internal Server Error` status code with an error message.
+- **401 Unauthorized**: This error occurs when the provided `x-api-key` is missing or invalid.
+- **500 Internal Server Error**: This error occurs when an unexpected exception is raised during the execution of the endpoint.
 
 ## 6. Usage Notes
 
-This endpoint is primarily used for testing purposes and does not require any specific input parameters. It can be called to verify that the API is correctly installed and configured.
+This endpoint is primarily used for testing purposes and does not require any specific input parameters. It can be called to verify that the API is set up correctly and can successfully upload files to cloud storage.
 
 ## 7. Common Issues
 
-- Incorrect API key: Ensure that the provided `x-api-key` header value is valid and has the necessary permissions.
-- Network connectivity issues: Make sure that the API server is accessible and that there are no network connectivity problems.
+- Incorrect or missing `x-api-key` header.
+- Temporary file creation or upload failures due to permissions or storage issues.
 
 ## 8. Best Practices
 
-- Use this endpoint as a part of your API testing and monitoring processes to ensure that the API is functioning correctly.
-- Regularly rotate and update your API keys to maintain security.
+- Use this endpoint as a simple health check to ensure the API is functioning correctly before attempting more complex operations.
+- Regularly test the API setup, especially after updates or changes to the environment.
+- Monitor the API logs for any errors or exceptions that may occur during the test.

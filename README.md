@@ -281,6 +281,12 @@ Thank you for your contributions!
 
 ---
 
+## How To Get Support
+
+Get courses, community, support daily calls and more.
+
+Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)** today!
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

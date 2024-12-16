@@ -2,19 +2,13 @@ name: Generate Documentation
 
 on:
   push:
-    # Adjust branches as needed
     branches:
-    #   - main
-    #   - develop
-      - 'feature/**'
+      - features/docs
     paths:
       - 'routes/*.py'
   pull_request:
-    # Same adjustment for pull_request
     branches:
-    #   - main
-    #   - develop
-      - 'feature/**'
+      - features/docs
     paths:
       - 'routes/*.py'
 
@@ -42,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install requests
 
       - name: Get list of changed files
         id: get_changed_files
@@ -62,22 +56,28 @@ jobs:
           cat changed_files.txt || echo "No changed files found."
 
       - name: Generate documentation for changed files
+        if: success()
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           if [ -s changed_files.txt ]; then
             mkdir -p docs
+            FAILED=0
             while IFS= read -r file; do
               echo "Generating documentation for $file"
-              python generate_docs.py "$file"
+              python generate_docs.py "$file" || echo "Failed to generate docs for $file" && FAILED=1
             done < changed_files.txt
+            if [ $FAILED -eq 1 ]; then
+              echo "One or more documentation generations failed."
+              exit 1
+            fi
           else
             echo "No changed files to process."
           fi
           rm -f changed_files.txt
 
       - name: Commit and push changes
-        if: github.event_name != 'pull_request'
+        if: success() && github.event_name != 'pull_request'
         run: |
           if [ -n "$(git status --porcelain docs/)" ]; then
             git config --local user.email "github-actions[bot]@users.noreply.github.com"

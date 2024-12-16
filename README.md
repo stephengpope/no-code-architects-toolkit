@@ -99,19 +99,53 @@ Each feature is supported by robust payload validation and detailed API document
 
 ## Docker Build and Run
 
-1. **Build the Docker Image**:
+### Build the Docker Image
 
    ```bash
    docker build -t no-code-architects-toolkit .
    ```
 
-The following environment variables are necessary for the application to function as intended:
+### General Environment Variables
 
-- `API_KEY`: A secure API key for authenticating requests.
-- `GCP_SA_CREDENTIALS`: Service account credentials in JSON format for Google Cloud Platform access.
-- `GCP_BUCKET_NAME`: The name of the Google Cloud Storage bucket used for storage.
+#### `API_KEY`
+- **Purpose**: Used for API authentication.
+- **Requirement**: Mandatory.
 
-2. **Run the Docker Container**:
+---
+
+### Google Cloud Platform (GCP) Environment Variables
+
+#### `GCP_SA_CREDENTIALS`
+- **Purpose**: The JSON credentials for the GCP Service Account.
+- **Requirement**: Mandatory if using GCP storage.
+
+#### `GCP_BUCKET_NAME`
+- **Purpose**: The name of the GCP storage bucket.
+- **Requirement**: Mandatory if using GCP storage.
+
+---
+
+### S3-Compatible Storage Environment Variables (e.g., DigitalOcean Spaces)
+
+#### `S3_ENDPOINT_URL`
+- **Purpose**: Endpoint URL for the S3-compatible service.
+- **Requirement**: Mandatory if using S3-compatible storage.
+
+#### `S3_ACCESS_KEY`
+- **Purpose**: The access key for the S3-compatible storage service.
+- **Requirement**: Mandatory if using S3-compatible storage.
+
+#### `S3_SECRET_KEY`
+- **Purpose**: The secret key for the S3-compatible storage service.
+- **Requirement**: Mandatory if using S3-compatible storage.
+
+---
+
+### Notes
+- Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 
+- Missing any required variables will result in errors during runtime.
+
+### Run the Docker Container**:
 
    ```bash
    docker run -d -p 8080:8080 \

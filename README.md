@@ -86,16 +86,6 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
-## Environment Variables
-
-The following environment variables are necessary for the application to function as intended:
-
-- `API_KEY`: A secure API key for authenticating requests.
-- `GCP_SA_CREDENTIALS`: Service account credentials in JSON format for Google Cloud Platform access.
-- `GCP_BUCKET_NAME`: The name of the Google Cloud Storage bucket used for storage.
-
----
-
 ## Docker Build and Run
 
 1. **Build the Docker Image**:
@@ -103,6 +93,12 @@ The following environment variables are necessary for the application to functio
    ```bash
    docker build -t no-code-architects-toolkit .
    ```
+
+The following environment variables are necessary for the application to function as intended:
+
+- `API_KEY`: A secure API key for authenticating requests.
+- `GCP_SA_CREDENTIALS`: Service account credentials in JSON format for Google Cloud Platform access.
+- `GCP_BUCKET_NAME`: The name of the Google Cloud Storage bucket used for storage.
 
 2. **Run the Docker Container**:
 

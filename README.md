@@ -21,7 +21,9 @@ Who's this for?
 - SMMA & Content agencies
 - SaaS Startup Founders
 
-Get courses, community, support and daily calls inside the **[No-Code Architects Community](https://www.skool.com/no-code-architects)**!
+Get courses, community, support and daily calls and more.
+
+Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)** today!
 
 ---
 

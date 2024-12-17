@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for file in $(find . -type f \( -iname "*.md" -o -name "*.py" -o -name "Dockerfile" \) \
+for file in $(find . -type f \( -iname "*.md" -o -iname "*.txt" -o -name "*.py" -o -name "Dockerfile" \) \
     -not -name "audio_mixing.py" \
     -not -name "authenticate.py" \
     -not -name "authentication.py" \

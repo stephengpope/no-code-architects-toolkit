@@ -101,37 +101,42 @@ RUN git clone https://github.com/libass/libass.git && \
     ldconfig && \
     cd .. && rm -rf libass
 
-# Build and install FFmpeg with all required features (without macOS-specific options)
+# Build and install FFmpeg with all required features
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
     git checkout n7.0.2 && \
-    CFLAGS="-I/usr/include/unibreak" LDFLAGS="-L/usr/lib" \
+    PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
+    CFLAGS="-I/usr/include/freetype2" \
+    LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
     ./configure --prefix=/usr/local \
-    --enable-gpl \
-    --enable-pthreads \
-    --enable-neon \
-    --enable-libaom \
-    --enable-libdav1d \
-    --enable-librav1e \
-    --enable-libsvtav1 \
-    --enable-libvmaf \
-    --enable-libzimg \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-libvpx \
-    --enable-libwebp \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-libvorbis \
-    --enable-libtheora \
-    --enable-libspeex \
-    --enable-libass \
-    --enable-libfreetype \
-    --enable-fontconfig \
-    --enable-libsrt \
-    --enable-gnutls \
-    && \
-    make -j$(nproc) && \
+        --enable-gpl \
+        --enable-pthreads \
+        --enable-neon \
+        --enable-libaom \
+        --enable-libdav1d \
+        --enable-librav1e \
+        --enable-libsvtav1 \
+        --enable-libvmaf \
+        --enable-libzimg \
+        --enable-libx264 \
+        --enable-libx265 \
+        --enable-libvpx \
+        --enable-libwebp \
+        --enable-libmp3lame \
+        --enable-libopus \
+        --enable-libvorbis \
+        --enable-libtheora \
+        --enable-libspeex \
+        --enable-libass \
+        --enable-libfreetype \
+        --enable-libharfbuzz \
+        --enable-fontconfig \
+        --enable-libsrt \
+        --enable-filter=drawtext \
+        --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
+        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
+        --enable-gnutls \
+    && make -j$(nproc) && \
     make install && \
     cd .. && rm -rf ffmpeg
 

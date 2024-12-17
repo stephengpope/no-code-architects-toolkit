@@ -41,7 +41,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 #### 1. `/v1/ffmpeg/compose`
 - **Description**: Provides a flexible way to compose and manipulate media files using FFmpeg. Supports complex media operations like transcoding, concatenation, and filtering.
-- **Documentation Link**: [FFmpeg Compose Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/compose.md)
+- **Documentation Link**: [FFmpeg Compose Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)
 
 ---
 
@@ -81,7 +81,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 #### 7. `/v1/media/transcribe`
 - **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
-- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transcribe.md)
+- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
 
 ---
 

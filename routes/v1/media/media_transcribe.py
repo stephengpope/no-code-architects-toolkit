@@ -2,7 +2,7 @@ from flask import Blueprint
 from app_utils import *
 import logging
 import os
-from services.v1.media.transcribe import process_transcribe_media
+from services.v1.media.media_transcribe import process_transcribe_media
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 

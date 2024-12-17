@@ -87,11 +87,11 @@ Each feature is supported by robust payload validation and detailed API document
 
 ### Core Features
 
-#### 8. `/v1/test`
+#### 8. `/v1/toolkit/test`
 - **Description**: A basic endpoint to verify the availability and functionality of the API. Useful for initial setup and connection tests.
 - **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
 
-#### 9. `/v1/authenticate`
+#### 9. `/v1/toolkit/authenticate`
 - **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
 - **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
 

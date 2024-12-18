@@ -1,13 +1,13 @@
 from flask import Blueprint, jsonify, request
 import logging
 from app_utils import validate_payload, queue_task_wrapper
-from services.v1.media.upload.upload import upload_file_service
+from services.v1.storage.gcp.upload import upload_file_service
 from services.authentication import authenticate
 
 v1_media_upload_bp = Blueprint('v1_media_upload', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_media_upload_bp.route('/v1/media/upload', methods=['POST'])
+@v1_media_upload_bp.route('/v1/storage/gcp/upload', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
@@ -38,10 +38,8 @@ def upload_media_v1():
         )
 
         logger.info(f"File uploaded successfully: {uploaded_file_url}")
-
         return jsonify({"file_url": uploaded_file_url}), 200
 
     except Exception as e:
         logger.error(f"Error uploading file: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-    

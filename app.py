@@ -143,7 +143,7 @@ def create_app():
     from routes.v1.toolkit.test import v1_toolkit_test_bp
     from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
     from routes.v1.code.execute.execute_python import v1_code_execute_bp
-    from routes.v1.media.upload.upload import v1_media_upload_bp
+    from routes.v1.storage.gcp.upload import v1_media_upload_bp
 
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
@@ -156,7 +156,6 @@ def create_app():
     app.register_blueprint(v1_toolkit_auth_bp)
     app.register_blueprint(v1_code_execute_bp)
     app.register_blueprint(v1_media_upload_bp)
-
     return app
 
 app = create_app()

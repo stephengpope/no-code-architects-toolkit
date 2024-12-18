@@ -2,7 +2,7 @@ import os
 import logging
 from flask import Blueprint, request, jsonify
 from app_utils import *
-from services.v1.ffmpeg.compose import process_ffmpeg_compose
+from services.v1.ffmpeg.ffmpeg_compose import process_ffmpeg_compose
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 

@@ -101,37 +101,42 @@ RUN git clone https://github.com/libass/libass.git && \
     ldconfig && \
     cd .. && rm -rf libass
 
-# Build and install FFmpeg with all required features (without macOS-specific options)
+# Build and install FFmpeg with all required features
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
     git checkout n7.0.2 && \
-    CFLAGS="-I/usr/include/unibreak" LDFLAGS="-L/usr/lib" \
+    PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
+    CFLAGS="-I/usr/include/freetype2" \
+    LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
     ./configure --prefix=/usr/local \
-    --enable-gpl \
-    --enable-pthreads \
-    --enable-neon \
-    --enable-libaom \
-    --enable-libdav1d \
-    --enable-librav1e \
-    --enable-libsvtav1 \
-    --enable-libvmaf \
-    --enable-libzimg \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-libvpx \
-    --enable-libwebp \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-libvorbis \
-    --enable-libtheora \
-    --enable-libspeex \
-    --enable-libass \
-    --enable-libfreetype \
-    --enable-fontconfig \
-    --enable-libsrt \
-    --enable-gnutls \
-    && \
-    make -j$(nproc) && \
+        --enable-gpl \
+        --enable-pthreads \
+        --enable-neon \
+        --enable-libaom \
+        --enable-libdav1d \
+        --enable-librav1e \
+        --enable-libsvtav1 \
+        --enable-libvmaf \
+        --enable-libzimg \
+        --enable-libx264 \
+        --enable-libx265 \
+        --enable-libvpx \
+        --enable-libwebp \
+        --enable-libmp3lame \
+        --enable-libopus \
+        --enable-libvorbis \
+        --enable-libtheora \
+        --enable-libspeex \
+        --enable-libass \
+        --enable-libfreetype \
+        --enable-libharfbuzz \
+        --enable-fontconfig \
+        --enable-libsrt \
+        --enable-filter=drawtext \
+        --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
+        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
+        --enable-gnutls \
+    && make -j$(nproc) && \
     make install && \
     cd .. && rm -rf ffmpeg
 
@@ -150,31 +155,37 @@ WORKDIR /app
 # Set environment variable for Whisper cache
 ENV WHISPER_CACHE_DIR="/app/whisper_cache"
 
-# Create cache directory
-RUN mkdir -p ${WHISPER_CACHE_DIR} && chmod 777 ${WHISPER_CACHE_DIR}
+# Create cache directory (no need for chown here yet)
+RUN mkdir -p ${WHISPER_CACHE_DIR} 
 
 # Copy the requirements file first to optimize caching
 COPY requirements.txt .
 
-# Install Python dependencies, upgrade pip, and pre-download the Whisper model
-RUN pip install openai-whisper && \
-    pip install jsonschema && \
-    pip install --no-cache-dir --upgrade pip && \
+# Install Python dependencies, upgrade pip 
+RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
-    python -c "import os; os.environ['WHISPER_CACHE_DIR'] = '${WHISPER_CACHE_DIR}'; import whisper; whisper.load_model('base')"
+    pip install openai-whisper && \
+    pip install jsonschema 
+
+# Create the appuser 
+RUN useradd -m appuser 
+
+# Give appuser ownership of the /app directory (including whisper_cache)
+RUN chown appuser:appuser /app 
+
+# Important: Switch to the appuser before downloading the model
+USER appuser
+
+RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
 
 # Copy the rest of the application code
 COPY . .
 
-# Create a non-root user and switch to it
-RUN useradd -m appuser && chown -R appuser /app
-USER appuser
+# Expose the port the app runs on
+EXPOSE 8080
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
-
-# Expose the port the app runs on
-EXPOSE 8080
 
 RUN echo '#!/bin/bash\n\
 gunicorn --bind 0.0.0.0:8080 \

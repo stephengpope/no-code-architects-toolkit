@@ -6,6 +6,9 @@ import uuid
 import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
+from functools import wraps
+from flask import jsonify, request
+import logging
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -53,6 +56,7 @@ def create_app():
     # Decorator to add tasks to the queue or bypass it
     def queue_task(bypass_queue=False):
         def decorator(f):
+            @wraps(f)
             def wrapper(*args, **kwargs):
                 job_id = str(uuid.uuid4())
                 data = request.json if request.is_json else {}

@@ -8,6 +8,19 @@ from config import get_storage_provider
 logger = logging.getLogger(__name__)
 
 def upload_file_service(file_url=None, file_binary=None, file_name=None, bucket_name=None, content_type=None):
+    """
+    Handles the uploading of a file to the specified cloud storage provider.
+
+    Parameters:
+        file_url (str): URL of the file to upload.
+        file_binary (str): Base64-encoded binary data of the file.
+        file_name (str): Desired name for the uploaded file.
+        bucket_name (str): Name of the target bucket.
+        content_type (str): MIME type of the file.
+
+    Returns:
+        str: URL of the uploaded file in cloud storage.
+    """
     # Determine the source type
     if file_url:
         # Download the file from the URL

@@ -20,16 +20,27 @@ logger = logging.getLogger(__name__)
     "required": ["file_url"],
     "additionalProperties": False
 })
-def upload_media_v1():
-    data = request.get_json()
+@queue_task_wrapper(bypass_queue=False)  # Add the queue_task_wrapper decorator
+def upload_media_v1(job_id, data):
+    """
+    Handles the media upload to GCP storage.
+
+    Parameters:
+        job_id (str): Unique identifier for the job.
+        data (dict): Parsed JSON payload from the request.
+
+    Returns:
+        tuple: (response, endpoint, status_code)
+    """
     file_url = data.get('file_url')
     file_name = data.get('file_name')
     bucket_name = data.get('bucket_name')  # Optional bucket name
     content_type = data.get('content_type')
 
-    logger.info(f"Received media upload request for {file_url}")
+    logger.info(f"Job {job_id}: Received media upload request for {file_url}")
 
     try:
+        # Call the service to handle the file upload
         uploaded_file_url = upload_file_service(
             file_url=file_url,
             file_name=file_name,
@@ -37,9 +48,9 @@ def upload_media_v1():
             content_type=content_type
         )
 
-        logger.info(f"File uploaded successfully: {uploaded_file_url}")
-        return jsonify({"file_url": uploaded_file_url}), 200
+        logger.info(f"Job {job_id}: File uploaded successfully: {uploaded_file_url}")
+        return uploaded_file_url, "/v1/storage/gcp/upload", 200  # Successful response
 
     except Exception as e:
-        logger.error(f"Error uploading file: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Job {job_id}: Error uploading file: {str(e)}", exc_info=True)
+        return str(e), "/v1/storage/gcp/upload", 500  # Error response

@@ -1,68 +1,47 @@
-# routes/v1/media/upload/upload.py
-from flask import Blueprint, request, jsonify
-import jsonschema
-from functools import wraps
-import os
-import requests
-from google.auth.exceptions import GoogleAuthError
-from services.v1.media.upload.upload import GCPStorageProvider
+from flask import Blueprint, jsonify, request
+import logging
+from app_utils import validate_payload, queue_task_wrapper
+from services.v1.media.upload.upload import upload_file_service
+from services.authentication import authenticate
 
 v1_media_upload_bp = Blueprint('v1_media_upload', __name__)
+logger = logging.getLogger(__name__)
 
-def validate_payload(schema):
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            try:
-                jsonschema.validate(instance=request.json, schema=schema)
-            except jsonschema.exceptions.ValidationError as e:
-                return jsonify({"error": str(e)}), 400
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
-
-@v1_media_upload_bp.route('/media/upload', methods=['POST'])
+@v1_media_upload_bp.route('/v1/media/upload', methods=['POST'])
+@authenticate
 @validate_payload({
     "type": "object",
     "properties": {
-        "file_url": {"type": ["string", "null"], "format": "uri"},
+        "file_url": {"type": "string", "format": "uri"},
         "file_name": {"type": "string"},
         "bucket_name": {"type": "string"},
         "content_type": {"type": "string"}
     },
-    "oneOf": [
-        {"required": ["file_url", "file_name"]},
-        {"required": ["file_name"]}
-    ],
+    "required": ["file_url"],
     "additionalProperties": False
 })
-def media_upload():
+def upload_media_v1():
+    data = request.get_json()
+    file_url = data.get('file_url')
+    file_name = data.get('file_name')
+    bucket_name = data.get('bucket_name')  # Optional bucket name
+    content_type = data.get('content_type')
+
+    logger.info(f"Received media upload request for {file_url}")
+
     try:
-        file_url = request.json.get('file_url')
-        file_name = request.json.get('file_name')
-        bucket_name = request.json.get('bucket_name', os.getenv('GCP_BUCKET_NAME'))
-        content_type = request.json.get('content_type')
+        uploaded_file_url = upload_file_service(
+            file_url=file_url,
+            file_name=file_name,
+            bucket_name=bucket_name,
+            content_type=content_type
+        )
 
-        if 'file' in request.files:
-            # Handle binary file upload
-            file_data = request.files['file'].read()
-            file_name = request.files['file'].filename
-        elif file_url:
-            # Handle file URL download and upload
-            response = requests.get(file_url)
-            response.raise_for_status()  # Raise an error for bad responses
-            file_data = response.content
-        else:
-            return jsonify({"error": "Either 'file' or 'file_url' must be provided"}), 400
+        logger.info(f"File uploaded successfully: {uploaded_file_url}")
 
-        gcp_storage_provider = GCPStorageProvider()
-        blob_name = gcp_storage_provider.upload_file(file_data, file_name)
+        return jsonify({"file_url": uploaded_file_url}), 200
 
-        return jsonify({"bucket_name": bucket_name, "blob_name": blob_name}), 200
-
-    except requests.RequestException as e:
-        return jsonify({"error": f"Error downloading file from URL: {str(e)}"}), 500
-    except GoogleAuthError as e:
-        return jsonify({"error": f"Google Authentication Error: {str(e)}"}), 401
     except Exception as e:
+        logger.error(f"Error uploading file: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+    

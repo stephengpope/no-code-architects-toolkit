@@ -1,25 +1,48 @@
-# services/v1/media/upload/upload.py
 import os
-from google.cloud import storage
 import requests
+import tempfile
+import logging
+import base64
+from config import get_storage_provider
 
-class GCPStorageProvider:
-    """Google Cloud Storage-specific storage provider"""
+logger = logging.getLogger(__name__)
 
-    def __init__(self):
-        self.bucket_name = os.getenv('GCP_BUCKET_NAME', 'default-bucket-name')
-        self.storage_client = storage.Client()
+def upload_file_service(file_url=None, file_binary=None, file_name=None, bucket_name=None, content_type=None):
+    # Determine the source type
+    if file_url:
+        # Download the file from the URL
+        response = requests.get(file_url)
+        response.raise_for_status()
+        file_content = response.content
+        if not file_name:
+            file_name = os.path.basename(file_url)
+    elif file_binary:
+        # Decode the base64 file binary
+        file_content = base64.b64decode(file_binary)
+        if not file_name:
+            file_name = 'uploaded_file'
+    else:
+        raise ValueError("Either file_url or file_binary must be provided.")
 
-    def upload_file(self, file_data: bytes, filename: str) -> str:
-        bucket = self.storage_client.get_bucket(self.bucket_name)
-        blob = bucket.blob(filename)
+    # Save the file temporarily
+    temp_dir = tempfile.gettempdir()
+    temp_file_path = os.path.join(temp_dir, file_name)
 
-        # Upload the file data
-        blob.upload_from_string(file_data)
+    with open(temp_file_path, 'wb') as temp_file:
+        temp_file.write(file_content)
 
-        return blob.name
+    # Get the storage provider from config.py
+    storage_provider = get_storage_provider()
 
-def download_file_from_url(url: str) -> bytes:
-    response = requests.get(url)
-    response.raise_for_status()  # Raise an error for bad responses
-    return response.content
+    # Upload the file using the storage provider
+    uploaded_file_url = storage_provider.upload_file(
+        file_path=temp_file_path,
+        file_name=file_name,
+        bucket_name=bucket_name,
+        content_type=content_type
+    )
+
+    # Remove the temporary file
+    os.remove(temp_file_path)
+
+    return uploaded_file_url

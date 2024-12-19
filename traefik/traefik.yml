@@ -1,0 +1,47 @@
+# ============================
+# Traefik Configuration File
+# ============================
+
+# Define Certificates Resolvers for Let's Encrypt
+certificatesResolvers:
+  myresolver:
+    acme:
+      email: your-email@example.com          # Replace with your actual email
+      storage: /letsencrypt/acme.json        # Storage path for certificates
+      tlsChallenge: {}                      # Enable TLS-ALPN-01 challenge
+
+# Define Entry Points
+entryPoints:
+  web:
+    address: ":80"       # Handle HTTP traffic
+    http:
+      redirections:
+        entryPoint:
+          to: websecure   # Redirect HTTP to HTTPS
+          scheme: https
+
+  websecure:
+    address: ":443"      # Handle HTTPS traffic
+    http:
+      tls: {}            # Enable TLS on this entry point
+
+# Configure Providers
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"  # Connect to Docker daemon
+    exposedByDefault: false                   # Only services with explicit labels are exposed
+    watch: true                               # Watch for container changes
+    network: "traefik_network"                # Ensure Traefik is on the same network as other services
+
+# Configure Logging (Optional)
+log:
+  level: INFO
+  # Optional: Uncomment the following lines to log to a file
+  # filePath: "/var/log/traefik/traefik.log"
+  # format: json
+
+# Access Logs (Optional)
+accessLog:
+  # Optional: Uncomment the following lines to enable access logging
+  # filePath: "/var/log/traefik/access.log"
+  # format: json

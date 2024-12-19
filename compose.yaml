@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Ensure a Dockerfile exists in your project root
+    ports:
+      - "8080:8080"  # Expose port 8080
+    env_file:
+      - .env  # External environment variables file
+    restart: unless-stopped  # Restart policy
+    container_name: no_code_architects_toolkit  # Optional: Assign a custom container name

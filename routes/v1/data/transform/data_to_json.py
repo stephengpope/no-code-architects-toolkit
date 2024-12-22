@@ -7,20 +7,20 @@ from app_utils import validate_payload, queue_task_wrapper
 from services.cloud_storage import upload_file
 import json
 
-v1_string_to_json_bp = Blueprint('v1_string_to_json', __name__)
+v1_data_to_json_bp = Blueprint('v1_data_to_json', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_string_to_json_bp.route('/v1/string/transform/json', methods=['POST'])
+@v1_data_to_json_bp.route('/v1/data/transform/json', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
     "properties": {
-        "string": {"type": ["object", "array", "string", "number", "boolean"]},
+        "data": {"type": ["object", "array", "string", "number", "boolean"]},
         "response_type": {"type": "string", "enum": ["direct", "cloud"]},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
-    "required": ["string"],
+    "required": ["data"],
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
@@ -28,7 +28,7 @@ def transform_json(job_id, data):
     logger.info(f"Job {job_id}: Received JSON transformation request")
     
     try:
-        input_data = data['string']
+        input_data = data['data']
         response_type = data.get('response_type', 'direct')
         
         try:
@@ -38,6 +38,7 @@ def transform_json(job_id, data):
                 if response_type == "direct":
                     return {
                         'json': json_string,
+                        'json_url': None,
                         'message': 'success'
                     }, '/v1/data/transform/json', 200
                     
@@ -54,7 +55,8 @@ def transform_json(job_id, data):
                     os.remove(temp_path)
                         
                     return {
-                        'json': cloud_url,
+                        'json': None,
+                        'json_url': cloud_url,
                         'message': 'success'
                     }, '/v1/data/transform/json', 200
                         

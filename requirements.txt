@@ -4,10 +4,8 @@ requests
 ffmpeg-python
 openai-whisper
 gunicorn
-APScheduler
 srt
 numpy
-torch
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
@@ -16,4 +14,3 @@ google-cloud-storage
 psutil
 boto3
 Pillow
-matplotlib

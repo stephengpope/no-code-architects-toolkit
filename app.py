@@ -143,7 +143,8 @@ def create_app():
     from routes.v1.toolkit.test import v1_toolkit_test_bp
     from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
     from routes.v1.code.execute.execute_python import v1_code_execute_bp
-    from routes.v1.string.transform.string_to_json import v1_string_to_json_bp
+    from routes.v1.data.transform.data_to_json import v1_data_to_json_bp
+    from routes.v1.string.transform.text_to_chunks import v1_transform_chunk_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -154,7 +155,8 @@ def create_app():
     app.register_blueprint(v1_toolkit_test_bp)
     app.register_blueprint(v1_toolkit_auth_bp)
     app.register_blueprint(v1_code_execute_bp)
-    app.register_blueprint(v1_string_to_json_bp)
+    app.register_blueprint(v1_data_to_json_bp)
+    app.register_blueprint(v1_transform_chunk_bp)
 
     return app
 

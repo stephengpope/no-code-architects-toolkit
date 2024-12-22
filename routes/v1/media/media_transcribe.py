@@ -53,7 +53,10 @@ def transcribe(job_id, data):
             result_json = {
                 "text": result[0],
                 "srt": result[1],
-                "segments": result[2]
+                "segments": result[2],
+                "text_url": None,
+                "srt_url": None,
+                "segments_url": None,
             }
 
             return result_json, "/v1/transcribe/media", 200
@@ -61,9 +64,12 @@ def transcribe(job_id, data):
         else:
 
             cloud_urls = {
-                "text": upload_file(result[0]) if include_text is True else None,
-                "srt": upload_file(result[1]) if include_srt is True else None,
-                "segments": upload_file(result[2]) if include_segments is True else None,
+                "text": None,
+                "srt": None,
+                "segments": None,
+                "text_url": upload_file(result[0]) if include_text is True else None,
+                "srt_url": upload_file(result[1]) if include_srt is True else None,
+                "segments_url": upload_file(result[2]) if include_segments is True else None,
             }
 
             if include_text is True:

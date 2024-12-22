@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   traefik:
-    image: traefik:v2.9  # Use a specific stable version of Traefik
+    image: traefik:v3.1  # Use a specific stable version of Traefik
     command:
       - "--providers.docker=true"  # Enable Docker provider
       - "--providers.docker.exposedbydefault=false"  # Only expose services with explicit labels

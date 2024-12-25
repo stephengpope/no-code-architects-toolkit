@@ -10,14 +10,17 @@ import json
 v1_transform_chunk_bp = Blueprint('v1_transform_chunk', __name__)
 logger = logging.getLogger(__name__)
 
-def chunk_text(text, max_tokens=500, percent=0, direction="left"):
+def chunk_text(text, max_tokens=500, overlap=0, overlap_type="token", direction="both"):
     """
     Chunk text with configurable overlap.
     
     Args:
         text (str): Input text to chunk
         max_tokens (int): Maximum number of tokens (words) per chunk
-        percent (float): Percentage of overlap between chunks (0-100)
+        overlap (float or int): Amount of overlap between chunks
+        overlap_type (str): Type of overlap - "percent" or "token"
+                          "percent" - overlap is a percentage of max_tokens (0-100)
+                          "token" - overlap is a specific number of tokens
         direction (str): Direction of overlap - "left" or "both"
                         "left" - each chunk overlaps only with previous chunk
                         "both" - each chunk overlaps with both previous and next chunks
@@ -27,10 +30,17 @@ def chunk_text(text, max_tokens=500, percent=0, direction="left"):
     """
     words = text.split()
     if not words:
-        return []
+        raise ValueError("Input text is empty or contains only whitespace")
         
     # Calculate overlap size in tokens
-    overlap_size = int(max_tokens * (percent / 100))
+    if overlap_type == "percent":
+        if not 0 <= overlap <= 100:
+            raise ValueError("Percentage overlap must be between 0 and 100")
+        overlap_size = int(max_tokens * (overlap / 100))
+    else:  # "token"
+        if not 0 <= overlap < max_tokens:
+            raise ValueError("Token overlap must be less than max_tokens")
+        overlap_size = int(overlap)
     
     # Validate parameters
     if overlap_size >= max_tokens:
@@ -78,6 +88,9 @@ def chunk_text(text, max_tokens=500, percent=0, direction="left"):
         for pos in positions
     ]
     
+    if not chunks:
+        raise ValueError("No chunks were generated. The input text may be too short.")
+    
     return chunks
 
 @v1_transform_chunk_bp.route('/v1/string/transform/chunks', methods=['POST'])
@@ -87,7 +100,8 @@ def chunk_text(text, max_tokens=500, percent=0, direction="left"):
     "properties": {
         "text": {"type": "string"},
         "max_tokens": {"type": "integer", "minimum": 1, "maximum": 10000},
-        "percent": {"type": "number", "minimum": 0, "maximum": 100},
+        "overlap": {"type": "number", "minimum": 0},
+        "overlap_type": {"type": "string", "enum": ["percent", "token"]},
         "direction": {"type": "string", "enum": ["left", "both"]},
         "response_type": {"type": "string", "enum": ["direct", "cloud"]},
         "webhook_url": {"type": "string", "format": "uri"},
@@ -107,15 +121,17 @@ def transform_chunk(job_id, data):
         # Extract parameters with defaults
         text = data['text']
         max_tokens = data.get('max_tokens', 500)
-        percent = data.get('percent', 10)
-        direction = data.get('direction', 'left')
+        overlap = data.get('overlap', 0)
+        overlap_type = data.get('overlap_type', 'token')
+        direction = data.get('direction', 'both')
         response_type = data.get('response_type', 'direct')
         
         # Process the text
         chunks = chunk_text(
             text=text,
             max_tokens=max_tokens,
-            percent=percent,
+            overlap=overlap,
+            overlap_type=overlap_type,
             direction=direction
         )
         

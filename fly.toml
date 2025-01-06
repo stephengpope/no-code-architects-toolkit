@@ -1,0 +1,25 @@
+app = "nca-toolkit"
+
+kill_signal = "SIGINT"
+kill_timeout = 300
+
+[build]
+  image = "stephengpope/no-code-architects-toolkit:latest"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "60s"
+    interval = "15s"
+    restart_limit = 3
+    timeout = "2s"

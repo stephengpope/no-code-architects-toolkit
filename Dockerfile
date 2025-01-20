@@ -133,6 +133,7 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
         --enable-fontconfig \
         --enable-libsrt \
         --enable-filter=drawtext \
+        --enable-filter=text_split \
         --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
         --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
         --enable-gnutls \

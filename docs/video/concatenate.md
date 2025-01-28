@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-The `/v1/video/concatenate` endpoint is part of the Video API and is responsible for combining multiple video files into a single video file. This endpoint fits into the overall API structure by providing a way to concatenate videos, which can be useful in various scenarios, such as creating video compilations or combining multiple video segments into a single file.
+The `/v1/video/concatenate` endpoint is a part of the Video API and is responsible for combining multiple video files into a single video file. This endpoint fits into the overall API structure as a part of the version 1 (v1) routes, specifically under the `/v1/video` namespace.
 
 ## 2. Endpoint
 
@@ -20,10 +20,10 @@ The `/v1/video/concatenate` endpoint is part of the Video API and is responsible
 The request body must be a JSON object with the following properties:
 
 - `video_urls` (required, array of objects): An array of video URLs to be concatenated. Each object in the array must have a `video_url` property (string, URI format) containing the URL of the video file.
-- `webhook_url` (optional, string, URI format): The URL to receive a webhook notification when the video concatenation process is complete.
-- `id` (optional, string): A unique identifier for the request.
+- `webhook_url` (optional, string, URI format): The URL to which the response should be sent as a webhook.
+- `id` (optional, string): An identifier for the request.
 
-The `validate_payload` decorator in the route file enforces the following JSON schema for the request body:
+The `validate_payload` decorator in the routes file enforces the following JSON schema for the request body:
 
 ```json
 {
@@ -58,7 +58,7 @@ The `validate_payload` decorator in the route file enforces the following JSON s
         {"video_url": "https://example.com/video3.mp4"}
     ],
     "webhook_url": "https://example.com/webhook",
-    "id": "unique-request-id"
+    "id": "request-123"
 }
 ```
 
@@ -73,7 +73,7 @@ curl -X POST \
             {"video_url": "https://example.com/video3.mp4"}
         ],
         "webhook_url": "https://example.com/webhook",
-        "id": "unique-request-id"
+        "id": "request-123"
      }' \
      https://your-api-endpoint.com/v1/video/concatenate
 ```
@@ -88,12 +88,12 @@ The success response follows the general response format defined in the `app.py`
 {
     "endpoint": "/v1/video/concatenate",
     "code": 200,
-    "id": "unique-request-id",
+    "id": "request-123",
     "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-    "response": "https://cloud-storage.com/combined-video.mp4",
+    "response": "https://cloud-storage.example.com/combined-video.mp4",
     "message": "success",
     "pid": 12345,
-    "queue_id": 67890,
+    "queue_id": 6789,
     "run_time": 10.234,
     "queue_time": 2.345,
     "total_time": 12.579,
@@ -107,53 +107,74 @@ The `response` field contains the URL of the combined video file uploaded to clo
 ### Error Responses
 
 - **400 Bad Request**: Returned when the request body is missing or invalid.
+
+  ```json
+  {
+    "code": 400,
+    "message": "Invalid request payload"
+  }
+  ```
+
 - **401 Unauthorized**: Returned when the `x-api-key` header is missing or invalid.
-- **429 Too Many Requests**: Returned when the maximum queue length is reached (if configured).
+
+  ```json
+  {
+    "code": 401,
+    "message": "Unauthorized"
+  }
+  ```
+
+- **429 Too Many Requests**: Returned when the maximum queue length is reached.
+
+  ```json
+  {
+    "code": 429,
+    "id": "request-123",
+    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+    "message": "MAX_QUEUE_LENGTH (100) reached",
+    "pid": 12345,
+    "queue_id": 6789,
+    "queue_length": 100,
+    "build_number": "1.0.0"
+  }
+  ```
+
 - **500 Internal Server Error**: Returned when an unexpected error occurs during the video concatenation process.
 
-Example error response:
-
-```json
-{
-    "code": 400,
-    "id": "unique-request-id",
-    "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
-    "message": "Invalid request payload: 'video_urls' is a required property",
-    "pid": 12345,
-    "queue_id": 67890,
-    "queue_length": 0,
-    "build_number": "1.0.0"
-}
-```
+  ```json
+  {
+    "code": 500,
+    "message": "An error occurred during video concatenation"
+  }
+  ```
 
 ## 5. Error Handling
 
 The endpoint handles the following common errors:
 
-- Missing or invalid request parameters: Returns a 400 Bad Request error with a descriptive error message.
-- Authentication failure: Returns a 401 Unauthorized error if the `x-api-key` header is missing or invalid.
-- Queue length exceeded: Returns a 429 Too Many Requests error if the maximum queue length is reached (if configured).
-- Unexpected exceptions during video concatenation: Returns a 500 Internal Server Error with the exception message.
+- **Missing or invalid request body**: If the request body is missing or does not conform to the expected JSON schema, a 400 Bad Request error is returned.
+- **Missing or invalid API key**: If the `x-api-key` header is missing or invalid, a 401 Unauthorized error is returned.
+- **Queue length exceeded**: If the maximum queue length is reached (determined by the `MAX_QUEUE_LENGTH` environment variable), a 429 Too Many Requests error is returned.
+- **Unexpected errors during video concatenation**: If an unexpected error occurs during the video concatenation process, a 500 Internal Server Error is returned with the error message.
 
-The main application context (`app.py`) also includes error handling for queue-related errors, such as reaching the maximum queue length.
+The main application context (`app.py`) also includes error handling for the task queue. If the queue length exceeds the `MAX_QUEUE_LENGTH` limit, the request is rejected with a 429 Too Many Requests error.
 
 ## 6. Usage Notes
 
+- The video files to be concatenated must be accessible via the provided URLs.
 - The order of the video files in the `video_urls` array determines the order in which they will be concatenated.
-- The endpoint supports various video file formats, but the specific supported formats may depend on the underlying video processing library (e.g., FFmpeg).
-- The combined video file will be uploaded to cloud storage, and the response will include the URL of the uploaded file.
-- If a `webhook_url` is provided, a webhook notification will be sent to that URL when the video concatenation process is complete.
+- If the `webhook_url` parameter is provided, the response will be sent as a webhook to the specified URL.
+- The `id` parameter can be used to identify the request in the response.
 
 ## 7. Common Issues
 
-- Providing invalid or inaccessible video URLs in the `video_urls` array.
-- Exceeding the maximum queue length, if configured, which can result in a 429 Too Many Requests error.
-- Encountering issues during the video concatenation process, such as unsupported video formats or corrupted video files.
+- Providing invalid or inaccessible video URLs.
+- Exceeding the maximum queue length, which can lead to requests being rejected with a 429 Too Many Requests error.
+- Encountering unexpected errors during the video concatenation process, which can result in a 500 Internal Server Error.
 
 ## 8. Best Practices
 
-- Validate the video URLs before sending the request to ensure they are accessible and in a supported format.
-- Monitor the queue length and adjust the maximum queue length as needed to prevent overloading the system.
-- Implement retry mechanisms for failed requests or consider using a message queue system for better reliability and scalability.
-- Implement proper error handling and logging to aid in troubleshooting and monitoring.
-- Consider implementing rate limiting or throttling mechanisms to prevent abuse or excessive load on the system.
+- Validate the video URLs before sending the request to ensure they are accessible and in the correct format.
+- Monitor the queue length and adjust the `MAX_QUEUE_LENGTH` value accordingly to prevent requests from being rejected due to a full queue.
+- Implement retry mechanisms for handling temporary errors or failures during the video concatenation process.
+- Provide meaningful and descriptive `id` values to easily identify requests in the response.

@@ -1,19 +1,19 @@
-# Authenticate Endpoint Documentation
+# Authenticate Endpoint
 
 ## 1. Overview
 
-The `/v1/toolkit/authenticate` endpoint is a part of the `v1_toolkit_auth` blueprint in the Flask application. Its purpose is to authenticate requests by verifying the provided API key against a predefined value. This endpoint serves as a gatekeeper for accessing other protected endpoints within the API.
+The `/v1/toolkit/authenticate` endpoint is a part of the `v1_toolkit_auth` blueprint in the API structure. Its purpose is to authenticate requests by verifying the provided API key against a predefined value. This endpoint serves as a gatekeeper, ensuring that only authorized clients can access the API's resources.
 
 ## 2. Endpoint
 
-- **URL Path**: `/v1/toolkit/authenticate`
-- **HTTP Method**: `GET`
+- URL Path: `/v1/toolkit/authenticate`
+- HTTP Method: `GET`
 
 ## 3. Request
 
 ### Headers
 
-- `X-API-Key` (required): The API key to be verified for authentication.
+- `X-API-Key` (required): The API key used for authentication.
 
 ### Body Parameters
 
@@ -29,7 +29,7 @@ curl -X GET -H "X-API-Key: YOUR_API_KEY" http://localhost:8080/v1/toolkit/authen
 
 ### Success Response
 
-If the provided API key matches the predefined value (`API_KEY` environment variable), the endpoint will return a 200 OK status code with the following response:
+If the provided API key matches the predefined value, the endpoint will return a 200 OK status code with the following response:
 
 ```json
 {
@@ -44,13 +44,14 @@ If the provided API key matches the predefined value (`API_KEY` environment vari
   "response": "Authorized",
   "run_time": 0.001,
   "total_time": 0.001,
+  "queue_time": 0,
   "build_number": "1.0.0"
 }
 ```
 
 ### Error Responses
 
-If the provided API key does not match the predefined value, the endpoint will return a 401 Unauthorized status code with the following response:
+If the provided API key is invalid or missing, the endpoint will return a 401 Unauthorized status code with the following response:
 
 ```json
 {
@@ -65,27 +66,27 @@ If the provided API key does not match the predefined value, the endpoint will r
   "response": null,
   "run_time": 0.001,
   "total_time": 0.001,
+  "queue_time": 0,
   "build_number": "1.0.0"
 }
 ```
 
 ## 5. Error Handling
 
-The main error that can occur with this endpoint is providing an invalid or missing API key. In such cases, the endpoint will return a 401 Unauthorized status code with an appropriate error message.
+The main error that can occur with this endpoint is providing an invalid or missing API key. In this case, the endpoint will return a 401 Unauthorized status code with an appropriate error message.
 
 ## 6. Usage Notes
 
-- This endpoint is designed to be used as a gatekeeper for other protected endpoints within the API.
-- The API key must be provided in the `X-API-Key` header for every request to this endpoint.
-- The API key is typically a secret value that should be kept secure and not shared publicly.
+- This endpoint is designed to be used as a gatekeeper for the API, ensuring that only authorized clients can access the API's resources.
+- The API key should be kept secure and should not be shared with unauthorized parties.
 
 ## 7. Common Issues
 
 - Forgetting to include the `X-API-Key` header in the request.
-- Providing an incorrect or invalid API key.
+- Using an invalid or expired API key.
 
 ## 8. Best Practices
 
-- Keep the API key secure and avoid storing it in plaintext or committing it to version control systems.
-- Consider implementing additional security measures, such as rate limiting or IP whitelisting, to further protect the authentication endpoint.
-- Regularly rotate or update the API key to enhance security.
+- Rotate API keys periodically to enhance security.
+- Store API keys securely and avoid committing them to version control systems.
+- Consider implementing additional security measures, such as rate limiting or IP whitelisting, to further protect the API.

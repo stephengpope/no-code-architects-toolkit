@@ -100,7 +100,7 @@ def caption_video_v1(job_id, data):
             # Check if this is a font-related error by checking for 'available_fonts' key
             if 'available_fonts' in output:
                 # Font error scenario
-                return {"error": output['error'], "available_fonts": output['available_fonts']}, "/v1/caption-video", 400
+                return {"error": output['error'], "available_fonts": output['available_fonts']}, "/v1/video/caption", 400
             else:
                 # Non-font error scenario, do not return available_fonts
                 return {"error": output['error']}, "/v1/video/caption", 400

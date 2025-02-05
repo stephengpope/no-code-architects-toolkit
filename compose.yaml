@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  traefik:
+    image: traefik:v3.1  # Use a specific stable version of Traefik
+    command:
+      - "--providers.docker=true"  # Enable Docker provider
+      - "--providers.docker.exposedbydefault=false"  # Only expose services with explicit labels
+      - "--entrypoints.web.address=:80"  # HTTP entrypoint
+      - "--entrypoints.websecure.address=:443"  # HTTPS entrypoint
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"  # Enable TLS-ALPN-01 challenge for Let's Encrypt
+      - "--certificatesresolvers.myresolver.acme.email=your-email@example.com"  # Replace with your email
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"  # Store certificates
+      - "--log.level=INFO"  # Optional: Set log level
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"  # Allow Traefik to listen to Docker events
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml"  # Traefik configuration
+      - "./traefik/acme.json:/letsencrypt/acme.json"  # Let's Encrypt certificates storage
+    restart: unless-stopped
+    container_name: traefik  # Assign a custom container name
+    networks:
+      - traefik_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Ensure your Dockerfile is correctly set up
+    labels:
+      - "traefik.enable=true"  # Enable Traefik for this service
+      - "traefik.http.routers.app.rule=Host(`your-domain.com`)"  # Replace with your actual domain
+      - "traefik.http.routers.app.entrypoints=websecure"  # Use HTTPS
+      - "traefik.http.routers.app.tls=true"  # Enable TLS
+      - "traefik.http.routers.app.tls.certresolver=myresolver"  # Use the defined cert resolver
+    env_file:
+      - .env  # External environment variables file
+    restart: unless-stopped
+    container_name: no_code_architects_toolkit  # Assign a custom container name
+    networks:
+      - traefik_network
+
+volumes:
+  traefik_data:
+  traefik_config:
+
+networks:
+  traefik_network:
+    driver: bridge  # Use bridge network; adjust if necessary

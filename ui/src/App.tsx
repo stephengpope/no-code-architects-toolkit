@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
 
-// Available videos list
-const AVAILABLE_VIDEOS = [
-  {
-    name: "stephen_horizontal_video.mp4",
-    url: import.meta.env.VITE_EXAMPLE_HARDCODED_VIDEO_URL,
-  },
-];
+interface Video {
+  name: string;
+  url: string;
+  size: number;
+  last_modified: string;
+}
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<{
-    name: string;
-    url: string;
-  } | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user has a dark mode preference
@@ -31,11 +30,35 @@ function App() {
     localStorage.setItem("darkMode", (!isDarkMode).toString());
   };
 
-  const handleLoadVideos = () => {
-    setIsDialogOpen(true);
+  const handleLoadVideos = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_BACKEND_URL || "http://localhost:8080"
+        }/v1/videos`,
+        {
+          headers: {
+            "x-api-key": import.meta.env.VITE_API_KEY || "",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Failed to fetch videos");
+      }
+      const data = await response.json();
+      setVideos(data.videos);
+      setIsDialogOpen(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+      console.error("Error loading videos:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleVideoSelect = (video: { name: string; url: string }) => {
+  const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
     setIsDialogOpen(false);
   };
@@ -101,7 +124,7 @@ function App() {
                 Select a Video
               </h2>
               <div className="space-y-2">
-                {AVAILABLE_VIDEOS.map((video) => (
+                {videos.map((video) => (
                   <button
                     key={video.name}
                     onClick={() => handleVideoSelect(video)}

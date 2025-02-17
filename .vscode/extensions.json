@@ -1,3 +1,6 @@
 {
-  "recommendations": ["DavidAnson.vscode-markdownlint"]
+  "recommendations": [
+    "DavidAnson.vscode-markdownlint",
+    "sailhenz.copy-path-linux"
+  ]
 }

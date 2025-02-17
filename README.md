@@ -169,12 +169,15 @@ Each feature is supported by robust payload validation and detailed API document
 
 ### Python Environment
 
+This app currently requires a Python 3.9 environment. This is due to the use of Whisper, which requires a specific version of Python.
+
 This application is compatible with `uv`, so you can create a virtual environment like:
 
 ```bash
+# this should installed the pinned `uv venv --python 3.9.19`
 uv venv
 source .venv/Scripts/activate
-uv pip install -r requirements.txt
+uv pip install -r requirements-dev.txt
 ```
 
 ### Notes

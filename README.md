@@ -184,13 +184,17 @@ uv pip install -r requirements.txt
 
 ### Run the Docker Container
 
-There are at least four ways to run the Docker container. First, using the local.py script:
+There are at least four ways to run the Docker container.
+
+After starting your container, verify the container is running and healthy by inspecting the helath endpoint at `http://localhost:8080/health`.
+
+The first approach uses the local.py script:
 
 ```bash
 python local.py
 ```
 
-Second, using the local.sh script (requires `jq` to be installed):
+The second approach uses the local.sh script (requires `jq` to be installed):
 
 ```bash
 ./local.sh

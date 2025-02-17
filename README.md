@@ -167,6 +167,16 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
+### Python Environment
+
+This application is compatible with `uv`, so you can create a virtual environment like:
+
+```bash
+uv venv
+source .venv/Scripts/activate
+uv pip install -r requirements.txt
+```
+
 ### Notes
 
 - Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible).

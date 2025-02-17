@@ -174,13 +174,40 @@ Each feature is supported by robust payload validation and detailed API document
 
 ### Run the Docker Container
 
-   ```bash
-   docker run -d -p 8080:8080 \
-     -e API_KEY=your_api_key \
-     -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
-     -e GCP_BUCKET_NAME=your_gcs_bucket_name \
-     no-code-architects-toolkit
-   ```
+There are at least four ways to run the Docker container. First, using the local.py script:
+
+```bash
+python local.py
+```
+
+Second, using the local.sh script (requires `jq` to be installed):
+
+```bash
+./local.sh
+```
+
+Direct docker run for the Google Cloud Platform (GCP) pattern:
+
+```bash
+docker run -d -p 8080:8080 \
+   -e API_KEY=your_api_key \
+   -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
+   -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+   no-code-architects-toolkit
+```
+
+Direct docker run for the S3-compatible storage pattern:
+
+```bash
+docker run -d -p 8080:8080 \
+   -e API_KEY=your_api_key \
+   -e S3_ENDPOINT_URL=your_s3_endpoint_url \
+   -e S3_ACCESS_KEY=your_s3_access_key \
+   -e S3_SECRET_KEY=your_s3_secret_key \
+   -e S3_BUCKET_NAME=your_s3_bucket_name \
+   -e S3_REGION=your_s3_region \
+   no-code-architects-toolkit
+```
 
 ---
 

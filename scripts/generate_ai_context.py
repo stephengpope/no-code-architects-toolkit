@@ -4,7 +4,7 @@ from pathlib import Path
 def get_file_structure(root_dir):
     file_structure = []
     # Directories to ignore
-    ignore_dirs = {'.git', '.venv'}
+    ignore_dirs = {'.git', '.venv', 'node_modules'}
 
     for root, dirs, files in os.walk(root_dir):
         # Skip ignored directories

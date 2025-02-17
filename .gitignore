@@ -1,5 +1,6 @@
 .env_variables.json
 .DS_Store
 .env_shell.json
+input/
 output/
 .venv/

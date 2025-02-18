@@ -3,6 +3,8 @@ import logging
 from services.authentication import authenticate
 import boto3
 import json
+from botocore.config import Config
+
 
 SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60
 
@@ -23,7 +25,8 @@ def get_s3_client():
         endpoint_url=env_vars['S3_ENDPOINT_URL'],
         aws_access_key_id=env_vars['S3_ACCESS_KEY'],
         aws_secret_access_key=env_vars['S3_SECRET_KEY'],
-        region_name=env_vars['S3_REGION']
+        region_name=env_vars['S3_REGION'],
+        config=Config(signature_version='s3v4')
     )
 
 @v1_videos_get_bp.route('/v1/videos', methods=['GET'])

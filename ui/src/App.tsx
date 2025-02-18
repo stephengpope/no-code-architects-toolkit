@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 interface Video {
   name: string;
-  url: string;
+  presigned_url: string;
   size: number;
   last_modified: string;
 }
@@ -12,7 +12,7 @@ function App() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,7 +31,6 @@ function App() {
   };
 
   const handleLoadVideos = async () => {
-    setIsLoading(true);
     setError(null);
     try {
       const response = await fetch(
@@ -54,13 +53,28 @@ function App() {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Error loading videos:", err);
     } finally {
-      setIsLoading(false);
+      setIsVideoLoading(false);
     }
   };
 
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
     setIsDialogOpen(false);
+    setIsVideoLoading(true);
+  };
+
+  const handleVideoCanPlay = () => {
+    setIsVideoLoading(false);
+  };
+
+  const handleVideoError = (
+    e: React.SyntheticEvent<HTMLVideoElement, Event>
+  ) => {
+    const target = e.target as HTMLVideoElement;
+    setError(
+      `Failed to load video: ${target.error?.message || "Unknown error"}`
+    );
+    setIsVideoLoading(false);
   };
 
   return (
@@ -98,14 +112,29 @@ function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-center h-[calc(100vh-8rem)]">
           {selectedVideo ? (
-            <div className="w-full max-w-4xl">
+            <div className="w-full max-w-4xl relative">
               <video
-                src={selectedVideo.url}
+                key={selectedVideo.presigned_url}
+                src={selectedVideo.presigned_url}
                 controls
                 className="w-full rounded-lg shadow-lg"
+                onCanPlay={handleVideoCanPlay}
+                onError={handleVideoError}
               >
                 Your browser does not support the video tag.
               </video>
+              {isVideoLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
+                  <div className="text-white text-lg">Loading video...</div>
+                </div>
+              )}
+              {error && (
+                <div className="absolute inset-0 flex items-center justify-center bg-red-900 bg-opacity-50 rounded-lg">
+                  <div className="text-white text-lg px-4 text-center">
+                    {error}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-500 dark:text-gray-400 text-lg">

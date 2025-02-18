@@ -27,16 +27,17 @@ def get_s3_client():
 @v1_videos_get_bp.route('/v1/videos', methods=['GET'])
 @authenticate
 def get_videos():
+    logger.info("/v1/videos GET request received")
     try:
         env_vars = load_env_variables()
         s3_client = get_s3_client()
-        
+
         # List objects in the bucket
         response = s3_client.list_objects_v2(
             Bucket=env_vars['S3_BUCKET_NAME'],
-            Prefix='',  # List all objects
+            Prefix='',
         )
-        
+
         # Filter for MP4 files and format response
         videos = []
         for obj in response.get('Contents', []):
@@ -49,11 +50,12 @@ def get_videos():
                     "size": obj['Size'],
                     "last_modified": obj['LastModified'].isoformat()
                 })
-        
+
+        logger.info(f"Returning {len(videos)} videos to client")
         return jsonify({
             "videos": videos
         }), 200
-        
+
     except Exception as e:
         logger.error(f"Error getting videos: {str(e)}")
         return jsonify({

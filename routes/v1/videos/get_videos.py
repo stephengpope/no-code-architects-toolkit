@@ -4,6 +4,8 @@ from services.authentication import authenticate
 import boto3
 import json
 
+SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60
+
 v1_videos_get_bp = Blueprint('v1_videos_get', __name__)
 logger = logging.getLogger(__name__)
 
@@ -43,10 +45,18 @@ def get_videos():
         for obj in response.get('Contents', []):
             key = obj['Key']
             if key.lower().endswith('.mp4'):
-                url = f"{env_vars['S3_ENDPOINT_URL']}/object/public/{env_vars['S3_BUCKET_NAME']}/{key}"
+                signed_url = s3_client.generate_presigned_url(
+                    'get_object',
+                    Params={
+                        'Bucket': env_vars['S3_BUCKET_NAME'],
+                        'Key': key
+                    },
+                    ExpiresIn=SEVEN_DAYS_IN_SECONDS
+                )
+                
                 videos.append({
                     "name": key,
-                    "url": url,
+                    "presigned_url": signed_url,
                     "size": obj['Size'],
                     "last_modified": obj['LastModified'].isoformat()
                 })

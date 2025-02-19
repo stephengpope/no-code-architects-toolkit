@@ -68,8 +68,15 @@ function App() {
               >
                 {isDarkMode ? "🌞" : "🌙"}
               </button>
-              <h1 className="ml-4 text-xl font-bold text-gray-800 dark:text-white">
-                No-Code Architects Toolkit
+              <h1 className="ml-4">
+                <a
+                  href="https://github.com/stephengpope/no-code-architects-toolkit"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xl font-bold text-gray-800 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200"
+                >
+                  No-Code Architects Toolkit
+                </a>
               </h1>
             </div>
 

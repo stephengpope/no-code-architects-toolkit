@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Canvas } from "fabric";
+import { Canvas, PencilBrush } from "fabric";
 
 const MAX_COMMENT_LENGTH = 250;
 const TOOLBAR_COLORS = [
@@ -68,32 +68,95 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
   useEffect(() => {
     if (canvasRef.current && videoRef.current) {
       const video = videoRef.current;
-      const canvas = new Canvas(canvasRef.current, {
-        width: video.clientWidth,
-        height: video.clientHeight,
-        isDrawingMode: false,
+      const rect = video.getBoundingClientRect();
+
+      // Function to update canvas dimensions
+      const updateCanvasDimensions = () => {
+        const canvas = fabricCanvasRef.current;
+        if (canvas) {
+          const rect = video.getBoundingClientRect();
+          const scale = rect.width / video.videoWidth;
+
+          canvas.setDimensions({
+            width: rect.width,
+            height: rect.height,
+          });
+          canvas.setZoom(scale);
+          canvas.renderAll();
+        }
+      };
+
+      // Create canvas with initial dimensions
+      const canvas = new Canvas(canvasRef.current);
+      canvas.setDimensions({
+        width: rect.width,
+        height: rect.height,
+      });
+
+      // Initialize the canvas with drawing settings
+      canvas.isDrawingMode = isDrawingMode;
+      const brush = new PencilBrush(canvas);
+      brush.width = 5;
+      brush.color = selectedColor;
+      canvas.freeDrawingBrush = brush;
+
+      // Add event listeners for drawing
+      canvas.on("mouse:down", () => {
+        if (isDrawingMode) {
+          canvas.isDrawingMode = true;
+          if (canvas.freeDrawingBrush) {
+            canvas.freeDrawingBrush.width = 5;
+            canvas.freeDrawingBrush.color = selectedColor;
+          }
+        }
+      });
+
+      canvas.on("mouse:up", () => {
+        console.log("mouse up");
+        console.log("brush width:", canvas.freeDrawingBrush?.width);
+        console.log("brush color:", canvas.freeDrawingBrush?.color);
+        console.log("is drawing mode:", canvas.isDrawingMode);
+        canvas.renderAll();
+      });
+
+      canvas.on("path:created", (e) => {
+        console.log("path created");
+        canvas.renderAll();
       });
 
       fabricCanvasRef.current = canvas;
-      if (canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.width = 2;
-        canvas.freeDrawingBrush.color = selectedColor;
-      }
+
+      // Wait for video metadata to load to set proper scaling
+      video.addEventListener("loadedmetadata", () => {
+        const scale = rect.width / video.videoWidth;
+        canvas.setZoom(scale);
+        canvas.renderAll();
+      });
+
+      // Add resize observer to handle video container size changes
+      const resizeObserver = new ResizeObserver(updateCanvasDimensions);
+      resizeObserver.observe(video);
 
       // Cleanup
       return () => {
+        resizeObserver.disconnect();
         canvas.dispose();
         fabricCanvasRef.current = null;
       };
     }
-  }, []);
+  }, [isDrawingMode, selectedColor]);
 
-  // Update brush color when selected color changes
+  // Update canvas drawing mode when it changes
   useEffect(() => {
-    if (fabricCanvasRef.current?.freeDrawingBrush) {
-      fabricCanvasRef.current.freeDrawingBrush.color = selectedColor;
+    if (fabricCanvasRef.current) {
+      fabricCanvasRef.current.isDrawingMode = isDrawingMode;
+      if (fabricCanvasRef.current.freeDrawingBrush) {
+        fabricCanvasRef.current.freeDrawingBrush.color = selectedColor;
+        fabricCanvasRef.current.freeDrawingBrush.width = 5;
+      }
+      fabricCanvasRef.current.renderAll();
     }
-  }, [selectedColor]);
+  }, [isDrawingMode, selectedColor]);
 
   const handleVideoCanPlay = () => {
     setIsVideoLoading(false);
@@ -163,6 +226,7 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
       const newMode = !isDrawingMode;
       setIsDrawingMode(newMode);
       fabricCanvasRef.current.isDrawingMode = newMode;
+      fabricCanvasRef.current.renderAll();
     }
   };
 
@@ -174,26 +238,33 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
         className="flex-1 p-8 flex flex-col items-center justify-center"
       >
         <div className="w-full max-w-4xl relative">
-          <video
-            ref={videoRef}
-            key={video.presigned_url}
-            src={video.presigned_url}
-            controls
-            className="w-full rounded-lg shadow-lg"
-            onCanPlay={handleVideoCanPlay}
-            onError={handleVideoError}
-          >
-            Your browser does not support the video tag.
-          </video>
-          <canvas
-            ref={canvasRef}
-            className="absolute inset-0 pointer-events-auto"
-          />
-          {isVideoLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
-              <div className="text-white text-lg">Loading video...</div>
+          {/* Video element */}
+          <div className="relative w-full">
+            <video
+              ref={videoRef}
+              key={video.presigned_url}
+              src={video.presigned_url}
+              controls
+              className="w-full rounded-lg shadow-lg"
+              onCanPlay={handleVideoCanPlay}
+              onError={handleVideoError}
+            >
+              Your browser does not support the video tag.
+            </video>
+            {/* Canvas overlay */}
+            <div
+              className={`absolute top-0 left-0 w-full h-full ${
+                isDrawingMode ? "pointer-events-auto" : "pointer-events-none"
+              }`}
+            >
+              <canvas ref={canvasRef} className="w-full h-full" />
             </div>
-          )}
+            {isVideoLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
+                <div className="text-white text-lg">Loading video...</div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Drawing Toolbar */}

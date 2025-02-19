@@ -1,6 +1,16 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { Canvas } from "fabric";
 
 const MAX_COMMENT_LENGTH = 250;
+const TOOLBAR_COLORS = [
+  "#000000",
+  "#FF0000",
+  "#00FF00",
+  "#0000FF",
+  "#FFFF00",
+  "#FF00FF",
+  "#00FFFF",
+];
 
 export interface Video {
   name: string;
@@ -13,7 +23,7 @@ interface CommentData {
   comment_id: string;
   timestamp: number;
   comment: string;
-  drawing?: string;
+  drawing?: string; // JSON string of Fabric.js canvas data
 }
 
 interface VideoDetails {
@@ -43,12 +53,47 @@ function formatTimestamp(seconds: number): string {
 
 export function VideoPlayer({ video, onError }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fabricCanvasRef = useRef<Canvas | null>(null);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [currentComment, setCurrentComment] = useState("");
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(TOOLBAR_COLORS[0]);
   const [videoDetails, setVideoDetails] = useState<VideoDetails>({
     video_url: video.presigned_url,
     comments: [],
   });
+
+  // Initialize Fabric.js canvas
+  useEffect(() => {
+    if (canvasRef.current && videoRef.current) {
+      const video = videoRef.current;
+      const canvas = new Canvas(canvasRef.current, {
+        width: video.clientWidth,
+        height: video.clientHeight,
+        isDrawingMode: false,
+      });
+
+      fabricCanvasRef.current = canvas;
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.width = 2;
+        canvas.freeDrawingBrush.color = selectedColor;
+      }
+
+      // Cleanup
+      return () => {
+        canvas.dispose();
+        fabricCanvasRef.current = null;
+      };
+    }
+  }, []);
+
+  // Update brush color when selected color changes
+  useEffect(() => {
+    if (fabricCanvasRef.current?.freeDrawingBrush) {
+      fabricCanvasRef.current.freeDrawingBrush.color = selectedColor;
+    }
+  }, [selectedColor]);
 
   const handleVideoCanPlay = () => {
     setIsVideoLoading(false);
@@ -72,12 +117,16 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
   };
 
   const handleAddComment = () => {
-    if (!currentComment.trim() || !videoRef.current) return;
+    if (!currentComment.trim() || !videoRef.current || !fabricCanvasRef.current)
+      return;
 
     const newComment: CommentData = {
       comment_id: crypto.randomUUID(),
       timestamp: videoRef.current.currentTime,
       comment: currentComment.trim(),
+      drawing: fabricCanvasRef.current.isEmpty()
+        ? undefined
+        : JSON.stringify(fabricCanvasRef.current.toJSON()),
     };
 
     setVideoDetails((prev) => ({
@@ -86,12 +135,34 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
         (a, b) => a.timestamp - b.timestamp
       ),
     }));
+
+    // Clear the canvas and comment
+    fabricCanvasRef.current.clear();
     setCurrentComment("");
+    setIsDrawingMode(false);
   };
 
-  const handleCommentClick = (timestamp: number) => {
-    if (videoRef.current) {
+  const handleCommentClick = (timestamp: number, drawing?: string) => {
+    if (videoRef.current && fabricCanvasRef.current) {
       videoRef.current.currentTime = timestamp;
+
+      // Clear current canvas
+      fabricCanvasRef.current.clear();
+
+      // Load drawing if exists
+      if (drawing) {
+        fabricCanvasRef.current.loadFromJSON(drawing, () => {
+          fabricCanvasRef.current?.renderAll();
+        });
+      }
+    }
+  };
+
+  const toggleDrawingMode = () => {
+    if (fabricCanvasRef.current) {
+      const newMode = !isDrawingMode;
+      setIsDrawingMode(newMode);
+      fabricCanvasRef.current.isDrawingMode = newMode;
     }
   };
 
@@ -100,7 +171,7 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
       {/* Left side - Video Player */}
       <div
         id="video-player"
-        className="flex-1 p-8 flex items-center justify-center"
+        className="flex-1 p-8 flex flex-col items-center justify-center"
       >
         <div className="w-full max-w-4xl relative">
           <video
@@ -114,11 +185,45 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
           >
             Your browser does not support the video tag.
           </video>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 pointer-events-auto"
+          />
           {isVideoLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
               <div className="text-white text-lg">Loading video...</div>
             </div>
           )}
+        </div>
+
+        {/* Drawing Toolbar */}
+        <div className="mt-4 p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg flex items-center space-x-4">
+          <button
+            onClick={toggleDrawingMode}
+            className={`p-2 rounded-lg transition-colors ${
+              isDrawingMode
+                ? "bg-indigo-100 dark:bg-indigo-900"
+                : "hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+            title={isDrawingMode ? "Disable drawing" : "Enable drawing"}
+          >
+            ✏️
+          </button>
+          <div className="flex items-center space-x-2">
+            {TOOLBAR_COLORS.map((color) => (
+              <button
+                key={color}
+                onClick={() => setSelectedColor(color)}
+                className={`w-6 h-6 rounded-full border-2 transition-all ${
+                  selectedColor === color
+                    ? "border-indigo-500 scale-110"
+                    : "border-gray-300 hover:scale-105"
+                }`}
+                style={{ backgroundColor: color }}
+                title={`Select ${color} color`}
+              />
+            ))}
+          </div>
         </div>
       </div>
 
@@ -137,10 +242,15 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
             <div
               key={comment.comment_id}
               className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-              onClick={() => handleCommentClick(comment.timestamp)}
+              onClick={() =>
+                handleCommentClick(comment.timestamp, comment.drawing)
+              }
             >
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                 {formatTimestamp(comment.timestamp)}
+                {comment.drawing && (
+                  <span className="ml-2 text-indigo-500">✏️</span>
+                )}
               </div>
               <div className="text-gray-700 dark:text-gray-300">
                 {comment.comment}

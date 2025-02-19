@@ -85,7 +85,7 @@ function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto">
         <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
           {selectedVideo ? (
             <VideoPlayer video={selectedVideo} onError={setError} />

@@ -72,34 +72,42 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
   };
 
   return (
-    <div className="flex gap-4">
+    <div className="flex h-screen w-full">
       {/* Left side - Video Player */}
-      <div className="w-2/3 relative">
-        <video
-          key={video.presigned_url}
-          src={video.presigned_url}
-          controls
-          className="w-full rounded-lg shadow-lg"
-          onCanPlay={handleVideoCanPlay}
-          onError={handleVideoError}
-        >
-          Your browser does not support the video tag.
-        </video>
-        {isVideoLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
-            <div className="text-white text-lg">Loading video...</div>
-          </div>
-        )}
+      <div
+        id="video-player"
+        className="flex-1 p-8 flex items-center justify-center"
+      >
+        <div className="w-full max-w-4xl relative">
+          <video
+            key={video.presigned_url}
+            src={video.presigned_url}
+            controls
+            className="w-full rounded-lg shadow-lg"
+            onCanPlay={handleVideoCanPlay}
+            onError={handleVideoError}
+          >
+            Your browser does not support the video tag.
+          </video>
+          {isVideoLoading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 rounded-lg">
+              <div className="text-white text-lg">Loading video...</div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Right side - Comments Panel */}
-      <div className="w-1/3 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-        <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
+      <div
+        id="comments-panel"
+        className="w-96 h-screen bg-white dark:bg-gray-800 shadow-lg overflow-hidden flex flex-col border-l border-gray-200 dark:border-gray-700"
+      >
+        <h3 className="text-lg font-semibold p-4 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700">
           Comments
         </h3>
 
         {/* Comment List */}
-        <div className="mb-4 space-y-2 max-h-[calc(100vh-20rem)] overflow-y-auto">
+        <div className="flex-1 overflow-y-auto p-4 space-y-2">
           {videoDetails.comments.map((comment) => (
             <div
               key={comment.comment_id}
@@ -116,7 +124,7 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
         </div>
 
         {/* Add Comment */}
-        <div className="space-y-2">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-2">
           <textarea
             value={currentComment}
             onChange={handleCommentChange}

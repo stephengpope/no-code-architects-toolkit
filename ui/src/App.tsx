@@ -6,7 +6,6 @@ function App() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -46,15 +45,12 @@ function App() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       console.error("Error loading videos:", err);
-    } finally {
-      setIsVideoLoading(false);
     }
   };
 
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
     setIsDialogOpen(false);
-    setIsVideoLoading(true);
   };
 
   return (

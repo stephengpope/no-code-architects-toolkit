@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 const MAX_COMMENT_LENGTH = 250;
 
@@ -11,7 +11,7 @@ export interface Video {
 
 interface CommentData {
   comment_id: string;
-  timestamp: string;
+  timestamp: number;
   comment: string;
   drawing?: string;
 }
@@ -26,7 +26,23 @@ interface VideoPlayerProps {
   onError: (error: string) => void;
 }
 
+function formatTimestamp(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${remainingSeconds.toString().padStart(2, "0")}`;
+  }
+  return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+    .toString()
+    .padStart(2, "0")}`;
+}
+
 export function VideoPlayer({ video, onError }: VideoPlayerProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
   const [isVideoLoading, setIsVideoLoading] = useState(false);
   const [currentComment, setCurrentComment] = useState("");
   const [videoDetails, setVideoDetails] = useState<VideoDetails>({
@@ -56,19 +72,27 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
   };
 
   const handleAddComment = () => {
-    if (!currentComment.trim()) return;
+    if (!currentComment.trim() || !videoRef.current) return;
 
     const newComment: CommentData = {
       comment_id: crypto.randomUUID(),
-      timestamp: "00:00:00", // TODO: Get current video timestamp
+      timestamp: videoRef.current.currentTime,
       comment: currentComment.trim(),
     };
 
     setVideoDetails((prev) => ({
       ...prev,
-      comments: [...prev.comments, newComment],
+      comments: [...prev.comments, newComment].sort(
+        (a, b) => a.timestamp - b.timestamp
+      ),
     }));
     setCurrentComment("");
+  };
+
+  const handleCommentClick = (timestamp: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = timestamp;
+    }
   };
 
   return (
@@ -80,6 +104,7 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
       >
         <div className="w-full max-w-4xl relative">
           <video
+            ref={videoRef}
             key={video.presigned_url}
             src={video.presigned_url}
             controls
@@ -111,10 +136,11 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
           {videoDetails.comments.map((comment) => (
             <div
               key={comment.comment_id}
-              className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
+              className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+              onClick={() => handleCommentClick(comment.timestamp)}
             >
               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                {comment.timestamp}
+                {formatTimestamp(comment.timestamp)}
               </div>
               <div className="text-gray-700 dark:text-gray-300">
                 {comment.comment}

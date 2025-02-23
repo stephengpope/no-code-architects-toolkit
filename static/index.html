@@ -613,12 +613,56 @@
         const [videoId, setVideoId] = React.useState("");
         const [error, setError] = React.useState(null);
 
+        // Load dark mode and check for query parameters on initial load
         React.useEffect(() => {
+          // Handle dark mode
           const darkModePreference =
             localStorage.getItem("darkMode") === "true";
           setIsDarkMode(darkModePreference);
           if (darkModePreference) {
             document.documentElement.classList.add("dark");
+          }
+
+          // Load video: Query parameters take precedence over localStorage
+          const loadVideoFromParams = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlFromParams = urlParams.get("url");
+            const idFromParams = urlParams.get("id");
+
+            // Query parameters take precedence
+            if (urlFromParams || idFromParams) {
+              if (urlFromParams) {
+                handleVideoLoad(urlFromParams, null);
+              } else {
+                handleVideoLoad(null, idFromParams);
+              }
+              return true; // Indicate that we loaded from params
+            }
+            return false; // Indicate that we didn't load from params
+          };
+
+          const loadVideoFromStorage = () => {
+            const savedVideo = localStorage.getItem("lastLoadedVideo");
+            if (savedVideo) {
+              try {
+                const video = JSON.parse(savedVideo);
+                // Don't automatically load the video, just populate the form
+                if (video.url.includes("/")) {
+                  setVideoUrl(video.url);
+                } else {
+                  setVideoId(video.id);
+                }
+              } catch (error) {
+                console.error("Failed to parse saved video:", error);
+                localStorage.removeItem("lastLoadedVideo"); // Clear invalid data
+              }
+            }
+          };
+
+          // Try to load from query params first, fall back to localStorage
+          const loadedFromParams = loadVideoFromParams();
+          if (!loadedFromParams) {
+            loadVideoFromStorage();
           }
         }, []);
 
@@ -630,7 +674,59 @@
 
         const handleLoadVideo = () => {
           setError(null);
+          // Pre-populate the dialog with saved video if available
+          const savedVideo = localStorage.getItem("lastLoadedVideo");
+          if (savedVideo) {
+            const video = JSON.parse(savedVideo);
+            if (video.url.includes("/")) {
+              setVideoUrl(video.url);
+              setVideoId("");
+            } else {
+              setVideoId(video.id);
+              setVideoUrl("");
+            }
+          }
           setIsDialogOpen(true);
+        };
+
+        const handleVideoLoad = (url, id) => {
+          let video;
+          if (url) {
+            // Handle URL input
+            const urlParts = url.split("/");
+            const rawVideoId = urlParts[urlParts.length - 1].split("?")[0];
+            const extractedVideoId = rawVideoId.split(".")[0];
+
+            video = {
+              id: extractedVideoId,
+              name: extractedVideoId,
+              url: url,
+            };
+          } else if (id) {
+            // Handle ID input
+            const cleanVideoId = id.trim();
+            video = {
+              id: cleanVideoId,
+              name: cleanVideoId,
+              url: `/videos/${cleanVideoId}`,
+            };
+          }
+
+          if (video) {
+            setSelectedVideo(video);
+            // Save to localStorage
+            localStorage.setItem("lastLoadedVideo", JSON.stringify(video));
+            // Update URL with query parameters without page reload
+            const newUrl = new URL(window.location.href);
+            if (url) {
+              newUrl.searchParams.set("url", url);
+              newUrl.searchParams.delete("id");
+            } else {
+              newUrl.searchParams.set("id", id);
+              newUrl.searchParams.delete("url");
+            }
+            window.history.pushState({}, "", newUrl);
+          }
         };
 
         const handleVideoSubmit = (e) => {
@@ -640,29 +736,7 @@
             return;
           }
 
-          let video;
-          if (videoUrl.trim()) {
-            // Handle URL input
-            const urlParts = videoUrl.split("/");
-            const rawVideoId = urlParts[urlParts.length - 1].split("?")[0];
-            const extractedVideoId = rawVideoId.split(".")[0];
-
-            video = {
-              id: extractedVideoId,
-              name: extractedVideoId,
-              url: videoUrl,
-            };
-          } else {
-            // Handle ID input
-            const cleanVideoId = videoId.trim();
-            video = {
-              id: cleanVideoId,
-              name: cleanVideoId,
-              url: `/videos/${cleanVideoId}`,
-            };
-          }
-
-          setSelectedVideo(video);
+          handleVideoLoad(videoUrl.trim(), videoId.trim());
           setIsDialogOpen(false);
           setVideoUrl("");
           setVideoId("");

@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 import logging
 import json
 from datetime import datetime
-import os
+from pathlib import Path
 import glob
 
 # Configure logging
@@ -11,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 v1_video_comments_bp = Blueprint('v1_video_comments', __name__)
 
-# Ensure comments directory exists
-COMMENTS_DIR = 'comments'
-if not os.path.exists(COMMENTS_DIR):
-    os.makedirs(COMMENTS_DIR)
+# Get the directory where this file is located
+CURRENT_DIR = Path(__file__).parent
+# Create comments directory adjacent to this file
+COMMENTS_DIR = CURRENT_DIR / 'comments'
 
 def get_video_id(video_url):
     """Extract a clean video ID from the URL."""
@@ -23,7 +23,7 @@ def get_video_id(video_url):
     # Get the last part of the path
     video_id = base_url.split('/')[-1]
     # Remove any file extension
-    video_id = os.path.splitext(video_id)[0]
+    video_id = Path(video_id).stem
     # Remove any special characters
     return ''.join(c for c in video_id if c.isalnum())
 
@@ -31,8 +31,8 @@ def get_video_id(video_url):
 def load_comments(video_id):
     try:
         # Find all comment files for this video ID
-        pattern = os.path.join(COMMENTS_DIR, f"{video_id}_*.json")
-        comment_files = glob.glob(pattern)
+        pattern = str(COMMENTS_DIR / f"{video_id}_*.json")
+        comment_files = sorted(glob.glob(pattern), reverse=True)
         
         if not comment_files:
             logger.info(f"No comments found for video ID: {video_id}")
@@ -41,9 +41,6 @@ def load_comments(video_id):
                 "data": {"comments": []}
             }), 404
 
-        # Sort files by timestamp (newest first)
-        comment_files.sort(reverse=True)
-        
         # Load the most recent comments file
         with open(comment_files[0], 'r') as f:
             comments_data = json.load(f)
@@ -52,7 +49,7 @@ def load_comments(video_id):
         return jsonify({
             "message": "Comments loaded successfully",
             "data": comments_data,
-            "filename": os.path.basename(comment_files[0])
+            "filename": Path(comment_files[0]).name
         }), 200
 
     except Exception as e:
@@ -74,7 +71,7 @@ def save_comments():
         video_id = data['videoId']
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         filename = f"{video_id}_{timestamp}.json"
-        filepath = os.path.join(COMMENTS_DIR, filename)
+        filepath = COMMENTS_DIR / filename
 
         # Save comments to file
         with open(filepath, 'w') as f:

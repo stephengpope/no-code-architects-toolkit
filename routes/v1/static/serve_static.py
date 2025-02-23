@@ -1,5 +1,4 @@
-from flask import Blueprint, send_from_directory, current_app
-import os
+from flask import Blueprint, send_from_directory
 
 v1_static_serve_bp = Blueprint('v1_static_serve', __name__)
 

@@ -158,7 +158,6 @@ def create_app():
     from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
     from routes.v1.code.execute.execute_python import v1_code_execute_bp
     from routes.v1.video.comments import v1_video_comments_bp
-    from routes.v1.videos.get_videos import v1_videos_get_bp
     from routes.v1.static.serve_static import v1_static_serve_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
@@ -171,7 +170,6 @@ def create_app():
     app.register_blueprint(v1_toolkit_auth_bp)
     app.register_blueprint(v1_code_execute_bp)
     app.register_blueprint(v1_video_comments_bp)
-    app.register_blueprint(v1_videos_get_bp)
     app.register_blueprint(v1_static_serve_bp, url_prefix='/static')
 
     return app

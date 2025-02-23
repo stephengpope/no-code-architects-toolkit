@@ -400,6 +400,37 @@
                     </div>
                   </div>
                 </div>
+                <div className="flex items-center justify-end mt-2">
+                  <button
+                    onClick={() => {
+                      if (fabricCanvasRef.current) {
+                        const objects = fabricCanvasRef.current.getObjects();
+                        if (objects.length > 0) {
+                          const lastObject = objects[objects.length - 1];
+                          fabricCanvasRef.current.remove(lastObject);
+                          fabricCanvasRef.current.requestRenderAll();
+                        }
+                      }
+                    }}
+                    className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+                    title="Undo last drawing"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M9 14L4 9l5-5" />
+                      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                    </svg>
+                    Undo
+                  </button>
+                </div>
               </div>
 
               {/* Comment Input */}

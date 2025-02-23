@@ -6,23 +6,11 @@ import uuid
 import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
-from flask_cors import CORS
 
-ALLOW_REQUESTS_FROM_LOCALHOST = os.environ.get('ALLOW_REQUESTS_FROM_LOCALHOST', 'false').lower() == 'true'
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
 def create_app():
     app = Flask(__name__)
-    
-    # Configure CORS
-    if ALLOW_REQUESTS_FROM_LOCALHOST:
-        CORS(app, resources={
-            r"/*": {
-                "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-                "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-                "allow_headers": ["Content-Type", "x-api-key"]
-            }
-        })
 
     # Create a queue to hold tasks
     task_queue = Queue()
@@ -130,7 +118,6 @@ def create_app():
     from routes.caption_video import caption_bp 
     from routes.extract_keyframes import extract_keyframes_bp
     from routes.image_to_video import image_to_video_bp
-    from routes.health_check import health_bp
     
 
     # Register blueprints
@@ -143,7 +130,6 @@ def create_app():
     app.register_blueprint(caption_bp)
     app.register_blueprint(extract_keyframes_bp)
     app.register_blueprint(image_to_video_bp)
-    app.register_blueprint(health_bp)
     
     
 

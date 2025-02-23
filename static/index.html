@@ -47,25 +47,293 @@
       function VideoPlayer({ video, onError }) {
         const videoRef = React.useRef(null);
         const canvasRef = React.useRef(null);
+        const fabricCanvasRef = React.useRef(null);
         const [isVideoLoading, setIsVideoLoading] = React.useState(false);
         const [currentComment, setCurrentComment] = React.useState("");
         const [isDrawingMode, setIsDrawingMode] = React.useState(false);
         const [selectedColor, setSelectedColor] = React.useState("#000000");
+        const [comments, setComments] = React.useState([]);
+        const MAX_COMMENT_LENGTH = 250;
+        const TOOLBAR_COLORS = [
+          "#000000",
+          "#FF0000",
+          "#00FF00",
+          "#0000FF",
+          "#FFFF00",
+          "#FF00FF",
+          "#00FFFF",
+        ];
+
+        // Initialize Fabric.js canvas
+        React.useEffect(() => {
+          if (canvasRef.current && videoRef.current) {
+            const video = videoRef.current;
+            const rect = video.getBoundingClientRect();
+
+            // Create canvas with initial dimensions
+            const canvas = new fabric.Canvas(canvasRef.current);
+            canvas.setDimensions({
+              width: rect.width,
+              height: rect.height,
+            });
+
+            // Initialize drawing settings
+            canvas.isDrawingMode = isDrawingMode;
+            const brush = new fabric.PencilBrush(canvas);
+            brush.width = 5;
+            brush.color = selectedColor;
+            canvas.freeDrawingBrush = brush;
+
+            // Add event listeners for drawing
+            canvas.on("mouse:down", () => {
+              if (isDrawingMode) {
+                canvas.isDrawingMode = true;
+                if (canvas.freeDrawingBrush) {
+                  canvas.freeDrawingBrush.width = 5;
+                  canvas.freeDrawingBrush.color = selectedColor;
+                }
+              }
+            });
+
+            canvas.on("mouse:up", () => {
+              canvas.renderAll();
+            });
+
+            fabricCanvasRef.current = canvas;
+
+            // Handle video events
+            video.addEventListener("play", () => {
+              if (fabricCanvasRef.current) {
+                fabricCanvasRef.current.clear();
+                fabricCanvasRef.current.renderAll();
+              }
+            });
+
+            video.addEventListener("pause", () => {
+              if (fabricCanvasRef.current) {
+                fabricCanvasRef.current.renderAll();
+              }
+            });
+
+            // Handle resize
+            const updateCanvasDimensions = () => {
+              const canvas = fabricCanvasRef.current;
+              if (canvas) {
+                const rect = video.getBoundingClientRect();
+                const scale = rect.width / video.videoWidth;
+                canvas.setDimensions({
+                  width: rect.width,
+                  height: rect.height,
+                });
+                canvas.setZoom(scale);
+                canvas.renderAll();
+              }
+            };
+
+            const resizeObserver = new ResizeObserver(updateCanvasDimensions);
+            resizeObserver.observe(video);
+
+            return () => {
+              resizeObserver.disconnect();
+              canvas.dispose();
+              fabricCanvasRef.current = null;
+            };
+          }
+        }, [isDrawingMode, selectedColor]);
+
+        // Update canvas drawing mode when it changes
+        React.useEffect(() => {
+          if (fabricCanvasRef.current) {
+            fabricCanvasRef.current.isDrawingMode = isDrawingMode;
+            if (fabricCanvasRef.current.freeDrawingBrush) {
+              fabricCanvasRef.current.freeDrawingBrush.color = selectedColor;
+              fabricCanvasRef.current.freeDrawingBrush.width = 5;
+            }
+            fabricCanvasRef.current.renderAll();
+          }
+        }, [isDrawingMode, selectedColor]);
+
+        const handleCommentChange = (e) => {
+          const text = e.target.value;
+          if (text.length <= MAX_COMMENT_LENGTH) {
+            setCurrentComment(text);
+          }
+        };
+
+        const handleAddComment = () => {
+          if (
+            !currentComment.trim() ||
+            !videoRef.current ||
+            !fabricCanvasRef.current
+          )
+            return;
+
+          const newComment = {
+            id: crypto.randomUUID(),
+            timestamp: videoRef.current.currentTime,
+            comment: currentComment.trim(),
+            drawing: fabricCanvasRef.current.isEmpty()
+              ? undefined
+              : JSON.stringify(fabricCanvasRef.current.toJSON()),
+          };
+
+          setComments((prev) =>
+            [...prev, newComment].sort((a, b) => a.timestamp - b.timestamp)
+          );
+          fabricCanvasRef.current.clear();
+          setCurrentComment("");
+          setIsDrawingMode(false);
+        };
+
+        const handleCommentClick = (timestamp, drawing) => {
+          if (videoRef.current && fabricCanvasRef.current) {
+            videoRef.current.pause();
+            videoRef.current.currentTime = timestamp;
+            fabricCanvasRef.current.clear();
+
+            if (drawing) {
+              try {
+                const drawingData = JSON.parse(drawing);
+                setTimeout(() => {
+                  if (fabricCanvasRef.current && videoRef.current) {
+                    const rect = videoRef.current.getBoundingClientRect();
+                    const scale = rect.width / videoRef.current.videoWidth;
+                    fabricCanvasRef.current.setDimensions({
+                      width: rect.width,
+                      height: rect.height,
+                    });
+                    fabricCanvasRef.current.setZoom(scale);
+                    fabricCanvasRef.current.loadFromJSON(drawingData, () => {
+                      if (fabricCanvasRef.current) {
+                        fabricCanvasRef.current.renderAll();
+                      }
+                    });
+                  }
+                }, 100);
+              } catch (err) {
+                console.error("Failed to load drawing:", err);
+              }
+            }
+          }
+        };
+
+        const formatTimestamp = (seconds) => {
+          const hours = Math.floor(seconds / 3600);
+          const minutes = Math.floor((seconds % 3600) / 60);
+          const remainingSeconds = Math.floor(seconds % 60);
+
+          if (hours > 0) {
+            return `${hours.toString().padStart(2, "0")}:${minutes
+              .toString()
+              .padStart(2, "0")}:${remainingSeconds
+              .toString()
+              .padStart(2, "0")}`;
+          }
+          return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+            .toString()
+            .padStart(2, "0")}`;
+        };
 
         return (
-          <div className="relative">
-            <video
-              ref={videoRef}
-              src={video.url}
-              controls
-              className="w-full max-w-4xl"
-              onCanPlay={() => setIsVideoLoading(false)}
-              onError={(e) => onError("Failed to load video")}
-            />
-            <canvas
-              ref={canvasRef}
-              className="absolute top-0 left-0 pointer-events-none"
-            />
+          <div className="relative flex flex-col md:flex-row gap-4 w-full max-w-7xl mx-auto p-4">
+            <div className="relative flex-1">
+              <video
+                ref={videoRef}
+                src={video.url}
+                controls
+                className="w-full"
+                onCanPlay={() => setIsVideoLoading(false)}
+                onError={(e) => onError("Failed to load video")}
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 pointer-events-none"
+              />
+            </div>
+
+            <div className="w-full md:w-80 flex flex-col gap-4">
+              {/* Drawing Controls */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Drawing
+                  </h3>
+                  <button
+                    onClick={() => setIsDrawingMode(!isDrawingMode)}
+                    className={`px-3 py-1 rounded ${
+                      isDrawingMode
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {isDrawingMode ? "Drawing" : "Draw"}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {TOOLBAR_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        selectedColor === color
+                          ? "border-indigo-600 dark:border-indigo-400"
+                          : "border-transparent"
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Comment Input */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                <textarea
+                  value={currentComment}
+                  onChange={handleCommentChange}
+                  placeholder="Add a comment..."
+                  className="w-full h-24 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                />
+                <div className="flex justify-between items-center mt-2">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {currentComment.length}/{MAX_COMMENT_LENGTH}
+                  </span>
+                  <button
+                    onClick={handleAddComment}
+                    disabled={!currentComment.trim()}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg disabled:opacity-50"
+                  >
+                    Add Comment
+                  </button>
+                </div>
+              </div>
+
+              {/* Comments List */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex-1 overflow-y-auto">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Comments
+                </h3>
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div
+                      key={comment.id}
+                      className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0"
+                    >
+                      <button
+                        onClick={() =>
+                          handleCommentClick(comment.timestamp, comment.drawing)
+                        }
+                        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2"
+                      >
+                        {formatTimestamp(comment.timestamp)}
+                      </button>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        {comment.comment}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         );
       }

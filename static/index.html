@@ -610,6 +610,7 @@
         const [isDialogOpen, setIsDialogOpen] = React.useState(false);
         const [selectedVideo, setSelectedVideo] = React.useState(null);
         const [videoUrl, setVideoUrl] = React.useState("");
+        const [videoId, setVideoId] = React.useState("");
         const [error, setError] = React.useState(null);
 
         React.useEffect(() => {
@@ -634,25 +635,37 @@
 
         const handleVideoSubmit = (e) => {
           e.preventDefault();
-          if (!videoUrl.trim()) {
-            setError("Please enter a video URL");
+          if (!videoUrl.trim() && !videoId.trim()) {
+            setError("Please enter either a video URL or ID");
             return;
           }
 
-          // Extract video ID from URL
-          const urlParts = videoUrl.split("/");
-          const rawVideoId = urlParts[urlParts.length - 1].split("?")[0];
-          const videoId = rawVideoId.split(".")[0];
+          let video;
+          if (videoUrl.trim()) {
+            // Handle URL input
+            const urlParts = videoUrl.split("/");
+            const rawVideoId = urlParts[urlParts.length - 1].split("?")[0];
+            const extractedVideoId = rawVideoId.split(".")[0];
 
-          const video = {
-            id: videoId,
-            name: videoId,
-            url: videoUrl,
-          };
+            video = {
+              id: extractedVideoId,
+              name: extractedVideoId,
+              url: videoUrl,
+            };
+          } else {
+            // Handle ID input
+            const cleanVideoId = videoId.trim();
+            video = {
+              id: cleanVideoId,
+              name: cleanVideoId,
+              url: `/videos/${cleanVideoId}`,
+            };
+          }
 
           setSelectedVideo(video);
           setIsDialogOpen(false);
           setVideoUrl("");
+          setVideoId("");
         };
 
         return (
@@ -719,23 +732,66 @@
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
                   <div className="p-6">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                      Enter Video URL
+                      Load Video
                     </h2>
                     <form onSubmit={handleVideoSubmit}>
-                      <input
-                        type="url"
-                        value={videoUrl}
-                        onChange={(e) => setVideoUrl(e.target.value)}
-                        placeholder="Enter video URL"
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        required
-                      />
+                      <div className="space-y-4">
+                        <div>
+                          <label
+                            htmlFor="video-url"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          >
+                            Video URL
+                          </label>
+                          <input
+                            id="video-url"
+                            type="url"
+                            value={videoUrl}
+                            onChange={(e) => {
+                              setVideoUrl(e.target.value);
+                              setVideoId(""); // Clear ID when URL is entered
+                            }}
+                            placeholder="Enter full video URL"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                        <div className="relative">
+                          <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
+                          </div>
+                          <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                              OR
+                            </span>
+                          </div>
+                        </div>
+                        <div>
+                          <label
+                            htmlFor="video-id"
+                            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                          >
+                            Video ID
+                          </label>
+                          <input
+                            id="video-id"
+                            type="text"
+                            value={videoId}
+                            onChange={(e) => {
+                              setVideoId(e.target.value);
+                              setVideoUrl(""); // Clear URL when ID is entered
+                            }}
+                            placeholder="Enter video ID"
+                            className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                      </div>
                       <div className="mt-6 flex justify-end space-x-3">
                         <button
                           type="button"
                           onClick={() => {
                             setIsDialogOpen(false);
                             setVideoUrl("");
+                            setVideoId("");
                           }}
                           className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                         >

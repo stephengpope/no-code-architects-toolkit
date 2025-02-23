@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>No-Code Architects Toolkit</title>
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React and ReactDOM via CDN -->
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.development.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
+    ></script>
+
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Fabric.js for canvas drawing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      // Video interface
+      const Video = {
+        name: String,
+        presigned_url: String,
+        size: Number,
+        last_modified: String,
+      };
+
+      // VideoPlayer Component
+      function VideoPlayer({ video, onError }) {
+        const videoRef = React.useRef(null);
+        const canvasRef = React.useRef(null);
+        const [isVideoLoading, setIsVideoLoading] = React.useState(false);
+        const [currentComment, setCurrentComment] = React.useState("");
+        const [isDrawingMode, setIsDrawingMode] = React.useState(false);
+        const [selectedColor, setSelectedColor] = React.useState("#000000");
+
+        // ... rest of VideoPlayer implementation
+        return (
+          <div className="relative">
+            <video
+              ref={videoRef}
+              src={video.presigned_url}
+              controls
+              className="w-full max-w-4xl"
+              onCanPlay={() => setIsVideoLoading(false)}
+              onError={handleVideoError}
+            />
+            <canvas
+              ref={canvasRef}
+              className="absolute top-0 left-0 pointer-events-none"
+            />
+          </div>
+        );
+      }
+
+      // App Component
+      function App() {
+        const [isDarkMode, setIsDarkMode] = React.useState(false);
+        const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+        const [selectedVideo, setSelectedVideo] = React.useState(null);
+        const [videos, setVideos] = React.useState([]);
+        const [error, setError] = React.useState(null);
+
+        React.useEffect(() => {
+          const darkModePreference =
+            localStorage.getItem("darkMode") === "true";
+          setIsDarkMode(darkModePreference);
+          if (darkModePreference) {
+            document.documentElement.classList.add("dark");
+          }
+        }, []);
+
+        const toggleDarkMode = () => {
+          setIsDarkMode(!isDarkMode);
+          document.documentElement.classList.toggle("dark");
+          localStorage.setItem("darkMode", (!isDarkMode).toString());
+        };
+
+        const handleLoadVideos = async () => {
+          setError(null);
+          try {
+            const response = await fetch(
+              `${window.location.origin}/v1/videos`,
+              {
+                headers: {
+                  "x-api-key": "", // Set your API key here
+                },
+              }
+            );
+            if (!response.ok) {
+              throw new Error("Failed to fetch videos");
+            }
+            const data = await response.json();
+            setVideos(data.videos);
+            setIsDialogOpen(true);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "An error occurred");
+            console.error("Error loading videos:", err);
+          }
+        };
+
+        const handleVideoSelect = (video) => {
+          setSelectedVideo(video);
+          setIsDialogOpen(false);
+        };
+
+        return (
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+            {/* Navigation Bar */}
+            <nav className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 transition-colors duration-200">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                  {/* Left side */}
+                  <div className="flex items-center">
+                    <button
+                      onClick={toggleDarkMode}
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                      aria-label="Toggle dark mode"
+                    >
+                      {isDarkMode ? "🌞" : "🌙"}
+                    </button>
+                    <h1 className="ml-4">
+                      <a
+                        href="https://github.com/stephengpope/no-code-architects-toolkit"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xl font-bold text-gray-800 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors duration-200"
+                      >
+                        No-Code Architects Toolkit
+                      </a>
+                    </h1>
+                  </div>
+
+                  {/* Right side */}
+                  <button
+                    onClick={handleLoadVideos}
+                    className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 active:transform active:scale-95 transition-all"
+                  >
+                    Load Videos
+                  </button>
+                </div>
+              </div>
+            </nav>
+
+            {/* Main Content */}
+            <main className="mx-auto">
+              <div className="flex items-center justify-center min-h-[calc(100vh-8rem)]">
+                {selectedVideo ? (
+                  <VideoPlayer video={selectedVideo} onError={setError} />
+                ) : (
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">
+                    No Video Loaded
+                  </p>
+                )}
+                {error && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-red-900 bg-opacity-50 rounded-lg">
+                    <div className="text-white text-lg px-4 text-center">
+                      {error}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </main>
+
+            {/* Video Selection Dialog */}
+            {isDialogOpen && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+                  <div className="p-6">
+                    <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
+                      Select a Video
+                    </h2>
+                    <div className="space-y-2">
+                      {videos.map((video) => (
+                        <button
+                          key={video.name}
+                          onClick={() => handleVideoSelect(video)}
+                          className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                        >
+                          {video.name}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                      <button
+                        onClick={() => setIsDialogOpen(false)}
+                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Render the App
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>

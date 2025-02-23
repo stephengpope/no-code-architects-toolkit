@@ -78,6 +78,7 @@
               height: rect.height,
               isDrawingMode: isDrawingMode,
               selection: false,
+              backgroundColor: "transparent",
             });
 
             // Initialize drawing settings
@@ -123,9 +124,9 @@
                 const rect = videoRef.current.getBoundingClientRect();
                 fabricCanvasRef.current.setDimensions({
                   width: rect.width,
-                  height: rect.height,
+                  height: rect.height * 0.8,
                 });
-                fabricCanvasRef.current.renderAll();
+                fabricCanvasRef.current.requestRenderAll();
               }
             };
 
@@ -260,21 +261,41 @@
         return (
           <div className="relative flex flex-col md:flex-row gap-4 w-full max-w-7xl mx-auto p-4">
             <div className="relative flex-1">
-              <video
-                ref={videoRef}
-                src={video.url}
-                controls
-                className="w-full"
-                onCanPlay={() => setIsVideoLoading(false)}
-                onError={(e) => onError("Failed to load video")}
-              />
-              <canvas
-                ref={canvasRef}
-                className={`absolute top-0 left-0 w-full h-full ${
-                  isDrawingMode ? "cursor-crosshair" : "pointer-events-none"
-                }`}
-                style={{ touchAction: "none" }}
-              />
+              <div className="relative w-full" style={{ aspectRatio: "16/9" }}>
+                <video
+                  ref={videoRef}
+                  src={video.url}
+                  controls
+                  className="w-full h-full object-contain"
+                  onCanPlay={() => {
+                    setIsVideoLoading(false);
+                    // Force canvas update when video loads
+                    if (fabricCanvasRef.current && videoRef.current) {
+                      const rect = videoRef.current.getBoundingClientRect();
+                      fabricCanvasRef.current.setDimensions({
+                        width: rect.width,
+                        height: rect.height * 0.8,
+                      });
+                      fabricCanvasRef.current.requestRenderAll();
+                    }
+                  }}
+                  onError={(e) => onError("Failed to load video")}
+                />
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ height: "80%" }}
+                >
+                  <canvas
+                    ref={canvasRef}
+                    className={`w-full h-full ${
+                      isDrawingMode
+                        ? "cursor-crosshair pointer-events-auto"
+                        : "pointer-events-none"
+                    }`}
+                    style={{ touchAction: "none" }}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="w-full md:w-80 flex flex-col gap-4">
@@ -307,7 +328,23 @@
                         );
                         fabricCanvasRef.current.clear();
                       }
+
+                      // Toggle drawing mode
                       setIsDrawingMode(!isDrawingMode);
+
+                      // Reposition and resize canvas when entering drawing mode
+                      if (
+                        !isDrawingMode &&
+                        fabricCanvasRef.current &&
+                        videoRef.current
+                      ) {
+                        const rect = videoRef.current.getBoundingClientRect();
+                        fabricCanvasRef.current.setDimensions({
+                          width: rect.width,
+                          height: rect.height * 0.8,
+                        });
+                        fabricCanvasRef.current.requestRenderAll();
+                      }
                     }}
                     className={`px-3 py-1 rounded ${
                       isDrawingMode

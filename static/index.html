@@ -7,6 +7,15 @@
 
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Configure Tailwind dark mode
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {},
+        },
+      };
+    </script>
 
     <!-- React and ReactDOM via CDN -->
     <script
@@ -31,9 +40,7 @@
       // Video interface
       const Video = {
         name: String,
-        presigned_url: String,
-        size: Number,
-        last_modified: String,
+        url: String,
       };
 
       // VideoPlayer Component
@@ -45,16 +52,15 @@
         const [isDrawingMode, setIsDrawingMode] = React.useState(false);
         const [selectedColor, setSelectedColor] = React.useState("#000000");
 
-        // ... rest of VideoPlayer implementation
         return (
           <div className="relative">
             <video
               ref={videoRef}
-              src={video.presigned_url}
+              src={video.url}
               controls
               className="w-full max-w-4xl"
               onCanPlay={() => setIsVideoLoading(false)}
-              onError={handleVideoError}
+              onError={(e) => onError("Failed to load video")}
             />
             <canvas
               ref={canvasRef}
@@ -69,7 +75,7 @@
         const [isDarkMode, setIsDarkMode] = React.useState(false);
         const [isDialogOpen, setIsDialogOpen] = React.useState(false);
         const [selectedVideo, setSelectedVideo] = React.useState(null);
-        const [videos, setVideos] = React.useState([]);
+        const [videoUrl, setVideoUrl] = React.useState("");
         const [error, setError] = React.useState(null);
 
         React.useEffect(() => {
@@ -87,32 +93,26 @@
           localStorage.setItem("darkMode", (!isDarkMode).toString());
         };
 
-        const handleLoadVideos = async () => {
+        const handleLoadVideo = () => {
           setError(null);
-          try {
-            const response = await fetch(
-              `${window.location.origin}/v1/videos`,
-              {
-                headers: {
-                  "x-api-key": "", // Set your API key here
-                },
-              }
-            );
-            if (!response.ok) {
-              throw new Error("Failed to fetch videos");
-            }
-            const data = await response.json();
-            setVideos(data.videos);
-            setIsDialogOpen(true);
-          } catch (err) {
-            setError(err instanceof Error ? err.message : "An error occurred");
-            console.error("Error loading videos:", err);
-          }
+          setIsDialogOpen(true);
         };
 
-        const handleVideoSelect = (video) => {
+        const handleVideoSubmit = (e) => {
+          e.preventDefault();
+          if (!videoUrl.trim()) {
+            setError("Please enter a video URL");
+            return;
+          }
+
+          const video = {
+            name: videoUrl.split("/").pop() || "Video",
+            url: videoUrl,
+          };
+
           setSelectedVideo(video);
           setIsDialogOpen(false);
+          setVideoUrl("");
         };
 
         return (
@@ -144,10 +144,10 @@
 
                   {/* Right side */}
                   <button
-                    onClick={handleLoadVideos}
+                    onClick={handleLoadVideo}
                     className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 active:transform active:scale-95 transition-all"
                   >
-                    Load Videos
+                    Load Video
                   </button>
                 </div>
               </div>
@@ -173,33 +173,42 @@
               </div>
             </main>
 
-            {/* Video Selection Dialog */}
+            {/* Video URL Input Dialog */}
             {isDialogOpen && (
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
                   <div className="p-6">
                     <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-                      Select a Video
+                      Enter Video URL
                     </h2>
-                    <div className="space-y-2">
-                      {videos.map((video) => (
+                    <form onSubmit={handleVideoSubmit}>
+                      <input
+                        type="url"
+                        value={videoUrl}
+                        onChange={(e) => setVideoUrl(e.target.value)}
+                        placeholder="Enter video URL"
+                        className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        required
+                      />
+                      <div className="mt-6 flex justify-end space-x-3">
                         <button
-                          key={video.name}
-                          onClick={() => handleVideoSelect(video)}
-                          className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 transition-colors duration-200"
+                          type="button"
+                          onClick={() => {
+                            setIsDialogOpen(false);
+                            setVideoUrl("");
+                          }}
+                          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
                         >
-                          {video.name}
+                          Cancel
                         </button>
-                      ))}
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                      <button
-                        onClick={() => setIsDialogOpen(false)}
-                        className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                        <button
+                          type="submit"
+                          className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors duration-200"
+                        >
+                          Load
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 </div>
               </div>

@@ -53,6 +53,8 @@
         const [isDrawingMode, setIsDrawingMode] = React.useState(false);
         const [selectedColor, setSelectedColor] = React.useState("#000000");
         const [comments, setComments] = React.useState([]);
+        const [editingCommentId, setEditingCommentId] = React.useState(null);
+        const [editingText, setEditingText] = React.useState("");
         const MAX_COMMENT_LENGTH = 250;
         const TOOLBAR_COLORS = [
           "#000000",
@@ -236,6 +238,25 @@
             .padStart(2, "0")}`;
         };
 
+        const handleEditComment = (commentId, newText) => {
+          if (newText.trim()) {
+            setComments((prev) =>
+              prev.map((comment) =>
+                comment.id === commentId
+                  ? { ...comment, comment: newText.trim() }
+                  : comment
+              )
+            );
+          }
+          setEditingCommentId(null);
+          setEditingText("");
+        };
+
+        const startEditing = (comment) => {
+          setEditingCommentId(comment.id);
+          setEditingText(comment.comment);
+        };
+
         return (
           <div className="relative flex flex-col md:flex-row gap-4 w-full max-w-7xl mx-auto p-4">
             <div className="relative flex-1">
@@ -346,17 +367,69 @@
                       key={comment.id}
                       className="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0"
                     >
-                      <button
-                        onClick={() =>
-                          handleCommentClick(comment.timestamp, comment.drawing)
-                        }
-                        className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2"
-                      >
-                        {formatTimestamp(comment.timestamp)}
-                      </button>
-                      <p className="text-gray-700 dark:text-gray-300">
-                        {comment.comment}
-                      </p>
+                      <div className="flex items-start justify-between">
+                        <button
+                          onClick={() =>
+                            handleCommentClick(
+                              comment.timestamp,
+                              comment.drawing
+                            )
+                          }
+                          className="text-sm text-indigo-600 dark:text-indigo-400 font-medium mb-2"
+                        >
+                          {formatTimestamp(comment.timestamp)}
+                        </button>
+                        {comment.comment !== "Drawing Only" && (
+                          <button
+                            onClick={() => startEditing(comment)}
+                            className="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                          >
+                            ✏️ Edit
+                          </button>
+                        )}
+                      </div>
+                      {editingCommentId === comment.id ? (
+                        <div className="mt-2">
+                          <textarea
+                            value={editingText}
+                            onChange={(e) => {
+                              if (e.target.value.length <= MAX_COMMENT_LENGTH) {
+                                setEditingText(e.target.value);
+                              }
+                            }}
+                            className="w-full p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm"
+                            rows="2"
+                          />
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {editingText.length}/{MAX_COMMENT_LENGTH}
+                            </span>
+                            <div className="space-x-2">
+                              <button
+                                onClick={() => {
+                                  setEditingCommentId(null);
+                                  setEditingText("");
+                                }}
+                                className="px-2 py-1 text-sm text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() =>
+                                  handleEditComment(comment.id, editingText)
+                                }
+                                className="px-2 py-1 text-sm bg-indigo-600 text-white rounded hover:bg-indigo-700"
+                              >
+                                Save
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-gray-700 dark:text-gray-300">
+                          {comment.comment}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>

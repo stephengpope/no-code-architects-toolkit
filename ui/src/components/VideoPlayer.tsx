@@ -133,6 +133,20 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
         canvas.renderAll();
       });
 
+      // Add video play/pause event listeners
+      video.addEventListener("play", () => {
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.clear();
+          fabricCanvasRef.current.renderAll();
+        }
+      });
+
+      video.addEventListener("pause", () => {
+        if (fabricCanvasRef.current) {
+          fabricCanvasRef.current.renderAll();
+        }
+      });
+
       // Add resize observer to handle video container size changes
       const resizeObserver = new ResizeObserver(updateCanvasDimensions);
       resizeObserver.observe(video);
@@ -207,6 +221,10 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
 
   const handleCommentClick = (timestamp: number, drawing?: string) => {
     if (videoRef.current && fabricCanvasRef.current) {
+      // First pause the video if it's playing
+      videoRef.current.pause();
+
+      // Set the timestamp
       videoRef.current.currentTime = timestamp;
 
       // Clear current canvas
@@ -214,9 +232,40 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
 
       // Load drawing if exists
       if (drawing) {
-        fabricCanvasRef.current.loadFromJSON(drawing, () => {
-          fabricCanvasRef.current?.renderAll();
-        });
+        try {
+          const drawingData = JSON.parse(drawing);
+          // Wait a short moment for the video to update before rendering the drawing
+          setTimeout(() => {
+            if (fabricCanvasRef.current && videoRef.current) {
+              const rect = videoRef.current.getBoundingClientRect();
+              const scale = rect.width / videoRef.current.videoWidth;
+
+              fabricCanvasRef.current.setDimensions({
+                width: rect.width,
+                height: rect.height,
+              });
+              fabricCanvasRef.current.setZoom(scale);
+
+              fabricCanvasRef.current.loadFromJSON(drawingData, () => {
+                if (fabricCanvasRef.current) {
+                  // Force a re-render with the correct dimensions
+                  fabricCanvasRef.current.setViewportTransform([
+                    scale,
+                    0,
+                    0,
+                    scale,
+                    0,
+                    0,
+                  ]);
+                  fabricCanvasRef.current.renderAll();
+                  console.log("Drawing rendered after jump with scale:", scale);
+                }
+              });
+            }
+          }, 100);
+        } catch (error) {
+          console.error("Error loading drawing:", error);
+        }
       }
     }
   };
@@ -227,6 +276,26 @@ export function VideoPlayer({ video, onError }: VideoPlayerProps) {
       setIsDrawingMode(newMode);
       fabricCanvasRef.current.isDrawingMode = newMode;
       fabricCanvasRef.current.renderAll();
+
+      // When disabling draw mode, add comment if there's a drawing
+      if (!newMode && !fabricCanvasRef.current.isEmpty() && videoRef.current) {
+        const newComment: CommentData = {
+          comment_id: crypto.randomUUID(),
+          timestamp: videoRef.current.currentTime,
+          comment: "Drawing added",
+          drawing: JSON.stringify(fabricCanvasRef.current.toJSON()),
+        };
+
+        setVideoDetails((prev) => ({
+          ...prev,
+          comments: [...prev.comments, newComment].sort(
+            (a, b) => a.timestamp - b.timestamp
+          ),
+        }));
+
+        // Clear the canvas after saving
+        fabricCanvasRef.current.clear();
+      }
     }
   };
 

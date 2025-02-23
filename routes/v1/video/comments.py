@@ -11,10 +11,12 @@ logger = logging.getLogger(__name__)
 
 v1_video_comments_bp = Blueprint('v1_video_comments', __name__)
 
-# Get the directory where this file is located
-CURRENT_DIR = Path(__file__).parent
-# Create comments directory adjacent to this file
-COMMENTS_DIR = CURRENT_DIR / 'comments'
+# Always use /tmp/comments directory
+COMMENTS_DIR = Path('/tmp/comments')
+
+# Ensure the comments directory exists
+COMMENTS_DIR.mkdir(parents=True, exist_ok=True)
+logger.info(f"Comments directory initialized at {COMMENTS_DIR}")
 
 def get_video_id(video_url):
     """Extract a clean video ID from the URL."""
@@ -86,4 +88,7 @@ def save_comments():
 
     except Exception as e:
         logger.error(f"Error saving comments: {str(e)}")
-        return jsonify({"error": "Failed to save comments"}), 500 
+        return jsonify({
+            "error": f"Failed to save comments: {str(e)}",
+            "details": str(e)
+        }), 500 

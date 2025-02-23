@@ -17,4 +17,3 @@ psutil
 boto3
 Pillow
 matplotlib
-flask-cors==4.0.0

@@ -39,6 +39,7 @@
     <script type="text/babel">
       // Video interface
       const Video = {
+        id: String,
         name: String,
         url: String,
       };
@@ -57,6 +58,7 @@
         const [editingText, setEditingText] = React.useState("");
         const [isSaving, setIsSaving] = React.useState(false);
         const [saveError, setSaveError] = React.useState(null);
+        const [isLoading, setIsLoading] = React.useState(false);
         const MAX_COMMENT_LENGTH = 250;
         const TOOLBAR_COLORS = [
           "#000000",
@@ -67,6 +69,43 @@
           "#FF00FF",
           "#00FFFF",
         ];
+
+        // Add loadComments function
+        const loadComments = async () => {
+          setIsLoading(true);
+          setSaveError(null);
+
+          try {
+            const response = await fetch(`/api/comments/${video.id}`);
+
+            if (response.status === 404) {
+              // No comments found is not an error
+              setComments([]);
+              return;
+            }
+
+            if (!response.ok) {
+              const data = await response.json();
+              throw new Error(data.error || "Failed to load comments");
+            }
+
+            const data = await response.json();
+            setComments(data.data.comments);
+            console.log("Comments loaded from:", data.filename);
+          } catch (error) {
+            setSaveError(error.message);
+            console.error("Error loading comments:", error);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        // Load comments when video changes
+        React.useEffect(() => {
+          if (video && video.id) {
+            loadComments();
+          }
+        }, [video]);
 
         // Initialize Fabric.js canvas
         React.useEffect(() => {
@@ -284,6 +323,7 @@
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
+                videoId: video.id,
                 videoUrl: video.url,
                 comments: comments,
                 savedAt: new Date().toISOString(),
@@ -296,7 +336,6 @@
             }
 
             const data = await response.json();
-            // Show a success toast or notification
             console.log("Comments saved:", data.filename);
           } catch (error) {
             setSaveError(error.message);
@@ -315,18 +354,7 @@
                   src={video.url}
                   controls
                   className="w-full h-full object-contain"
-                  onCanPlay={() => {
-                    setIsVideoLoading(false);
-                    // Force canvas update when video loads
-                    if (fabricCanvasRef.current && videoRef.current) {
-                      const rect = videoRef.current.getBoundingClientRect();
-                      fabricCanvasRef.current.setDimensions({
-                        width: rect.width,
-                        height: rect.height * 0.8,
-                      });
-                      fabricCanvasRef.current.requestRenderAll();
-                    }
-                  }}
+                  onCanPlay={() => setIsVideoLoading(false)}
                   onError={(e) => onError("Failed to load video")}
                 />
                 <div
@@ -353,81 +381,41 @@
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">
                     Drawing
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleSaveComments}
-                      disabled={comments.length === 0 || isSaving}
-                      className="px-3 py-1 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-                      title="Save all comments"
-                    >
-                      {isSaving ? (
-                        <span className="inline-block animate-spin">↻</span>
-                      ) : (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-4 w-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-                          <polyline points="17 21 17 13 7 13 7 21" />
-                          <polyline points="7 3 7 8 15 8" />
-                        </svg>
-                      )}
-                      Save
-                    </button>
-                    <button
-                      onClick={() => {
-                        if (
-                          isDrawingMode &&
-                          fabricCanvasRef.current &&
-                          !fabricCanvasRef.current.isEmpty()
-                        ) {
-                          // If exiting draw mode with a drawing, create a comment
-                          const newComment = {
-                            id: crypto.randomUUID(),
-                            timestamp: videoRef.current.currentTime,
-                            comment: "Drawing Only",
-                            drawing: JSON.stringify(
-                              fabricCanvasRef.current.toJSON()
-                            ),
-                          };
-                          setComments((prev) =>
-                            [...prev, newComment].sort(
-                              (a, b) => a.timestamp - b.timestamp
-                            )
-                          );
-                          fabricCanvasRef.current.clear();
-                        }
+                  <button
+                    onClick={() => {
+                      if (
+                        isDrawingMode &&
+                        fabricCanvasRef.current &&
+                        !fabricCanvasRef.current.isEmpty()
+                      ) {
+                        // If exiting draw mode with a drawing, create a comment
+                        const newComment = {
+                          id: crypto.randomUUID(),
+                          timestamp: videoRef.current.currentTime,
+                          comment: "Drawing Only",
+                          drawing: JSON.stringify(
+                            fabricCanvasRef.current.toJSON()
+                          ),
+                        };
+                        setComments((prev) =>
+                          [...prev, newComment].sort(
+                            (a, b) => a.timestamp - b.timestamp
+                          )
+                        );
+                        fabricCanvasRef.current.clear();
+                      }
 
-                        // Toggle drawing mode
-                        setIsDrawingMode(!isDrawingMode);
-
-                        // Reposition and resize canvas when entering drawing mode
-                        if (
-                          !isDrawingMode &&
-                          fabricCanvasRef.current &&
-                          videoRef.current
-                        ) {
-                          const rect = videoRef.current.getBoundingClientRect();
-                          fabricCanvasRef.current.setDimensions({
-                            width: rect.width,
-                            height: rect.height * 0.8,
-                          });
-                          fabricCanvasRef.current.requestRenderAll();
-                        }
-                      }}
-                      className={`px-3 py-1 rounded ${
-                        isDrawingMode
-                          ? "bg-indigo-600 text-white"
-                          : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {isDrawingMode ? "Drawing" : "Draw"}
-                    </button>
-                  </div>
+                      // Toggle drawing mode
+                      setIsDrawingMode(!isDrawingMode);
+                    }}
+                    className={`px-3 py-1 rounded ${
+                      isDrawingMode
+                        ? "bg-indigo-600 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {isDrawingMode ? "Drawing" : "Draw"}
+                  </button>
                 </div>
                 <div className="flex flex-wrap gap-2" id="color-selector">
                   {TOOLBAR_COLORS.map((color) => (
@@ -442,58 +430,42 @@
                       style={{ backgroundColor: color }}
                     />
                   ))}
-                  <div className="relative">
-                    <input
-                      type="color"
-                      value={selectedColor}
-                      onChange={(e) => setSelectedColor(e.target.value)}
-                      className="opacity-0 absolute inset-0 w-8 h-8 cursor-pointer"
-                    />
-                    <div
-                      className={`w-8 h-8 rounded-full border-2 ${
-                        !TOOLBAR_COLORS.includes(selectedColor)
-                          ? "border-indigo-600 dark:border-indigo-400"
-                          : "border-transparent"
-                      }`}
-                      style={{ backgroundColor: selectedColor }}
-                    >
-                      <div className="absolute bottom-0 right-0 bg-white dark:bg-gray-700 rounded-full w-3 h-3 flex items-center justify-center text-[8px] shadow-sm">
-                        +
-                      </div>
-                    </div>
-                  </div>
                 </div>
-                <div className="flex items-center justify-end mt-2">
+              </div>
+
+              {/* Save Comments Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                <div className="flex items-center justify-between">
                   <button
-                    onClick={() => {
-                      if (fabricCanvasRef.current) {
-                        const objects = fabricCanvasRef.current.getObjects();
-                        if (objects.length > 0) {
-                          const lastObject = objects[objects.length - 1];
-                          fabricCanvasRef.current.remove(lastObject);
-                          fabricCanvasRef.current.requestRenderAll();
-                        }
-                      }
-                    }}
-                    className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
-                    title="Undo last drawing"
+                    onClick={handleSaveComments}
+                    disabled={comments.length === 0 || isSaving}
+                    className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    title="Save all comments"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M9 14L4 9l5-5" />
-                      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                    </svg>
-                    Undo
+                    {isSaving ? (
+                      <span className="inline-block animate-spin">↻</span>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                        <polyline points="17 21 17 13 7 13 7 21" />
+                        <polyline points="7 3 7 8 15 8" />
+                      </svg>
+                    )}
+                    {isSaving ? "Saving..." : "Save All Comments"}
                   </button>
                 </div>
+                {saveError && (
+                  <div className="mt-2 p-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 text-sm rounded-lg">
+                    {saveError}
+                  </div>
+                )}
               </div>
 
               {/* Comment Input */}
@@ -520,9 +492,30 @@
 
               {/* Comments List */}
               <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow flex-1 overflow-y-auto">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                  Comments
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+                    Comments
+                  </h3>
+                  <button
+                    onClick={loadComments}
+                    disabled={isLoading}
+                    className="px-3 py-1 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+                    title="Reload comments"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <path d="M9 12l2 2 4-4" />
+                    </svg>
+                    {isLoading ? "Loading..." : "Reload"}
+                  </button>
+                </div>
                 <div className="space-y-4">
                   {comments.map((comment) => (
                     <div
@@ -646,8 +639,14 @@
             return;
           }
 
+          // Extract video ID from URL
+          const urlParts = videoUrl.split("/");
+          const rawVideoId = urlParts[urlParts.length - 1].split("?")[0];
+          const videoId = rawVideoId.split(".")[0];
+
           const video = {
-            name: videoUrl.split("/").pop() || "Video",
+            id: videoId,
+            name: videoId,
             url: videoUrl,
           };
 

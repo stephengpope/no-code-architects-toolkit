@@ -71,14 +71,14 @@
             const rect = video.getBoundingClientRect();
 
             // Create canvas with initial dimensions
-            const canvas = new fabric.Canvas(canvasRef.current);
-            canvas.setDimensions({
+            const canvas = new fabric.Canvas(canvasRef.current, {
               width: rect.width,
               height: rect.height,
+              isDrawingMode: isDrawingMode,
+              selection: false,
             });
 
             // Initialize drawing settings
-            canvas.isDrawingMode = isDrawingMode;
             const brush = new fabric.PencilBrush(canvas);
             brush.width = 5;
             brush.color = selectedColor;
@@ -117,18 +117,20 @@
 
             // Handle resize
             const updateCanvasDimensions = () => {
-              const canvas = fabricCanvasRef.current;
-              if (canvas) {
-                const rect = video.getBoundingClientRect();
-                const scale = rect.width / video.videoWidth;
-                canvas.setDimensions({
+              if (fabricCanvasRef.current && videoRef.current) {
+                const rect = videoRef.current.getBoundingClientRect();
+                fabricCanvasRef.current.setDimensions({
                   width: rect.width,
                   height: rect.height,
                 });
-                canvas.setZoom(scale);
-                canvas.renderAll();
+                fabricCanvasRef.current.renderAll();
               }
             };
+
+            // Initial size update after video metadata is loaded
+            video.addEventListener("loadedmetadata", () => {
+              updateCanvasDimensions();
+            });
 
             const resizeObserver = new ResizeObserver(updateCanvasDimensions);
             resizeObserver.observe(video);
@@ -247,7 +249,10 @@
               />
               <canvas
                 ref={canvasRef}
-                className="absolute top-0 left-0 pointer-events-none"
+                className={`absolute top-0 left-0 w-full h-full ${
+                  isDrawingMode ? "cursor-crosshair" : "pointer-events-none"
+                }`}
+                style={{ touchAction: "none" }}
               />
             </div>
 
@@ -259,7 +264,30 @@
                     Drawing
                   </h3>
                   <button
-                    onClick={() => setIsDrawingMode(!isDrawingMode)}
+                    onClick={() => {
+                      if (
+                        isDrawingMode &&
+                        fabricCanvasRef.current &&
+                        !fabricCanvasRef.current.isEmpty()
+                      ) {
+                        // If exiting draw mode with a drawing, create a comment
+                        const newComment = {
+                          id: crypto.randomUUID(),
+                          timestamp: videoRef.current.currentTime,
+                          comment: "Drawing Only",
+                          drawing: JSON.stringify(
+                            fabricCanvasRef.current.toJSON()
+                          ),
+                        };
+                        setComments((prev) =>
+                          [...prev, newComment].sort(
+                            (a, b) => a.timestamp - b.timestamp
+                          )
+                        );
+                        fabricCanvasRef.current.clear();
+                      }
+                      setIsDrawingMode(!isDrawingMode);
+                    }}
                     className={`px-3 py-1 rounded ${
                       isDrawingMode
                         ? "bg-indigo-600 text-white"

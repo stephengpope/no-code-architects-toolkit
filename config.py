@@ -14,11 +14,21 @@ S3_ENDPOINT_URL = os.environ.get('S3_ENDPOINT_URL', '')
 S3_ACCESS_KEY = os.environ.get('S3_ACCESS_KEY', '')
 S3_SECRET_KEY = os.environ.get('S3_SECRET_KEY', '')
 
+# MinIO environment variables
+MINIO_ENDPOINT_URL = os.environ.get('MINIO_ENDPOINT_URL', '')
+MINIO_ACCESS_KEY = os.environ.get('MINIO_ACCESS_KEY', '')
+MINIO_SECRET_KEY = os.environ.get('MINIO_SECRET_KEY', '')
+MINIO_BUCKET_NAME = os.environ.get('MINIO_BUCKET_NAME', '')
+MINIO_REGION = os.environ.get('MINIO_REGION', '')
+
+
+
 def validate_env_vars(provider):
     """ Validate the necessary environment variables for the selected storage provider """
     required_vars = {
         'GCP': ['GCP_BUCKET_NAME', 'GCP_SA_CREDENTIALS'],
-        'S3': ['S3_ENDPOINT_URL', 'S3_ACCESS_KEY', 'S3_SECRET_KEY']
+        'S3': ['S3_ENDPOINT_URL', 'S3_ACCESS_KEY', 'S3_SECRET_KEY'],
+        'MINIO': ['MINIO_ENDPOINT_URL', 'MINIO_ACCESS_KEY', 'MINIO_SECRET_KEY']
     }
     
     missing_vars = [var for var in required_vars[provider] if not os.getenv(var)]
@@ -52,9 +62,25 @@ class S3CompatibleProvider(CloudStorageProvider):
         from services.s3_toolkit import upload_to_s3
         return upload_to_s3(file_path, self.bucket_name, self.region, self.endpoint_url, self.access_key, self.secret_key)
 
+class MinIOProvider(CloudStorageProvider):
+    """ MinIO storage provider """
+    def __init__(self):
+        self.endpoint_url = os.getenv('MINIO_ENDPOINT_URL')
+        self.access_key = os.getenv('MINIO_ACCESS_KEY')
+        self.secret_key = os.getenv('MINIO_SECRET_KEY')
+        self.bucket_name = os.getenv("MINIO_BUCKET_NAME")
+        self.region = os.getenv("MINIO_REGION")
+
+    def upload_file(self, file_path: str) -> str:
+        from services.minio_toolkit import upload_to_minio
+        return upload_to_minio(file_path, self.endpoint_url, self.access_key, self.secret_key, self.bucket_name, self.region)
+
 def get_storage_provider() -> CloudStorageProvider:
     """ Get the appropriate storage provider based on the available environment variables """
-    if os.getenv('S3_BUCKET_NAME'):
+    if os.getenv('MINIO_ENDPOINT_URL'):
+        validate_env_vars('MINIO')
+        return MinIOProvider()
+    elif os.getenv('S3_BUCKET_NAME'):
         validate_env_vars('S3')
         return S3CompatibleProvider()
     else:

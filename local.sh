@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Stop all running Docker containers
-echo "Stopping all running Docker containers..."
-docker stop $(docker ps -aq)
+echo "Stopping no-code-architects running Docker containers..."
+docker stop $(docker ps -a --filter ancestor=no-code-architects-toolkit:testing --format="{{.ID}}")
 
 # Build the Docker image
 echo "Building Docker image..."

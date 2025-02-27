@@ -141,8 +141,33 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
+### MinIO Storage Environment Variables
+
+#### `MINIO_ENDPOINT_URL`
+- **Purpose**: The endpoint URL for your MinIO server.
+- **Requirement**: Mandatory if using MinIO storage.
+
+#### `MINIO_ACCESS_KEY`
+- **Purpose**: The access key for MinIO authentication.
+- **Requirement**: Mandatory if using MinIO storage.
+
+#### `MINIO_SECRET_KEY`
+- **Purpose**: The secret key for MinIO authentication.
+- **Requirement**: Mandatory if using MinIO storage.
+
+#### `MINIO_BUCKET_NAME`
+- **Purpose**: The name of the MinIO storage bucket.
+- **Requirement**: Mandatory if using MinIO storage.
+
+#### `MINIO_REGION`
+- **Purpose**: The region where your MinIO server is located.
+- **Requirement**: Mandatory if using MinIO storage.
+
+---
+
 ### Notes
-- Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 
+- Ensure all required environment variables are set based on the storage provider in use (GCP, S3-compatible, or MinIO). 
+- You only need to set the variables for the storage provider you intend to use.
 - Missing any required variables will result in errors during runtime.
 
 ### Run the Docker Container:

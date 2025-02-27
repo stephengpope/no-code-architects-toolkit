@@ -3,7 +3,7 @@ import logging
 from abc import ABC, abstractmethod
 from services.gcp_toolkit import upload_to_gcs
 from services.s3_toolkit import upload_to_s3
-from config import validate_env_vars
+from config import validate_env_vars, MinIOProvider
 
 logger = logging.getLogger(__name__)
 
@@ -29,12 +29,15 @@ class S3CompatibleProvider(CloudStorageProvider):
         return upload_to_s3(file_path, self.endpoint_url, self.access_key, self.secret_key)
 
 def get_storage_provider() -> CloudStorageProvider:
-    try:
-        validate_env_vars('GCP')
-        return GCPStorageProvider()
-    except ValueError:
+    if os.getenv('MINIO_ENDPOINT_URL'):
+        validate_env_vars('MINIO')
+        return MinIOProvider()
+    elif os.getenv('S3_BUCKET_NAME'):
         validate_env_vars('S3')
         return S3CompatibleProvider()
+    else:
+        validate_env_vars('GCP')
+        return GCPStorageProvider()
 
 def upload_file(file_path: str) -> str:
     provider = get_storage_provider()

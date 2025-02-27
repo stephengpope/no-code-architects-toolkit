@@ -104,10 +104,10 @@ RUN git clone https://github.com/libass/libass.git && \
 # Build and install FFmpeg with all required features
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
-    git checkout n7.0.2 && \
+    git checkout n7.1 && \
     PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
-    CFLAGS="-I/usr/include/freetype2" \
-    LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
+    CFLAGS="-I/usr/include/freetype2 -I/usr/include/harfbuzz -I/usr/include/fontconfig" \
+    LDFLAGS="-L/usr/lib/x86_64-linux-gnu -lfreetype -lharfbuzz -lfontconfig" \
     ./configure --prefix=/usr/local \
         --enable-gpl \
         --enable-pthreads \
@@ -133,8 +133,8 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
         --enable-fontconfig \
         --enable-libsrt \
         --enable-filter=drawtext \
-        --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
-        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
+        --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include -I/usr/include/harfbuzz -I/usr/include/fontconfig" \
+        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig -lharfbuzz" \
         --enable-gnutls \
     && make -j$(nproc) && \
     make install && \

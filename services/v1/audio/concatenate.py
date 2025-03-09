@@ -8,8 +8,8 @@ STORAGE_PATH = "/tmp/"
 
 def process_audio_concatenate(media_urls, job_id, webhook_url=None):
     """Combine multiple audio files into one."""
-    input_files = []
-    output_filename = f"{job_id}.mp3"
+    input_streams = []
+    output_filename = f"{job_id}.wav"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
@@ -17,27 +17,19 @@ def process_audio_concatenate(media_urls, job_id, webhook_url=None):
         for i, media_item in enumerate(media_urls):
             url = media_item['audio_url']
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
-            input_files.append(input_filename)
+            input_streams.append(ffmpeg.input(input_filename))
 
-        # Generate an absolute path concat list file for FFmpeg
-        concat_file_path = os.path.join(STORAGE_PATH, f"{job_id}_concat_list.txt")
-        with open(concat_file_path, 'w') as concat_file:
-            for input_file in input_files:
-                # Write absolute paths to the concat list
-                concat_file.write(f"file '{os.path.abspath(input_file)}'\n")
-
-        # Use the concat demuxer to concatenate the audio files
+        # Use the concat filter with re-encoding
         (
-            ffmpeg.input(concat_file_path, format='concat', safe=0).
-                output(output_path, c='copy').
-                run(overwrite_output=True)
+            ffmpeg
+            .concat(*input_streams, v=0, a=1)
+            .output(output_path, acoded='libmp3lame', ar='44100')
+            .run(overwrite_output=True)
         )
 
         # Clean up input files
         for f in input_files:
             os.remove(f)
-
-        os.remove(concat_file_path)  # Remove the concat list file after the operation
 
         print(f"Audio combination successful: {output_path}")
 
@@ -49,3 +41,4 @@ def process_audio_concatenate(media_urls, job_id, webhook_url=None):
     except Exception as e:
         print(f"Audio combination failed: {str(e)}")
         raise
+

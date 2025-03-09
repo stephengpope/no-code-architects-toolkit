@@ -9,6 +9,7 @@ STORAGE_PATH = "/tmp/"
 def process_audio_concatenate(media_urls, job_id, webhook_url=None):
     """Combine multiple audio files into one."""
     input_streams = []
+    input_files = []
     output_filename = f"{job_id}.mp3"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
@@ -18,6 +19,7 @@ def process_audio_concatenate(media_urls, job_id, webhook_url=None):
             url = media_item['audio_url']
             input_filename = download_file(url, os.path.join(STORAGE_PATH, f"{job_id}_input_{i}"))
             input_streams.append(ffmpeg.input(input_filename))
+            input_files.append(input_filename)
 
         # Use the concat filter with re-encoding
         (

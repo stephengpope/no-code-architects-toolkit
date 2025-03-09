@@ -23,7 +23,7 @@ def process_audio_concatenate(media_urls, job_id, webhook_url=None):
         (
             ffmpeg
             .concat(*input_streams, v=0, a=1)
-            .output(output_path, acoded='libmp3lame', ar='44100')
+            .output(output_path, acodec='libmp3lame', ar='44100')
             .run(overwrite_output=True)
         )
 

@@ -9,7 +9,7 @@ STORAGE_PATH = "/tmp/"
 def process_audio_concatenate(media_urls, job_id, webhook_url=None):
     """Combine multiple audio files into one."""
     input_streams = []
-    output_filename = f"{job_id}.wav"
+    output_filename = f"{job_id}.mp3"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:

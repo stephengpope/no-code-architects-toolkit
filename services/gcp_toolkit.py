@@ -17,7 +17,7 @@ def initialize_gcp_client():
     GCP_SA_CREDENTIALS = os.getenv('GCP_SA_CREDENTIALS')
 
     if not GCP_SA_CREDENTIALS:
-        logger.warning("GCP credentials not found. Skipping GCS client initialization.")
+        #logger.warning("GCP credentials not found. Skipping GCS client initialization.")
         return None  # Skip client initialization if credentials are missing
 
     # Define the required scopes for Google Cloud Storage

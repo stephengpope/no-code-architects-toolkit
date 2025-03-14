@@ -145,7 +145,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 #### `S3_REGION`
 - **Purpose**: The region for the S3-compatible storage service.
-- **Requirement**: Mandatory if using S3-compatible storage.
+- **Requirement**: Mandatory if using S3-compatible storage, "None" is acceptible for some s3 providers.
 
 ---
 

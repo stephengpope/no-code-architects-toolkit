@@ -22,6 +22,7 @@ POST /v1/media/transform/mp3
 - `webhook_url` (optional, string): The URL to receive a webhook notification upon completion.
 - `id` (optional, string): A unique identifier for the request.
 - `bitrate` (optional, string): The desired bitrate for the output MP3 file, in the format `<value>k` (e.g., `128k`). If not provided, defaults to `128k`.
+- `sample_rate` (optional, string): The desired sample rate for the output MP3 file, in the format `XXXXX` (e.g., `44100`). If not provided, it will use the sample rate of the input file.
 
 The `validate_payload` directive in the routes file enforces the following JSON schema for the request body:
 
@@ -32,7 +33,8 @@ The `validate_payload` directive in the routes file enforces the following JSON 
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"}
+        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"},
+        "sample_rate": {"type": "string", "pattern": "^[0-9]{5}$"}
     },
     "required": ["media_url"],
     "additionalProperties": False
@@ -46,7 +48,8 @@ The `validate_payload` directive in the routes file enforces the following JSON 
     "media_url": "https://example.com/video.mp4",
     "webhook_url": "https://example.com/webhook",
     "id": "unique-request-id",
-    "bitrate": "192k"
+    "bitrate": "192k",
+    "sample_rate": "48000"
 }
 ```
 

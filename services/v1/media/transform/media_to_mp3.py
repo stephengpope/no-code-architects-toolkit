@@ -6,23 +6,23 @@ from services.file_management import download_file
 # Set the default local storage directory
 STORAGE_PATH = "/tmp/"
 
-def process_media_to_mp3(media_url, job_id, bitrate='128k', webhook_url=None):
-    """Convert media to MP3 format with specified bitrate."""
+def process_media_to_mp3(media_url, job_id, bitrate='128k', sample_rate=44.1, webhook_url=None):
+    """Convert media to MP3 format with specified bitrate and sample rate."""
     input_filename = download_file(media_url, os.path.join(STORAGE_PATH, f"{job_id}_input"))
     output_filename = f"{job_id}.mp3"
     output_path = os.path.join(STORAGE_PATH, output_filename)
 
     try:
-        # Convert media file to MP3 with specified bitrate
+        # Convert media file to MP3 with specified bitrate and sample rate
         (
             ffmpeg
             .input(input_filename)
-            .output(output_path, acodec='libmp3lame', audio_bitrate=bitrate)
+            .output(output_path, acodec='libmp3lame', audio_bitrate=bitrate, ar=sample_rate * 1000)
             .overwrite_output()
             .run(capture_stdout=True, capture_stderr=True)
         )
         os.remove(input_filename)
-        print(f"Conversion successful: {output_path} with bitrate {bitrate}")
+        print(f"Conversion successful: {output_path} with bitrate {bitrate} and sample rate {sample_rate}kHz")
 
         # Ensure the output file exists locally before attempting upload
         if not os.path.exists(output_path):

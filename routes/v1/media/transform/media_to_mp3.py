@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"}
+        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"},
+        "sample_rate": {"type": "number"}
     },
     "required": ["media_url"],
     "additionalProperties": False
@@ -29,11 +30,12 @@ def convert_media_to_mp3(job_id, data):
     webhook_url = data.get('webhook_url')
     id = data.get('id')
     bitrate = data.get('bitrate', '128k')
+    sample_rate = data.get('sample_rate', 44.1)
 
     logger.info(f"Job {job_id}: Received media-to-mp3 request for media URL: {media_url}")
 
     try:
-        output_file = process_media_to_mp3(media_url, job_id, bitrate)
+        output_file = process_media_to_mp3(media_url, job_id, bitrate, sample_rate)
         logger.info(f"Job {job_id}: Media conversion process completed successfully")
 
         cloud_url = upload_file(output_file)

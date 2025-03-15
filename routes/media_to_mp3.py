@@ -33,7 +33,7 @@ def convert_media_to_mp3(job_id, data):
     webhook_url = data.get("webhook_url")
     id = data.get("id")
     bitrate = data.get("bitrate", "128k")
-    sample_rate = data.get("sample_rate", None)
+    sample_rate = data.get("sample_rate")
 
     logger.info(
         f"Job {job_id}: Received media-to-mp3 request for media URL: {media_url}"

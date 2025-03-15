@@ -125,7 +125,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
-### S3-Compatible Storage Environment Variables (e.g., DigitalOcean Spaces)
+### S3-Compatible Storage Environment Variable
 
 #### `S3_ENDPOINT_URL`
 - **Purpose**: Endpoint URL for the S3-compatible service.
@@ -138,6 +138,14 @@ Each feature is supported by robust payload validation and detailed API document
 #### `S3_SECRET_KEY`
 - **Purpose**: The secret key for the S3-compatible storage service.
 - **Requirement**: Mandatory if using S3-compatible storage.
+
+#### `S3_BUCKET_NAME`
+- **Purpose**: The bucket name for the S3-compatible storage service.
+- **Requirement**: Mandatory if using S3-compatible storage.
+
+#### `S3_REGION`
+- **Purpose**: The region for the S3-compatible storage service.
+- **Requirement**: Mandatory if using S3-compatible storage, "None" is acceptible for some s3 providers.
 
 ---
 

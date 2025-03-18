@@ -151,4 +151,3 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False):
     except Exception as e:
         logger.error(f"Error streaming file to S3: {e}")
         raise
-    

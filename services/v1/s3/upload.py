@@ -4,7 +4,6 @@ import logging
 import requests
 from urllib.parse import urlparse, unquote
 import uuid
-from services.cloud_storage
 
 logger = logging.getLogger(__name__)
 

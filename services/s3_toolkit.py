@@ -22,7 +22,7 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region)
         with open(file_path, 'rb') as data:
             client.upload_fileobj(data, bucket_name, os.path.basename(file_path), ExtraArgs={'ACL': 'public-read'})
 
-        file_url = f"{s3_url}/{os.path.basename(file_path)}"
+        file_url = f"{s3_url}/{bucket_name}/{os.path.basename(file_path)}"
         return file_url
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")

@@ -141,7 +141,7 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False):
             )
         
         return {
-            'url': file_url,
+            'file_url': file_url,
             'filename': filename,
             'bucket': bucket_name,
             'public': make_public

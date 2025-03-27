@@ -5,10 +5,10 @@ from services.v1.video.thumbnail import extract_thumbnail
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 
-thumbnail_bp = Blueprint('thumbnail', __name__)
+v1_video_thumbnail_bp = Blueprint('v1_video_thumbnail', __name__)
 logger = logging.getLogger(__name__)
 
-@thumbnail_bp.route('/v1/video/thumbnail', methods=['POST'])
+@v1_video_thumbnail_bp.route('/v1/video/thumbnail', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",

@@ -2,8 +2,9 @@ import os
 import boto3
 import logging
 import requests
-from urllib.parse import urlparse, unquote
+from urllib.parse import urlparse, unquote, quote
 import uuid
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,9 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False):
         
         # Generate the URL to the uploaded file
         if make_public:
-            file_url = f"{endpoint_url}/{bucket_name}/{filename}"
+            # URL encode the filename for the URL only
+            encoded_filename = quote(filename)
+            file_url = f"{endpoint_url}/{bucket_name}/{encoded_filename}"
         else:
             # Generate a pre-signed URL for private files
             file_url = s3_client.generate_presigned_url(
@@ -142,7 +145,7 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False):
         
         return {
             'file_url': file_url,
-            'filename': filename,
+            'filename': filename,  # Return the original filename
             'bucket': bucket_name,
             'public': make_public
         }

@@ -1,8 +1,7 @@
 import os
 import ffmpeg
 from services.file_management import download_file
-
-STORAGE_PATH = "/tmp/"
+from config import LOCAL_STORAGE_PATH
 
 def extract_thumbnail(video_url, job_id, second=0):
     """
@@ -17,10 +16,10 @@ def extract_thumbnail(video_url, job_id, second=0):
         str: Path to the extracted thumbnail image
     """
     # Download the video from the provided URL
-    video_path = download_file(video_url, os.path.join(STORAGE_PATH, f"{job_id}_input"))
+    video_path = download_file(video_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
     
     # Set output path for the thumbnail
-    thumbnail_path = os.path.join(STORAGE_PATH, f"{job_id}_thumbnail.jpg")
+    thumbnail_path = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_thumbnail.jpg")
     
     try:
         # Extract thumbnail using ffmpeg at the specified timestamp

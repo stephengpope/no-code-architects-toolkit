@@ -3,14 +3,13 @@ import subprocess
 import logging
 from services.file_management import download_file
 from PIL import Image
-
-STORAGE_PATH = "/tmp/"
+from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 
 def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, webhook_url=None):
     try:
         # Download the image file
-        image_path = download_file(image_url, STORAGE_PATH)
+        image_path = download_file(image_url, LOCAL_STORAGE_PATH)
         logger.info(f"Downloaded image to {image_path}")
 
         # Get image dimensions using Pillow
@@ -19,7 +18,7 @@ def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, we
         logger.info(f"Original image dimensions: {width}x{height}")
 
         # Prepare the output path
-        output_path = os.path.join(STORAGE_PATH, f"{job_id}.mp4")
+        output_path = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.mp4")
 
         # Determine orientation and set appropriate dimensions
         if width > height:

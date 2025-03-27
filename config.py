@@ -6,6 +6,9 @@ API_KEY = os.environ.get('API_KEY')
 if not API_KEY:
     raise ValueError("API_KEY environment variable is not set")
 
+# Storage path setting
+LOCAL_STORAGE_PATH = os.environ.get('LOCAL_STORAGE_PATH', '/tmp')
+
 # GCP environment variables
 GCP_SA_CREDENTIALS = os.environ.get('GCP_SA_CREDENTIALS', '')
 GCP_BUCKET_NAME = os.environ.get('GCP_BUCKET_NAME', '')

@@ -37,11 +37,11 @@ def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, we
         logger.info(f"Video length: {length}s, Frame rate: {frame_rate}fps, Total frames: {total_frames}")
         logger.info(f"Zoom speed: {zoom_speed}/s, Final zoom factor: {zoom_factor}")
 
-        # Prepare FFmpeg command
+        # Prepare FFmpeg command with fps filter to ensure correct frame rate
         cmd = [
             'ffmpeg', '-framerate', str(frame_rate), '-loop', '1', '-i', image_path,
-            '-vf', f"scale={scale_dims},zoompan=z='min(1+({zoom_speed}*{length})*on/{total_frames}, {zoom_factor})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={output_dims}",
-            '-c:v', 'libx264', '-t', str(length), '-pix_fmt', 'yuv420p', output_path
+            '-vf', f"scale={scale_dims},zoompan=z='min(1+({zoom_speed}*{length})*on/{total_frames}, {zoom_factor})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={output_dims},fps={frame_rate}",
+            '-c:v', 'libx264', '-r', str(frame_rate), '-t', str(length), '-pix_fmt', 'yuv420p', output_path
         ]
 
         logger.info(f"Running FFmpeg command: {' '.join(cmd)}")

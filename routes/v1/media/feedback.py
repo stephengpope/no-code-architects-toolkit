@@ -107,24 +107,24 @@ def serve_next_static(path):
                 response.headers['Content-Type'] = 'font/ttf'
             elif ext == '.eot':
                 response.headers['Content-Type'] = 'application/vnd.ms-fontobject'
+            
+            # Add CORS headers for font files
+            response.headers['Access-Control-Allow-Origin'] = '*'
             return response
-                
+        
         # For other files, serve directly
         mime_type = mimetypes.types_map.get(ext, 'application/octet-stream')
         
-        # Log debugging information
-        current_app.logger.info(f"Serving {file_path} as {mime_type}")
-        
         response = send_from_directory(feedback_path, file_path)
         response.headers['Content-Type'] = mime_type
-        
+
         # Add CORS headers for font files
         if ext == '.woff2' or ext == '.woff' or ext == '.ttf' or ext == '.eot':
             response.headers['Access-Control-Allow-Origin'] = '*'
             
         return response
     except Exception as e:
-        current_app.logger.error(f"Error serving _next/{path}: {str(e)}")
+        current_app.logger.error(f"Error serving Next.js static file {path}: {str(e)}")
         return str(e), 'serve_next_static', 500
 
 @v1_media_feedback_bp.route('/<path:filename>', methods=['GET'])
@@ -177,6 +177,9 @@ def serve_feedback_static(filename):
         response = send_from_directory(feedback_path, filename)
         response.headers['Content-Type'] = mime_type
         return response
+    except FileNotFoundError:
+        current_app.logger.error(f"Static file not found: {filename}")
+        return "File not found", 404
     except Exception as e:
-        current_app.logger.error(f"Error serving {filename}: {str(e)}")
-        return str(e), 'serve_feedback_static', 500
+        current_app.logger.error(f"Error serving static file {filename}: {str(e)}")
+        return str(e), 500

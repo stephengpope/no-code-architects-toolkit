@@ -7,7 +7,9 @@ import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 
-MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
+
+
+# comment
 
 def create_app():
     app = Flask(__name__)

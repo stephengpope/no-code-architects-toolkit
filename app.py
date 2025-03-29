@@ -118,6 +118,7 @@ def create_app():
     from routes.caption_video import caption_bp 
     from routes.extract_keyframes import extract_keyframes_bp
     from routes.image_to_video import image_to_video_bp
+    from routes.v1.video.cut import v1_video_cut_bp
     
 
     # Register blueprints
@@ -130,6 +131,7 @@ def create_app():
     app.register_blueprint(caption_bp)
     app.register_blueprint(extract_keyframes_bp)
     app.register_blueprint(image_to_video_bp)
+    app.register_blueprint(v1_video_cut_bp)
     
     
 

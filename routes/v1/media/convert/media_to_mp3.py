@@ -20,16 +20,16 @@
 from flask import Blueprint, current_app
 from app_utils import *
 import logging
-from services.v1.media.transform.media_to_mp3 import process_media_to_mp3
+from services.v1.media.convert.media_to_mp3 import process_media_to_mp3
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 import os
 
-v1_media_transform_mp3_bp = Blueprint('v1_media_transform', __name__)
+v1_media_convert_mp3_bp = Blueprint('v1_media_convert', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_media_transform_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])
-@v1_media_transform_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #depleft for backwards compatibility, do not use.
+@v1_media_convert_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])
+@v1_media_convert_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #depleft for backwards compatibility, do not use.
 @authenticate
 @validate_payload({
     "type": "object",

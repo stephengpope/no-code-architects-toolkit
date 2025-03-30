@@ -67,7 +67,7 @@ Each feature is supported by robust payload validation and detailed API document
 
 ### Image Processing
 
-#### 5. `/v1/image/transform/video`
+#### 5. `/v1/image/convert/video`
 - **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
 - **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/transform/image_to_video.md)
 
@@ -187,7 +187,7 @@ Or use the guide below walks you through the steps to install the NCA Toolkit AP
 ---
 
 ## **Prerequisites**
-- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don’t already have one.
+- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don't already have one.
   - New users receive $300 in free credits.
 - Basic knowledge of GCP services such as Cloud Run and Cloud Storage.
 - A terminal or code editor for managing files.

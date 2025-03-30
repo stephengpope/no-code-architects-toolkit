@@ -11,7 +11,7 @@ v1_media_transform_mp3_bp = Blueprint('v1_media_transform', __name__)
 logger = logging.getLogger(__name__)
 
 @v1_media_transform_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])
-@v1_media_transform_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #left for backwards compatibility
+@v1_media_transform_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #depleft for backwards compatibility, do not use.
 @authenticate
 @validate_payload({
     "type": "object",

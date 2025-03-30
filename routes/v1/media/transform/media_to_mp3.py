@@ -10,7 +10,8 @@ import os
 v1_media_transform_mp3_bp = Blueprint('v1_media_transform', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_media_transform_mp3_bp.route('/v1/media/transform/mp3', methods=['POST'])
+@v1_media_transform_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])
+@v1_media_transform_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #left for backwards compatibility
 @authenticate
 @validate_payload({
     "type": "object",
@@ -30,7 +31,7 @@ def convert_media_to_mp3(job_id, data):
     webhook_url = data.get('webhook_url')
     id = data.get('id')
     bitrate = data.get('bitrate', '128k')
-    sample_rate = data.get('sample_rate', 44.1)
+    sample_rate = data.get('sample_rate')
 
     logger.info(f"Job {job_id}: Received media-to-mp3 request for media URL: {media_url}")
 

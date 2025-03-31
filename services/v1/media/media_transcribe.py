@@ -1,3 +1,21 @@
+# Copyright (c) 2025 Stephen G. Pope
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+
 import os
 import whisper
 import srt
@@ -5,18 +23,16 @@ from datetime import timedelta
 from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
 import logging
+from config import LOCAL_STORAGE_PATH
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-# Set the default local storage directory
-STORAGE_PATH = "/tmp/"
-
 def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
-    input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
+    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, 'input_media'))
     logger.info(f"Downloaded media to local file: {input_filename}")
 
     try:
@@ -72,21 +88,21 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
         else:
             
             if include_text is True:
-                text_filename = os.path.join(STORAGE_PATH, f"{job_id}.txt")
+                text_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.txt")
                 with open(text_filename, 'w') as f:
                     f.write(text)
             else:
                 text_file = None
             
             if include_srt is True:
-                srt_filename = os.path.join(STORAGE_PATH, f"{job_id}.srt")
+                srt_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.srt")
                 with open(srt_filename, 'w') as f:
                     f.write(srt_text)
             else:
                 srt_filename = None
 
             if include_segments is True:
-                segments_filename = os.path.join(STORAGE_PATH, f"{job_id}.json")
+                segments_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.json")
                 with open(segments_filename, 'w') as f:
                     f.write(str(segments_json))
             else:

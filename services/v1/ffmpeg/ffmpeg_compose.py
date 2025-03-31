@@ -1,9 +1,26 @@
+# Copyright (c) 2025 Stephen G. Pope
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+
 import os
 import subprocess
 import json
 from services.file_management import download_file
-
-STORAGE_PATH = "/tmp/"
+from config import LOCAL_STORAGE_PATH
 
 def get_extension_from_format(format_name):
     # Mapping of common format names to file extensions
@@ -95,7 +112,7 @@ def process_ffmpeg_compose(data, job_id):
                 command.append(option["option"])
                 if "argument" in option and option["argument"] is not None:
                     command.append(str(option["argument"]))
-        input_path = download_file(input_data["file_url"], STORAGE_PATH)
+        input_path = download_file(input_data["file_url"], LOCAL_STORAGE_PATH)
         command.extend(["-i", input_path])
     
     # Add filters
@@ -112,7 +129,7 @@ def process_ffmpeg_compose(data, job_id):
                 break
         
         extension = get_extension_from_format(format_name) if format_name else 'mp4'
-        output_filename = os.path.join(STORAGE_PATH, f"{job_id}_output_{i}.{extension}")
+        output_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_output_{i}.{extension}")
         output_filenames.append(output_filename)
         
         for option in output["options"]:
@@ -129,7 +146,7 @@ def process_ffmpeg_compose(data, job_id):
     
     # Clean up input files
     for input_data in data["inputs"]:
-        input_path = os.path.join(STORAGE_PATH, os.path.basename(input_data["file_url"]))
+        input_path = os.path.join(LOCAL_STORAGE_PATH, os.path.basename(input_data["file_url"]))
         if os.path.exists(input_path):
             os.remove(input_path)
     

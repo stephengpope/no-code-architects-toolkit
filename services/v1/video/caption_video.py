@@ -1,3 +1,21 @@
+# Copyright (c) 2025 Stephen G. Pope
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+
+
 import os
 import ffmpeg
 import logging
@@ -10,6 +28,7 @@ from services.file_management import download_file
 from services.cloud_storage import upload_file  # Ensure this import is present
 import requests  # Ensure requests is imported for webhook handling
 from urllib.parse import urlparse
+from config import LOCAL_STORAGE_PATH
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -19,8 +38,6 @@ if not logger.hasHandlers():
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     handler.setFormatter(formatter)
     logger.addHandler(handler)
-
-STORAGE_PATH = "/tmp/"
 
 POSITION_ALIGNMENT_MAP = {
     "bottom_left": 1,
@@ -668,7 +685,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
 
         # Download the video
         try:
-            video_path = download_file(video_url, STORAGE_PATH)
+            video_path = download_file(video_url, LOCAL_STORAGE_PATH)
             logger.info(f"Job {job_id}: Video downloaded to {video_path}")
         except Exception as e:
             logger.error(f"Job {job_id}: Video download error: {str(e)}")
@@ -722,7 +739,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
 
         # Save the subtitle content
         subtitle_filename = f"{job_id}.{subtitle_type}"
-        subtitle_path = os.path.join(STORAGE_PATH, subtitle_filename)
+        subtitle_path = os.path.join(LOCAL_STORAGE_PATH, subtitle_filename)
         try:
             with open(subtitle_path, 'w', encoding='utf-8') as f:
                 f.write(subtitle_content)
@@ -733,7 +750,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
 
         # Prepare output filename and path
         output_filename = f"{job_id}_captioned.mp4"
-        output_path = os.path.join(STORAGE_PATH, output_filename)
+        output_path = os.path.join(LOCAL_STORAGE_PATH, output_filename)
 
         # Process video with subtitles using FFmpeg
         try:

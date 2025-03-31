@@ -52,7 +52,7 @@ class GCPStorageProvider(CloudStorageProvider):
 
 class S3CompatibleProvider(CloudStorageProvider):
     def __init__(self):
-        logger.info(f"test")
+
         self.endpoint_url = os.getenv('S3_ENDPOINT_URL')
         self.access_key = os.getenv('S3_ACCESS_KEY')
         self.secret_key = os.getenv('S3_SECRET_KEY')

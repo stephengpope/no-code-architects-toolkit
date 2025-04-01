@@ -57,6 +57,9 @@ def get_extension_from_url(url):
 
 def download_file(url, storage_path="/tmp/"):
     """Download a file from URL to local storage."""
+    # Create storage directory if it doesn't exist
+    os.makedirs(storage_path, exist_ok=True)
+    
     file_id = str(uuid.uuid4())
     extension = get_extension_from_url(url)
     local_filename = os.path.join(storage_path, f"{file_id}{extension}")

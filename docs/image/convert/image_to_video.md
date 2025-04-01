@@ -1,12 +1,12 @@
-# Image to Video Endpoint
+# Image to Video Conversion
 
 ## 1. Overview
 
-The `/v1/image/transform/video` endpoint is part of the Flask API application and is responsible for converting an image into a video file. This endpoint is registered in the `app.py` file under the `v1_image_transform_video_bp` blueprint, which is imported from the `routes.v1.image.transform.image_to_video` module.
+The `/v1/image/convert/video` endpoint is part of the Flask API application and is responsible for converting an image into a video file. This endpoint is registered in the `app.py` file under the `v1_image_convert_video_bp` blueprint, which is imported from the `routes.v1.image.convert.image_to_video` module.
 
 ## 2. Endpoint
 
-**URL Path:** `/v1/image/transform/video`
+**URL Path:** `/v1/image/convert/video`
 **HTTP Method:** `POST`
 
 ## 3. Request
@@ -28,7 +28,7 @@ The request body must be in JSON format and should include the following paramet
 | `webhook_url`| string| No       | The URL to receive a webhook notification upon completion.  |
 | `id`        | string | No       | An optional identifier for the request.                      |
 
-The `validate_payload` decorator in the `routes.v1.image.transform.image_to_video` module enforces the following JSON schema for the request body:
+The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video` module enforces the following JSON schema for the request body:
 
 ```json
 {
@@ -64,7 +64,7 @@ curl -X POST \
      -H "x-api-key: YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"image_url": "https://example.com/image.jpg", "length": 10, "frame_rate": 24, "zoom_speed": 5, "webhook_url": "https://example.com/webhook", "id": "request-123"}' \
-     http://your-api-endpoint/v1/image/transform/video
+     http://your-api-endpoint/v1/image/convert/video
 ```
 
 ## 4. Response

@@ -67,21 +67,22 @@ Each feature is supported by robust payload validation and detailed API document
 
 ### Image Processing
 
-#### 5. `/v1/image/transform/video`
+#### 5. `/v1/image/convert/video`
 - **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
-- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/transform/image_to_video.md)
+- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)
 
 ---
 
 ### Media Transformation
 
-#### 6. `/v1/media/transform/mp3`
-- **Description**: Transforms media files into MP3 format, supporting advanced options for encoding like bit rate and sample rate configuration.
-- **Documentation Link**: [Media Transform to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/transform/media_to_mp3.md)
+#### 6. `/v1/media/convert/mp3`
+- **Description**: Converts various media files (audio or video) to MP3 format with configurable bitrate and quality settings.
+- **Documentation Link**: [Media to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)
 
 #### 7. `/v1/media/transcribe`
 - **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
 - **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
+
 
 ---
 
@@ -187,7 +188,7 @@ Or use the guide below walks you through the steps to install the NCA Toolkit AP
 ---
 
 ## **Prerequisites**
-- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don’t already have one.
+- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don't already have one.
   - New users receive $300 in free credits.
 - Basic knowledge of GCP services such as Cloud Run and Cloud Storage.
 - A terminal or code editor for managing files.

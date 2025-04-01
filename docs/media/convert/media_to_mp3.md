@@ -1,13 +1,19 @@
-# Media to MP3 Conversion Endpoint
+# Media to MP3 Conversion
+
+The `/v1/media/convert/mp3` endpoint is part of the Flask API application and is responsible for converting various media files into MP3 format. This endpoint is registered in the `app.py` file under the `v1_media_convert_mp3_bp` blueprint.
+
+## Endpoint Details
+
+**URL Path:** `/v1/media/convert/mp3`
 
 ## 1. Overview
 
-The `/v1/media/transform/mp3` endpoint is a part of the API's media transformation functionality. It allows users to convert various media files (audio or video) to MP3 format. This endpoint fits into the overall API structure as a part of the `v1` namespace, which represents the first version of the API.
+The `/v1/media/convert/mp3` endpoint is a part of the API's media transformation functionality. It allows users to convert various media files (audio or video) to MP3 format. This endpoint fits into the overall API structure as a part of the `v1` namespace, which represents the first version of the API.
 
 ## 2. Endpoint
 
 ```
-POST /v1/media/transform/mp3
+POST /v1/media/convert/mp3
 ```
 
 ## 3. Request
@@ -55,7 +61,7 @@ curl -X POST \
      -H "x-api-key: YOUR_API_KEY" \
      -H "Content-Type: application/json" \
      -d '{"media_url": "https://example.com/video.mp4", "webhook_url": "https://example.com/webhook", "id": "unique-request-id", "bitrate": "192k"}' \
-     https://your-api-endpoint.com/v1/media/transform/mp3
+     https://your-api-endpoint.com/v1/media/convert/mp3
 ```
 
 ## 4. Response
@@ -66,7 +72,7 @@ The success response follows the general response structure defined in `app.py`.
 
 ```json
 {
-    "endpoint": "/v1/media/transform/mp3",
+    "endpoint": "/v1/media/convert/mp3",
     "code": 200,
     "id": "unique-request-id",
     "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",

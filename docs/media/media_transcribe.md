@@ -59,6 +59,10 @@ The Media Transcription endpoint is part of the v1 API suite, providing audio/vi
 - `id` (string)
   - Description: Custom identifier for the transcription job
 
+- `words_per_line` (integer)
+  - Minimum: 1
+  - Description: Controls the number of words per line in the SRT file. When specified, each segment's text will be split into multiple lines with the specified number of words per line.
+
 ### Example Request
 
 ```bash
@@ -73,7 +77,8 @@ curl -X POST "https://api.example.com/v1/media/transcribe" \
     "include_segments": true,
     "response_type": "cloud",
     "webhook_url": "https://your-webhook.com/callback",
-    "id": "custom-job-123"
+    "id": "custom-job-123",
+    "words_per_line": 5
   }'
 ```
 
@@ -219,6 +224,11 @@ The endpoint performs strict validation of the request payload using JSON Schema
    - For cloud response_type, temporary files are automatically cleaned up
    - Results are uploaded to cloud storage before deletion
    - URLs in the response provide access to the stored files
+
+4. **SRT Formatting**
+   - The `words_per_line` parameter allows control over the number of words per line in the SRT file
+   - When specified, each segment's text will be split into multiple lines with the specified number of words per line
+   - This is useful for creating more readable subtitles with consistent line lengths
 
 ## Common Issues
 

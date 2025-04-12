@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
         "language": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "words_per_line": {"type": "integer", "minimum": 1}
+        "max_words_per_line": {"type": "integer", "minimum": 1}
     },
     "required": ["media_url"],
     "additionalProperties": False
@@ -59,12 +59,12 @@ def transcribe(job_id, data):
     language = data.get('language', None)
     webhook_url = data.get('webhook_url')
     id = data.get('id')
-    words_per_line = data.get('words_per_line', None)
+    max_words_per_line = data.get('max_words_per_line', None)
 
     logger.info(f"Job {job_id}: Received transcription request for {media_url}")
 
     try:
-        result = process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line)
+        result = process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, max_words_per_line)
         logger.info(f"Job {job_id}: Transcription process completed successfully")
 
         # If the result is a file path, upload it using the unified upload_file() method

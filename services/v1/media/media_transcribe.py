@@ -29,7 +29,7 @@ from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id):
+def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, max_words_per_line=None):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
     input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
@@ -67,12 +67,30 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
 
         if include_srt is True:
             srt_subtitles = []
-            for i, segment in enumerate(result['segments'], start=1):
+            subtitle_index = 1
+            
+            for segment in result['segments']:
                 start = timedelta(seconds=segment['start'])
                 end = timedelta(seconds=segment['end'])
-                # Use translated text if available, otherwise use transcribed text
                 segment_text = segment['text'].strip()
-                srt_subtitles.append(srt.Subtitle(i, start, end, segment_text))
+                
+                # If max_words_per_line is specified, split the text into lines with that many words
+                if max_words_per_line and max_words_per_line > 0:
+                    words = segment_text.split()
+                    lines = []
+                    
+                    for i in range(0, len(words), max_words_per_line):
+                        line = ' '.join(words[i:i + max_words_per_line])
+                        lines.append(line)
+                    
+                    # Create a subtitle for each line with the same timing
+                    for line in lines:
+                        srt_subtitles.append(srt.Subtitle(subtitle_index, start, end, line))
+                        subtitle_index += 1
+                else:
+                    # Original behavior - one subtitle per segment
+                    srt_subtitles.append(srt.Subtitle(subtitle_index, start, end, segment_text))
+                    subtitle_index += 1
             
             srt_text = srt.compose(srt_subtitles)
 

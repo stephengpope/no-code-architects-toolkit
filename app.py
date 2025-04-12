@@ -15,7 +15,6 @@
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
 
-
 from flask import Flask, request
 from queue import Queue
 from services.webhook import send_webhook
@@ -25,7 +24,8 @@ import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 
-MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
+MAX_QUEUE_LENGTH = int(os.environ.get("MAX_QUEUE_LENGTH", 0))
+
 
 def create_app():
     app = Flask(__name__)
@@ -58,7 +58,7 @@ def create_app():
                 "queue_time": round(queue_time, 3),
                 "total_time": round(total_time, 3),
                 "queue_length": task_queue.qsize(),
-                "build_number": BUILD_NUMBER  # Add build number to response
+                "build_number": BUILD_NUMBER,  # Add build number to response
             }
 
             send_webhook(data.get("webhook_url"), response_data)
@@ -76,9 +76,9 @@ def create_app():
                 data = request.json if request.is_json else {}
                 pid = os.getpid()  # Get PID for non-queued tasks
                 start_time = time.time()
-                
-                if bypass_queue or 'webhook_url' not in data:
-                    
+
+                if bypass_queue or "webhook_url" not in data:
+
                     response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
                     return {
@@ -93,7 +93,7 @@ def create_app():
                         "pid": pid,
                         "queue_id": queue_id,
                         "queue_length": task_queue.qsize(),
-                        "build_number": BUILD_NUMBER  # Add build number to response
+                        "build_number": BUILD_NUMBER,  # Add build number to response
                     }, response[2]
                 else:
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
@@ -105,11 +105,18 @@ def create_app():
                             "pid": pid,
                             "queue_id": queue_id,
                             "queue_length": task_queue.qsize(),
-                            "build_number": BUILD_NUMBER  # Add build number to response
+                            "build_number": BUILD_NUMBER,  # Add build number to response
                         }, 429
-                    
-                    task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
-                    
+
+                    task_queue.put(
+                        (
+                            job_id,
+                            data,
+                            lambda: f(job_id=job_id, data=data, *args, **kwargs),
+                            start_time,
+                        )
+                    )
+
                     return {
                         "code": 202,
                         "id": data.get("id"),
@@ -117,11 +124,15 @@ def create_app():
                         "message": "processing",
                         "pid": pid,
                         "queue_id": queue_id,
-                        "max_queue_length": MAX_QUEUE_LENGTH if MAX_QUEUE_LENGTH > 0 else "unlimited",
+                        "max_queue_length": (
+                            MAX_QUEUE_LENGTH if MAX_QUEUE_LENGTH > 0 else "unlimited"
+                        ),
                         "queue_length": task_queue.qsize(),
-                        "build_number": BUILD_NUMBER  # Add build number to response
+                        "build_number": BUILD_NUMBER,  # Add build number to response
                     }, 202
+
             return wrapper
+
         return decorator
 
     app.queue_task = queue_task
@@ -133,10 +144,9 @@ def create_app():
     from routes.audio_mixing import audio_mixing_bp
     from routes.gdrive_upload import gdrive_upload_bp
     from routes.authenticate import auth_bp
-    from routes.caption_video import caption_bp 
+    from routes.caption_video import caption_bp
     from routes.extract_keyframes import extract_keyframes_bp
     from routes.image_to_video import image_to_video_bp
-    
 
     # Register blueprints
     app.register_blueprint(convert_bp)
@@ -148,8 +158,6 @@ def create_app():
     app.register_blueprint(caption_bp)
     app.register_blueprint(extract_keyframes_bp)
     app.register_blueprint(image_to_video_bp)
-    
-    
 
     # version 1.0
     from routes.v1.ffmpeg.ffmpeg_compose import v1_ffmpeg_compose_bp
@@ -165,15 +173,17 @@ def create_app():
     from routes.v1.s3.upload import v1_s3_upload_bp
     from routes.v1.video.thumbnail import v1_video_thumbnail_bp
     from routes.v1.media.download import v1_media_download_bp
+    from routes.v1.audio.concatenate import v1_audio_concatenate_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
     app.register_blueprint(v1_media_feedback_bp)
-    
+
     # Register a special route for Next.js root asset paths
     from routes.v1.media.feedback import create_root_next_routes
+
     create_root_next_routes(app)
-    
+
     app.register_blueprint(v1_media_convert_mp3_bp)
     app.register_blueprint(v1_video_concatenate_bp)
     app.register_blueprint(v1_video_caption_bp)
@@ -184,10 +194,12 @@ def create_app():
     app.register_blueprint(v1_s3_upload_bp)
     app.register_blueprint(v1_video_thumbnail_bp)
     app.register_blueprint(v1_media_download_bp)
+    app.register_blueprint(v1_audio_concatenate_bp)
 
     return app
 
+
 app = create_app()
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8080)

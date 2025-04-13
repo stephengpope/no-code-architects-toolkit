@@ -24,21 +24,33 @@ from urllib.parse import urlparse, quote
 logger = logging.getLogger(__name__)
 
 def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region):
-    # Parse the S3 URL into bucket, region, and endpoint
-    #bucket_name, region, endpoint_url = parse_s3_url(s3_url)
+    from botocore.config import Config
     
+    # Create S3 client with proper configuration
     session = boto3.Session(
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         region_name=region
     )
     
-    client = session.client('s3', endpoint_url=s3_url)
+    # Configure with signature version 4 and payload signing
+    s3_config = Config(
+        signature_version='s3v4',
+        s3={'payload_signing_enabled': True}
+    )
+    
+    client = session.client('s3', endpoint_url=s3_url, config=s3_config)
 
     try:
-        # Upload the file to the specified S3 bucket
+        # Upload the file using put_object instead of upload_fileobj
         with open(file_path, 'rb') as data:
-            client.upload_fileobj(data, bucket_name, os.path.basename(file_path), ExtraArgs={'ACL': 'public-read'})
+            file_content = data.read()
+            client.put_object(
+                Bucket=bucket_name,
+                Key=os.path.basename(file_path),
+                Body=file_content,
+                ACL='public-read'
+            )
 
         # URL encode the filename for the URL
         encoded_filename = quote(os.path.basename(file_path))

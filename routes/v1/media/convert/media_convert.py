@@ -14,54 +14,64 @@
 # with this program; if not, write to the Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-
-
-# routes/media_to_mp3.py
-from flask import Blueprint, current_app
-from app_utils import *
+from flask import Blueprint, jsonify
+from app_utils import validate_payload, queue_task_wrapper
 import logging
-from services.v1.media.convert.media_to_mp3 import process_media_to_mp3
+from services.v1.media.convert.media_convert import process_media_convert
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 import os
 
-v1_media_convert_mp3_bp = Blueprint('v1_media_convert_mp3', __name__)
+v1_media_convert_bp = Blueprint('v1_media_convert', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_media_convert_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])
-@v1_media_convert_mp3_bp.route('/v1/media/transform/mp3', methods=['POST']) #depleft for backwards compatibility, do not use.
+@v1_media_convert_bp.route('/v1/media/convert', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
     "properties": {
         "media_url": {"type": "string", "format": "uri"},
+        "format": {"type": "string"},
+        "video_codec": {"type": "string"},
+        "audio_codec": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
-        "id": {"type": "string"},
-        "bitrate": {"type": "string", "pattern": "^[0-9]+k$"},
-        "sample_rate": {"type": "number"}
+        "id": {"type": "string"}
     },
-    "required": ["media_url"],
+    "required": ["media_url", "format"],
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
-def convert_media_to_mp3(job_id, data):
+def convert_media_format(job_id, data):
     media_url = data['media_url']
+    output_format = data['format']
+    video_codec = data.get('video_codec', 'copy')
+    audio_codec = data.get('audio_codec', 'copy')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
-    bitrate = data.get('bitrate', '128k')
-    sample_rate = data.get('sample_rate')
 
-    logger.info(f"Job {job_id}: Received media-to-mp3 request for media URL: {media_url}")
+    logger.info(f"Job {job_id}: Received media conversion request for media URL: {media_url} to format: {output_format}")
 
     try:
-        output_file = process_media_to_mp3(media_url, job_id, bitrate, sample_rate)
-        logger.info(f"Job {job_id}: Media conversion process completed successfully")
+        output_file = process_media_convert(
+            media_url, 
+            job_id, 
+            output_format, 
+            video_codec, 
+            audio_codec,
+            webhook_url
+        )
+        logger.info(f"Job {job_id}: Media format conversion completed successfully")
 
         cloud_url = upload_file(output_file)
         logger.info(f"Job {job_id}: Converted media uploaded to cloud storage: {cloud_url}")
 
-        return cloud_url, "/v1/media/transform/mp3", 200
+        # Return JSON response with file URL
+        response = {
+            "file_url": cloud_url
+        }
+        
+        return response, "/v1/media/convert", 200
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error during media conversion process - {str(e)}")
-        return str(e), "/v1/media/transform/mp3", 500
+        return {"error": str(e)}, "/v1/media/convert", 500 

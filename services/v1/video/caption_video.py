@@ -437,6 +437,8 @@ def handle_highlight(transcription_result, style_options, replace_dict, video_re
         words = segment.get('words', [])
         if not words:
             continue
+
+        # Process all words in the segment
         processed_words = []
         for w_info in words:
             w = process_subtitle_text(w_info.get('word', ''), replace_dict, all_caps, 0)
@@ -446,24 +448,28 @@ def handle_highlight(transcription_result, style_options, replace_dict, video_re
         if not processed_words:
             continue
 
+        # Split into lines if max_words_per_line is specified
         if max_words_per_line > 0:
             line_sets = [processed_words[i:i+max_words_per_line] for i in range(0, len(processed_words), max_words_per_line)]
         else:
             line_sets = [processed_words]
 
         for line_set in line_sets:
-            for idx, (word, w_start, w_end) in enumerate(line_set):
-                line_words = []
-                for w_idx, (w_text, _, _) in enumerate(line_set):
-                    if w_idx == idx:
-                        line_words.append(f"{{\\c{word_color}}}{w_text}{{\\c{line_color}}}")
-                    else:
-                        line_words.append(w_text)
-                full_text = ' '.join(line_words)
-                start_time = format_ass_time(w_start)
-                end_time = format_ass_time(w_end)
-                position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y})}}"
-                events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}")
+            # Get the start time of the first word and end time of the last word
+            line_start = line_set[0][1]
+            line_end = line_set[-1][2]
+            
+            # Create a single dialogue event that spans the entire line duration
+            line_words = []
+            for word, w_start, w_end in line_set:
+                line_words.append(word)
+            
+            full_text = ' '.join(line_words)
+            start_time = format_ass_time(line_start)
+            end_time = format_ass_time(line_end)
+            position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y})}}"
+            events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}")
+
     logger.info(f"Handled {len(events)} dialogues in highlight style.")
     return "\n".join(events)
 

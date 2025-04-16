@@ -29,7 +29,7 @@ from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, max_words_per_line=None):
+def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line=None):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
     input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
@@ -69,26 +69,50 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
             srt_subtitles = []
             subtitle_index = 1
             
-            for segment in result['segments']:
-                start = timedelta(seconds=segment['start'])
-                end = timedelta(seconds=segment['end'])
-                segment_text = segment['text'].strip()
+            if words_per_line and words_per_line > 0:
+                # Collect all words and their timings
+                all_words = []
+                word_timings = []
                 
-                # If max_words_per_line is specified, split the text into lines with that many words
-                if max_words_per_line and max_words_per_line > 0:
-                    words = segment_text.split()
-                    lines = []
+                for segment in result['segments']:
+                    words = segment['text'].strip().split()
+                    segment_start = segment['start']
+                    segment_end = segment['end']
                     
-                    for i in range(0, len(words), max_words_per_line):
-                        line = ' '.join(words[i:i + max_words_per_line])
-                        lines.append(line)
+                    # Calculate timing for each word
+                    if words:
+                        duration_per_word = (segment_end - segment_start) / len(words)
+                        for i, word in enumerate(words):
+                            word_start = segment_start + (i * duration_per_word)
+                            word_end = word_start + duration_per_word
+                            all_words.append(word)
+                            word_timings.append((word_start, word_end))
+                
+                # Process words in chunks of words_per_line
+                current_word = 0
+                while current_word < len(all_words):
+                    # Get the next chunk of words
+                    chunk = all_words[current_word:current_word + words_per_line]
                     
-                    # Create a subtitle for each line with the same timing
-                    for line in lines:
-                        srt_subtitles.append(srt.Subtitle(subtitle_index, start, end, line))
-                        subtitle_index += 1
-                else:
-                    # Original behavior - one subtitle per segment
+                    # Calculate timing for this chunk
+                    chunk_start = word_timings[current_word][0]
+                    chunk_end = word_timings[min(current_word + len(chunk) - 1, len(word_timings) - 1)][1]
+                    
+                    # Create the subtitle
+                    srt_subtitles.append(srt.Subtitle(
+                        subtitle_index,
+                        timedelta(seconds=chunk_start),
+                        timedelta(seconds=chunk_end),
+                        ' '.join(chunk)
+                    ))
+                    subtitle_index += 1
+                    current_word += words_per_line
+            else:
+                # Original behavior - one subtitle per segment
+                for segment in result['segments']:
+                    start = timedelta(seconds=segment['start'])
+                    end = timedelta(seconds=segment['end'])
+                    segment_text = segment['text'].strip()
                     srt_subtitles.append(srt.Subtitle(subtitle_index, start, end, segment_text))
                     subtitle_index += 1
             

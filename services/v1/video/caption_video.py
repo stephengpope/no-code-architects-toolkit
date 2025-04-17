@@ -459,16 +459,30 @@ def handle_highlight(transcription_result, style_options, replace_dict, video_re
             line_start = line_set[0][1]
             line_end = line_set[-1][2]
             
-            # Create a single dialogue event that spans the entire line duration
-            line_words = []
-            for word, w_start, w_end in line_set:
-                line_words.append(word)
-            
-            full_text = ' '.join(line_words)
+            # Create a persistent line that stays visible during the entire segment
+            base_text = ' '.join(word for word, _, _ in line_set)
             start_time = format_ass_time(line_start)
             end_time = format_ass_time(line_end)
             position_tag = f"{{\\an{an_code}\\pos({final_x},{final_y})}}"
-            events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{full_text}")
+            events.append(f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{base_text}")
+            
+            # Add individual highlighting for each word
+            for idx, (word, w_start, w_end) in enumerate(line_set):
+                # Create the highlighted version of this word within the line
+                highlighted_words = []
+                
+                for i, (w, _, _) in enumerate(line_set):
+                    if i == idx:
+                        # This is the current word - highlight it
+                        highlighted_words.append(f"{{\\c{word_color}}}{w}{{\\c{line_color}}}")
+                    else:
+                        # Add the word without highlighting
+                        highlighted_words.append(w)
+                
+                highlighted_text = ' '.join(highlighted_words)
+                word_start_time = format_ass_time(w_start)
+                word_end_time = format_ass_time(w_end)
+                events.append(f"Dialogue: 1,{word_start_time},{word_end_time},Default,,0,0,0,,{position_tag}{{\\c{line_color}}}{highlighted_text}")
 
     logger.info(f"Handled {len(events)} dialogues in highlight style.")
     return "\n".join(events)

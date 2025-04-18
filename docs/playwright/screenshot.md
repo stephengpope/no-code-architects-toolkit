@@ -1,5 +1,7 @@
 # Playwright Screenshot Endpoint
 
+**Implemented by:** [Harrison Fisher](https://github.com/HarrisonFisher)
+
 ## 1. Overview
 
 The `/v1/playwright/screenshot` endpoint allows you to capture screenshots of web pages using the Playwright browser automation library. It supports advanced options such as viewport size, device emulation, cookies, headers, element targeting, and more. Screenshots are uploaded to cloud storage, and the resulting URL is returned. This endpoint is part of the v1 API suite and is registered in the main Flask application as a blueprint.

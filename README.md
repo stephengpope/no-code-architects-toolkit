@@ -232,4 +232,4 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).

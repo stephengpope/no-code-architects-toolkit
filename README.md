@@ -33,68 +33,89 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ---
 
-## Features of the No-Code Architects Toolkit API
+## API Endpoints
 
-Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
+Each endpoint is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 
-### Advanced Media Manipulation
+### Audio
 
-#### 1. `/v1/ffmpeg/compose`
-- **Description**: Provides a flexible way to compose and manipulate media files using FFmpeg. Supports complex media operations like transcoding, concatenation, and filtering.
-- **Documentation Link**: [FFmpeg Compose Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)
+- **`/v1/audio/concatenate`**
+  - Combines multiple audio files into a single audio file.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/audio/concatenate.md)
 
----
+### Code
 
-### Video Processing
+- **`/v1/code/execute/python`**
+  - Executes Python code remotely and returns the execution results.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)
 
-#### 2. `/v1/video/caption`
-- **Description**: Adds captions to a video file, including options for font, position, and styling. It also supports automated language detection and custom replacements in captions.
-- **Documentation Link**: [Video Caption Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)
+### FFmpeg
 
-#### 3. `/v1/video/concatenate`
-- **Description**: Combines multiple video files into a single video file. The input files are concatenated in the specified order, and the final video is uploaded to cloud storage.
-- **Documentation Link**: [Video Concatenate Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)
+- **`/v1/ffmpeg/compose`**
+  - Provides a flexible interface to FFmpeg for complex media processing operations.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)
 
----
+### Image
 
-### Code Execution
+- **`/v1/image/convert/video`**
+  - Transforms a static image into a video with custom duration and zoom effects.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)
 
-#### 4. `/v1/code/execute/python`
-- **Description**: Executes Python code on the server in a controlled environment. Useful for scripting, prototyping, or dynamically running Python scripts with secure execution.
-- **Documentation Link**: [Execute Python Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)
+### Media
 
----
+- **`/v1/media/convert`**
+  - Converts media files from one format to another with customizable codec options.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media_convert.md)
 
-### Image Processing
+- **`/v1/media/convert/media`**
+  - Advanced media conversion with customizable video and audio codec options.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)
 
-#### 5. `/v1/image/convert/video`
-- **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
-- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)
+- **`/v1/media/convert/mp3`**
+  - Converts various media formats specifically to MP3 audio.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)
 
----
+- **`/v1/media/download`**
+  - Downloads media content from various online sources using yt-dlp.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)
 
-### Media Transformation
+- **`/v1/media/feedback`**
+  - Provides a web interface for collecting and displaying feedback on media content.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)
 
-#### 6. `/v1/media/convert/mp3`
-- **Description**: Converts various media files (audio or video) to MP3 format with configurable bitrate and quality settings.
-- **Documentation Link**: [Media to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)
+- **`/v1/media/transcribe`**
+  - Transcribes or translates audio/video content from a provided media URL.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
 
-#### 7. `/v1/media/transcribe`
-- **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
-- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
+### S3
 
+- **`/v1/s3/upload`**
+  - Uploads files to Amazon S3 storage by streaming directly from a URL.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/s3/upload.md)
 
----
+### Toolkit
 
-### Core Features
+- **`/v1/toolkit/authenticate`**
+  - Provides a simple authentication mechanism to validate API keys.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
 
-#### 8. `/v1/toolkit/test`
-- **Description**: A basic endpoint to verify the availability and functionality of the API. Useful for initial setup and connection tests.
-- **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
+- **`/v1/toolkit/test`**
+  - Verifies that the NCA Toolkit API is properly installed and functioning.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
 
-#### 9. `/v1/toolkit/authenticate`
-- **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
-- **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
+### Video
+
+- **`/v1/video/caption`**
+  - Adds customizable captions to videos with various styling options.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)
+
+- **`/v1/video/concatenate`**
+  - Combines multiple videos into a single continuous video file.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)
+
+- **`/v1/video/thumbnail`**
+  - Extracts a thumbnail image from a specific timestamp in a video.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)
 
 ---
 

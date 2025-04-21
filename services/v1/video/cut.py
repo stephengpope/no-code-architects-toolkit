@@ -52,13 +52,13 @@ def time_to_seconds(time_str):
     except ValueError:
         raise ValueError(f"Invalid time format: {time_str}. Expected HH:MM:SS[.mmm]")
 
-def cut_media(media_url, cuts, job_id=None, video_codec='libx264', video_preset='medium', 
+def cut_media(video_url, cuts, job_id=None, video_codec='libx264', video_preset='medium', 
            video_crf=23, audio_codec='aac', audio_bitrate='128k'):
     """
-    Cuts specified segments from a media file with customizable encoding settings.
+    Cuts specified segments from a video file with customizable encoding settings.
     
     Args:
-        media_url (str): URL of the media file to cut
+        video_url (str): URL of the video file to cut
         cuts (list): List of dictionaries with 'start' and 'end' timestamps
         job_id (str, optional): Unique job identifier
         video_codec (str, optional): Video codec to use for encoding (default: 'libx264')
@@ -70,9 +70,9 @@ def cut_media(media_url, cuts, job_id=None, video_codec='libx264', video_preset=
     Returns:
         str: Path to the processed local file
     """
-    logger.info(f"Starting media cut operation for {media_url}")
-    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
-    logger.info(f"Downloaded media to local file: {input_filename}")
+    logger.info(f"Starting video cut operation for {video_url}")
+    input_filename = download_file(video_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
+    logger.info(f"Downloaded video to local file: {input_filename}")
     
     try:
         # Get the file extension
@@ -182,7 +182,7 @@ def cut_media(media_url, cuts, job_id=None, video_codec='libx264', video_preset=
         return output_filename, input_filename
         
     except Exception as e:
-        logger.error(f"Media cut operation failed: {str(e)}")
+        logger.error(f"Video cut operation failed: {str(e)}")
         # Clean up all temporary files if they exist
         if 'input_filename' in locals() and os.path.exists(input_filename):
             os.remove(input_filename)

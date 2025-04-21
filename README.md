@@ -205,6 +205,7 @@ Each endpoint is supported by robust payload validation and detailed API documen
      # Cloud storage provider (choose one)
      -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
      -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+
      # Or
      -e S3_ENDPOINT_URL=https://nyc3.digitaloceanspaces.com \
      -e S3_ACCESS_KEY=your_access_key \

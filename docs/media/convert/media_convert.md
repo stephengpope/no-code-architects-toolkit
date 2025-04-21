@@ -111,9 +111,7 @@ When the conversion is complete, the following response will be sent to the webh
   "code": 200,
   "id": "custom-request-123",
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "response": {
-    "file_url": "https://storage.example.com/converted-file-123.mp4"
-  },
+  "response": "https://storage.example.com/converted-file-123.mp4",
   "message": "success",
   "pid": 12345,
   "queue_id": 67890,

@@ -232,8 +232,8 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 This API can be deployed to various cloud platforms:
 
-- [Google Cloud Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
 - [Digital Ocean Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
+- [Google Cloud Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
 
 ## Testing the API
 

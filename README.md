@@ -39,99 +39,79 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ### Audio
 
-- **`/v1/audio/concatenate`**
+- **[`/v1/audio/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/audio/concatenate.md)**
   - Combines multiple audio files into a single audio file.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/audio/concatenate.md)
 
 ### Code
 
-- **`/v1/code/execute/python`**
+- **[`/v1/code/execute/python`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)**
   - Executes Python code remotely and returns the execution results.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)
 
 ### FFmpeg
 
-- **`/v1/ffmpeg/compose`**
+- **[`/v1/ffmpeg/compose`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)**
   - Provides a flexible interface to FFmpeg for complex media processing operations.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)
 
 ### Image
 
-- **`/v1/image/convert/video`**
+- **[`/v1/image/convert/video`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)**
   - Transforms a static image into a video with custom duration and zoom effects.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)
 
 ### Media
 
-- **`/v1/media/convert`**
+- **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media_convert.md)**
   - Converts media files from one format to another with customizable codec options.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media_convert.md)
 
-- **`/v1/media/convert/media`**
+- **[`/v1/media/convert/media`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)**
   - Advanced media conversion with customizable video and audio codec options.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)
 
-- **`/v1/media/convert/mp3`**
+- **[`/v1/media/convert/mp3`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)**
   - Converts various media formats specifically to MP3 audio.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)
 
-- **`/v1/media/download`**
+- **[`/v1/media/download`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)**
   - Downloads media content from various online sources using yt-dlp.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)
 
-- **`/v1/media/feedback`**
+- **[`/v1/media/feedback`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)**
   - Provides a web interface for collecting and displaying feedback on media content.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)
 
-- **`/v1/media/transcribe`**
+- **[`/v1/media/transcribe`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)**
   - Transcribes or translates audio/video content from a provided media URL.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
 
-- **`/v1/media/silence`**
+- **[`/v1/media/silence`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/silence.md)**
   - Detects silence intervals in a given media file.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/silence.md)
 
 ### S3
 
-- **`/v1/s3/upload`**
+- **[`/v1/s3/upload`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/s3/upload.md)**
   - Uploads files to Amazon S3 storage by streaming directly from a URL.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/s3/upload.md)
 
 ### Toolkit
 
-- **`/v1/toolkit/authenticate`**
+- **[`/v1/toolkit/authenticate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)**
   - Provides a simple authentication mechanism to validate API keys.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
 
-- **`/v1/toolkit/test`**
+- **[`/v1/toolkit/test`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)**
   - Verifies that the NCA Toolkit API is properly installed and functioning.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
 
 ### Video
 
-- **`/v1/video/caption`**
+- **[`/v1/video/caption`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)**
   - Adds customizable captions to videos with various styling options.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)
 
-- **`/v1/video/concatenate`**
+- **[`/v1/video/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)**
   - Combines multiple videos into a single continuous video file.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)
 
-- **`/v1/video/thumbnail`**
+- **[`/v1/video/thumbnail`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)**
   - Extracts a thumbnail image from a specific timestamp in a video.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)
 
-- **`/v1/video/cut`**
+- **[`/v1/video/cut`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/cut.md)**
   - Cuts specified segments from a video file with optional encoding settings.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/cut.md)
 
-- **`/v1/video/split`**
+- **[`/v1/video/split`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/split.md)**
   - Splits a video into multiple segments based on specified start and end times.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/split.md)
 
-- **`/v1/video/trim`**
+- **[`/v1/video/trim`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/trim.md)**
   - Trims a video by keeping only the content between specified start and end times.
-  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/trim.md)
 
 ---
 
@@ -187,17 +167,60 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ---
 
+### Storage Configuration
+
+#### `LOCAL_STORAGE_PATH`
+- **Purpose**: Directory for temporary file storage during processing.
+- **Default**: /tmp
+- **Recommendation**: Set to a path with sufficient disk space for your expected workloads.
+
+### Performance Tuning Variables
+
+#### `MAX_QUEUE_LENGTH`
+- **Purpose**: Limits the maximum number of concurrent tasks in the queue.
+- **Default**: 0 (unlimited)
+- **Recommendation**: Set to a value based on your server resources, e.g., 10-20 for smaller instances.
+
+#### `GUNICORN_WORKERS`
+- **Purpose**: Number of worker processes for handling requests.
+- **Default**: Number of CPU cores + 1
+- **Recommendation**: 2-4× number of CPU cores for CPU-bound workloads.
+
+#### `GUNICORN_TIMEOUT`
+- **Purpose**: Timeout (in seconds) for worker processes.
+- **Default**: 30
+- **Recommendation**: Increase for processing large media files (e.g., 300-600).
+
 ### Notes
 - Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 
 - Missing any required variables will result in errors during runtime.
+- Performance variables can be tuned based on your workload and available resources.
 
 ### Run the Docker Container:
 
    ```bash
    docker run -d -p 8080:8080 \
+     # Authentication (required)
      -e API_KEY=your_api_key \
+     
+     # Cloud storage provider (choose one)
      -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
      -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+     # Or
+     -e S3_ENDPOINT_URL=https://nyc3.digitaloceanspaces.com \
+     -e S3_ACCESS_KEY=your_access_key \
+     -e S3_SECRET_KEY=your_secret_key \
+     -e S3_BUCKET_NAME=your_bucket_name \
+     -e S3_REGION=nyc3 \
+     
+     # Local storage configuration (optional)
+     -e LOCAL_STORAGE_PATH=/tmp \
+     
+     # Performance tuning (optional)
+     -e MAX_QUEUE_LENGTH=10 \
+     -e GUNICORN_WORKERS=4 \
+     -e GUNICORN_TIMEOUT=300 \
+     
      no-code-architects-toolkit
    ```
 

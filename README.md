@@ -68,7 +68,7 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **[`/v1/media/convert/mp3`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)**
   - Converts various media formats specifically to MP3 audio.
 
-- **[`/v1/media/download`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)**
+- **[`/v1/BETA/media/download`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)**
   - Downloads media content from various online sources using yt-dlp.
 
 - **[`/v1/media/feedback`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)**

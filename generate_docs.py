@@ -20,7 +20,9 @@ import os
 import sys
 import json
 import requests
+import time
 from pathlib import Path
+from datetime import datetime, timedelta
 
 def load_config():
     """Load configuration from env_shell.json file."""
@@ -125,9 +127,54 @@ def call_claude_api(message: str, api_key: str) -> str:
     
     return response.json()["content"][0]["text"]
 
-def process_single_file(source_file: Path, output_path: Path, api_key: str):
-    """Process a single Python file."""
+def should_skip_doc_generation(output_file: Path, force: bool = False) -> bool:
+    """
+    Check if documentation was updated in the last 24 hours.
+    
+    Args:
+        output_file: Path to the output markdown file
+        force: If True, always return False to force generation
+        
+    Returns:
+        bool: True if file was updated in the last 24 hours and not forced, False otherwise
+    """
+    # If force flag is provided, never skip
+    if force:
+        return False
+        
+    if not output_file.exists():
+        return False
+        
+    # Get file modification time
+    mod_time = datetime.fromtimestamp(output_file.stat().st_mtime)
+    
+    # Check if file was modified in the last 24 hours
+    time_threshold = datetime.now() - timedelta(hours=24)
+    
+    return mod_time > time_threshold
+
+def process_single_file(source_file: Path, output_path: Path, api_key: str, force: bool = False):
+    """
+    Process a single Python file.
+    
+    Args:
+        source_file: Path to the source Python file
+        output_path: Path to output the markdown file
+        api_key: Anthropic API key
+        force: If True, generate docs even if they were updated recently
+    """
     try:
+        # Create output file path
+        if output_path.is_dir():
+            output_file = output_path / source_file.with_suffix('.md').name
+        else:
+            output_file = output_path
+            
+        # Check if docs were recently updated
+        if should_skip_doc_generation(output_file, force):
+            print(f"Skipping {source_file} - documentation updated within the last 24 hours")
+            return
+            
         # Read the source file
         with open(source_file, 'r', encoding='utf-8') as f:
             file_content = f.read()
@@ -146,12 +193,6 @@ def process_single_file(source_file: Path, output_path: Path, api_key: str):
         # Get documentation from Claude
         markdown_content = call_claude_api(message, api_key)
 
-        # Create output file path
-        if output_path.is_dir():
-            output_file = output_path / source_file.with_suffix('.md').name
-        else:
-            output_file = output_path
-
         # Create necessary directories
         output_file.parent.mkdir(parents=True, exist_ok=True)
 
@@ -165,14 +206,23 @@ def process_single_file(source_file: Path, output_path: Path, api_key: str):
     except Exception as e:
         print(f"Error processing {source_file}: {str(e)}", file=sys.stderr)
 
-def process_directory(source_dir: Path, output_dir: Path, api_key: str):
+def process_directory(source_dir: Path, output_dir: Path, api_key: str, force: bool = False):
     """Process all Python files in the source directory recursively."""
+    # Track statistics
+    total_files = 0
+    processed_files = 0
+    skipped_files = 0
+    error_files = 0
+    
+    start_time = time.time()
+    
     # Walk through all files in source directory
     for root, _, files in os.walk(source_dir):
         for file in files:
             if file.endswith('.py'):
                 # Get the source file path
                 source_file = Path(root) / file
+                total_files += 1
                 
                 try:
                     # Calculate relative path to maintain directory structure
@@ -181,17 +231,46 @@ def process_directory(source_dir: Path, output_dir: Path, api_key: str):
 
                     # Create necessary directories
                     output_file.parent.mkdir(parents=True, exist_ok=True)
+                    
+                    # Check if we should skip this file
+                    if should_skip_doc_generation(output_file, force):
+                        print(f"Skipping {source_file} - documentation updated within the last 24 hours")
+                        skipped_files += 1
+                        continue
 
                     # Process the file
-                    process_single_file(source_file, output_file, api_key)
+                    process_single_file(source_file, output_file, api_key, force)
+                    processed_files += 1
 
                 except Exception as e:
                     print(f"Error processing {source_file}: {str(e)}", file=sys.stderr)
+                    error_files += 1
+    
+    # Print summary
+    elapsed_time = time.time() - start_time
+    print("\nDocumentation Generation Summary:")
+    print(f"Total Python files found: {total_files}")
+    print(f"Files processed: {processed_files}")
+    print(f"Files skipped (updated in last 24h): {skipped_files}")
+    print(f"Files with errors: {error_files}")
+    print(f"Total time: {elapsed_time:.2f} seconds")
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: python script.py <source_path>")
+    # Check if --force flag is provided
+    force_generation = False
+    source_path_arg = None
+    
+    for arg in sys.argv[1:]:
+        if arg == "--force":
+            force_generation = True
+        else:
+            source_path_arg = arg
+    
+    if not source_path_arg:
+        print("Usage: python script.py <source_path> [--force]")
         print("Note: source_path can be either a single .py file or a directory")
+        print("Options:")
+        print("  --force: Generate documentation even if it was updated within 24 hours")
         print("\nPlease ensure .env_shell.json exists in the same directory with:")
         print("  ANTHROPIC_API_KEY: Your Anthropic API key")
         print("  API_DOC_OUTPUT_DIR: Directory where documentation will be saved")
@@ -212,7 +291,7 @@ def main():
     output_path = Path(output_dir)
         
     # Get and validate source path
-    source_path = Path(sys.argv[1])
+    source_path = Path(source_path_arg)
     
     if not source_path.exists():
         print(f"Error: Source path does not exist: {source_path}")
@@ -225,11 +304,26 @@ def main():
     # Create output directory if it doesn't exist
     output_path.mkdir(parents=True, exist_ok=True)
 
+    print(f"Starting documentation generation...")
+    print(f"Source: {source_path}")
+    print(f"Output: {output_path}")
+    if force_generation:
+        print(f"Force flag enabled: Will generate all documentation regardless of last update time.\n")
+    else:
+        print(f"Note: Files updated within the last 24 hours will be skipped (use --force to override).\n")
+    
     # Process based on source type
     if source_path.is_file():
-        process_single_file(source_path, output_path, api_key)
+        # For a single file
+        output_file = output_path / source_path.with_suffix('.md').name if output_path.is_dir() else output_path
+        
+        # Check if should skip
+        if should_skip_doc_generation(output_file, force_generation):
+            print(f"Skipping {source_path} - documentation updated within the last 24 hours")
+        else:
+            process_single_file(source_path, output_path, api_key, force_generation)
     else:
-        process_directory(source_path, output_path, api_key)
+        process_directory(source_path, output_path, api_key, force_generation)
 
 if __name__ == "__main__":
     main()

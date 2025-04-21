@@ -64,13 +64,8 @@ def convert_media_format(job_id, data):
 
         cloud_url = upload_file(output_file)
         logger.info(f"Job {job_id}: Converted media uploaded to cloud storage: {cloud_url}")
-
-        # Return JSON response with file URL
-        response = {
-            "file_url": cloud_url
-        }
         
-        return response, "/v1/media/convert", 200
+        return cloud_url, "/v1/media/convert", 200
 
     except Exception as e:
         logger.error(f"Job {job_id}: Error during media conversion process - {str(e)}")

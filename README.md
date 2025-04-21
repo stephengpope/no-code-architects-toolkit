@@ -87,6 +87,10 @@ Each endpoint is supported by robust payload validation and detailed API documen
   - Transcribes or translates audio/video content from a provided media URL.
   - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
 
+- **`/v1/media/silence`**
+  - Detects silence intervals in a given media file.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/silence.md)
+
 ### S3
 
 - **`/v1/s3/upload`**
@@ -116,6 +120,18 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **`/v1/video/thumbnail`**
   - Extracts a thumbnail image from a specific timestamp in a video.
   - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)
+
+- **`/v1/video/cut`**
+  - Cuts specified segments from a video file with optional encoding settings.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/cut.md)
+
+- **`/v1/video/split`**
+  - Splits a video into multiple segments based on specified start and end times.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/split.md)
+
+- **`/v1/video/trim`**
+  - Trims a video by keeping only the content between specified start and end times.
+  - [Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/trim.md)
 
 ---
 

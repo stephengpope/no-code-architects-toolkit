@@ -59,7 +59,7 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ### Media
 
-- **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media_convert.md)**
+- **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)**
   - Converts media files from one format to another with customizable codec options.
 
 - **[`/v1/media/convert/mp3`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)**

@@ -167,13 +167,6 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ---
 
-### Storage Configuration
-
-#### `LOCAL_STORAGE_PATH`
-- **Purpose**: Directory for temporary file storage during processing.
-- **Default**: /tmp
-- **Recommendation**: Set to a path with sufficient disk space for your expected workloads.
-
 ### Performance Tuning Variables
 
 #### `MAX_QUEUE_LENGTH`
@@ -190,6 +183,15 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **Purpose**: Timeout (in seconds) for worker processes.
 - **Default**: 30
 - **Recommendation**: Increase for processing large media files (e.g., 300-600).
+
+---
+
+### Storage Configuration
+
+#### `LOCAL_STORAGE_PATH`
+- **Purpose**: Directory for temporary file storage during processing.
+- **Default**: /tmp
+- **Recommendation**: Set to a path with sufficient disk space for your expected workloads.
 
 ### Notes
 - Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 

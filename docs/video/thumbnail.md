@@ -79,9 +79,7 @@ When no webhook URL is provided or when the webhook is called after processing:
   "code": 200,
   "id": "custom-request-123",
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "response": {
-    "file_url": "https://storage.example.com/thumbnails/video-thumbnail-123.jpg"
-  },
+  "response": "https://storage.example.com/thumbnails/video-thumbnail-123.jpg",
   "message": "success",
   "run_time": 1.234,
   "queue_time": 0.567,

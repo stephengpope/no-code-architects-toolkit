@@ -23,23 +23,44 @@ The endpoint fits into the overall API structure as one of several media process
 |-----------|------|----------|-------------|
 | `media_url` | string | Yes | URL of the media file to convert (must be a valid URI) |
 | `format` | string | Yes | Desired output format (e.g., "mp4", "webm", "mov") |
-| `video_codec` | string | No | Video codec to use (defaults to "copy") |
-| `audio_codec` | string | No | Audio codec to use (defaults to "copy") |
+| `video_codec` | string | No | Video codec to use (defaults to "libx264") |
+| `video_preset` | string | No | Encoding preset for speed/quality tradeoff (defaults to "medium") |
+| `video_crf` | number | No | Constant Rate Factor for quality (0-51, default: 23, lower is better quality) |
+| `audio_codec` | string | No | Audio codec to use (defaults to "aac") |
+| `audio_bitrate` | string | No | Audio bitrate (defaults to "128k") |
 | `webhook_url` | string | No | URL to receive conversion completion notification (must be a valid URI) |
 | `id` | string | No | Custom identifier for tracking the request |
 
-### Example Request
+### Example Requests
+
+#### Video Conversion Example
 
 ```json
 {
   "media_url": "https://example.com/input-video.mp4",
-  "format": "webm",
-  "video_codec": "vp9",
-  "audio_codec": "opus",
+  "format": "mp4",
+  "video_codec": "libx264",
+  "video_preset": "medium",
+  "video_crf": 23,
+  "audio_codec": "aac",
+  "audio_bitrate": "192k",
   "webhook_url": "https://your-server.com/webhook",
   "id": "custom-request-123"
 }
 ```
+
+#### Audio Extraction Example
+
+```json
+{
+  "media_url": "https://example.com/input-video.mp4",
+  "format": "mp3",
+  "audio_bitrate": "320k",
+  "id": "audio-extraction-request"
+}
+```
+
+For audio-only formats (mp3, aac, wav, etc.), the appropriate audio codec will be automatically selected.
 
 ### Example cURL Command
 
@@ -49,9 +70,12 @@ curl -X POST https://api.example.com/v1/media/convert \
   -H "x-api-key: your-api-key" \
   -d '{
     "media_url": "https://example.com/input-video.mp4",
-    "format": "webm",
-    "video_codec": "vp9",
-    "audio_codec": "opus",
+    "format": "mp4",
+    "video_codec": "libx264",
+    "video_preset": "medium",
+    "video_crf": 23,
+    "audio_codec": "aac",
+    "audio_bitrate": "192k",
     "webhook_url": "https://your-server.com/webhook",
     "id": "custom-request-123"
   }'
@@ -88,7 +112,7 @@ When the conversion is complete, the following response will be sent to the webh
   "id": "custom-request-123",
   "job_id": "550e8400-e29b-41d4-a716-446655440000",
   "response": {
-    "file_url": "https://storage.example.com/converted-file-123.webm"
+    "file_url": "https://storage.example.com/converted-file-123.mp4"
   },
   "message": "success",
   "pid": 12345,
@@ -179,7 +203,18 @@ All errors include descriptive messages to help diagnose the issue.
 - The conversion process is queued by default, making it suitable for handling larger files without blocking.
 - When providing a `webhook_url`, you'll receive an immediate 202 response, and the final result will be sent to your webhook when processing completes.
 - Without a `webhook_url`, the request will still be queued but the response will be held until processing completes.
-- Using `"video_codec": "copy"` and `"audio_codec": "copy"` (the defaults) will attempt to copy the streams without re-encoding, which is faster but may not be compatible with all format conversions.
+- The default codecs (`libx264` for video and `aac` for audio) provide good compatibility with most formats.
+- The `video_preset` parameter controls the encoding speed/quality tradeoff. Options include: `ultrafast`, `superfast`, `veryfast`, `faster`, `fast`, `medium`, `slow`, `slower`, `veryslow`.
+- The `video_crf` parameter (0-51) controls quality - lower values mean better quality but larger files. 23 is a good default.
+- The `audio_bitrate` parameter sets the audio quality (e.g., "128k", "192k", "320k").
+- You can still use `"video_codec": "copy"` and `"audio_codec": "copy"` to copy streams without re-encoding, which is faster but may not be compatible with all format conversions.
+- For audio-only output formats (`mp3`, `aac`, `wav`, `flac`, `ogg`, `opus`), the service will automatically use the appropriate audio codec regardless of the codec you specify:
+  - `mp3`: Uses `libmp3lame` codec
+  - `aac`: Uses `aac` codec
+  - `opus`: Uses `libopus` codec
+  - `flac`: Uses `flac` codec
+  - `ogg`: Uses `libvorbis` codec
+  - `wav`: Uses `pcm_s16le` codec
 - The converted file is automatically uploaded to cloud storage, and the URL is provided in the response.
 
 ## 7. Common Issues
@@ -192,7 +227,11 @@ All errors include descriptive messages to help diagnose the issue.
 
 ## 8. Best Practices
 
-- **Use Appropriate Codecs**: Only specify custom codecs if you have specific requirements. Using `"copy"` is faster and maintains quality.
+- **Use Appropriate Settings**: Choose video/audio codecs and settings based on your needs:
+  - Use `"copy"` for both codecs when you just need to change the container format without re-encoding
+  - Use `"libx264"` with `"medium"` preset and CRF 23 for good quality/size balance for video
+  - For lower file sizes, increase CRF (e.g., 28) or use a faster preset
+  - For higher quality, decrease CRF (e.g., 18) or use a slower preset
 - **Include an ID**: Always include a unique `id` in your requests to help track and identify them, especially when using webhooks.
 - **Webhook Reliability**: Ensure your webhook endpoint is reliable and can handle the response payload. Implement retry logic on your webhook receiver.
 - **Format Selection**: Choose the output format based on your target platform requirements. For web use, WebM or MP4 are generally recommended.

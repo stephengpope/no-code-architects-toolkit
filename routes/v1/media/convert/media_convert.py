@@ -33,7 +33,10 @@ logger = logging.getLogger(__name__)
         "media_url": {"type": "string", "format": "uri"},
         "format": {"type": "string"},
         "video_codec": {"type": "string"},
+        "video_preset": {"type": "string"},
+        "video_crf": {"type": "number", "minimum": 0, "maximum": 51},
         "audio_codec": {"type": "string"},
+        "audio_bitrate": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -44,8 +47,11 @@ logger = logging.getLogger(__name__)
 def convert_media_format(job_id, data):
     media_url = data['media_url']
     output_format = data['format']
-    video_codec = data.get('video_codec', 'copy')
-    audio_codec = data.get('audio_codec', 'copy')
+    video_codec = data.get('video_codec', 'libx264')
+    video_preset = data.get('video_preset', 'medium')
+    video_crf = data.get('video_crf', 23)
+    audio_codec = data.get('audio_codec', 'aac')
+    audio_bitrate = data.get('audio_bitrate', '128k')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
@@ -57,7 +63,10 @@ def convert_media_format(job_id, data):
             job_id, 
             output_format, 
             video_codec, 
+            video_preset,
+            video_crf,
             audio_codec,
+            audio_bitrate,
             webhook_url
         )
         logger.info(f"Job {job_id}: Media format conversion completed successfully")

@@ -17,11 +17,32 @@
 import os
 import ffmpeg
 import subprocess
+import logging
 from services.file_management import download_file
 from config import LOCAL_STORAGE_PATH
 
-def process_media_convert(media_url, job_id, output_format='mp4', video_codec='copy', audio_codec='copy', webhook_url=None):
-    """Convert media to specified format with optional codec changes."""
+# Set up logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+def process_media_convert(media_url, job_id, output_format='mp4', video_codec='libx264', video_preset='medium', video_crf=23, audio_codec='aac', audio_bitrate='128k', webhook_url=None):
+    """
+    Convert media to specified format with customizable encoding settings.
+    
+    Args:
+        media_url (str): URL of the media file to convert
+        job_id (str): Unique job identifier
+        output_format (str): Target format (e.g., 'mp4', 'mov', 'mp3', etc.)
+        video_codec (str): Video codec to use (default: 'libx264')
+        video_preset (str): Encoding preset for speed/quality tradeoff (default: 'medium')
+        video_crf (int): Constant Rate Factor for quality (0-51, default: 23)
+        audio_codec (str): Audio codec to use (default: 'aac')
+        audio_bitrate (str): Audio bitrate (default: '128k')
+        webhook_url (str, optional): URL to send completion webhook
+        
+    Returns:
+        str: Path to the converted output file
+    """
     input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
     output_filename = f"{job_id}.{output_format}"
     output_path = os.path.join(LOCAL_STORAGE_PATH, output_filename)
@@ -39,21 +60,20 @@ def process_media_convert(media_url, job_id, output_format='mp4', video_codec='c
         audio_only_formats = ['mp3', 'aac', 'wav', 'flac', 'ogg', 'opus']
         
         if output_format in audio_only_formats:
-            # For audio-only formats, we need specific audio codecs
-            if audio_codec == 'copy':
-                # Map codec to formats appropriately
-                if output_format == 'mp3':
-                    audio_codec = 'libmp3lame'
-                elif output_format == 'aac':
-                    audio_codec = 'aac'
-                elif output_format == 'opus':
-                    audio_codec = 'libopus'
-                elif output_format == 'flac':
-                    audio_codec = 'flac'
-                elif output_format == 'ogg':
-                    audio_codec = 'libvorbis'
-                elif output_format == 'wav':
-                    audio_codec = 'pcm_s16le'
+            # Always override the audio codec for audio-only formats
+            # to ensure format compatibility, regardless of what was requested
+            if output_format == 'mp3':
+                audio_codec = 'libmp3lame'
+            elif output_format == 'aac':
+                audio_codec = 'aac'
+            elif output_format == 'opus':
+                audio_codec = 'libopus'
+            elif output_format == 'flac':
+                audio_codec = 'flac'
+            elif output_format == 'ogg':
+                audio_codec = 'libvorbis'
+            elif output_format == 'wav':
+                audio_codec = 'pcm_s16le'
             
             # For audio-only output, we don't need video codec
             output_options['acodec'] = audio_codec
@@ -64,20 +84,29 @@ def process_media_convert(media_url, job_id, output_format='mp4', video_codec='c
             # For video formats, apply both video and audio codec settings
             output_options['vcodec'] = video_codec
             output_options['acodec'] = audio_codec
+            
+            # Apply additional video encoding options when not using copy
+            if video_codec != 'copy':
+                output_options['preset'] = video_preset
+                output_options['crf'] = str(video_crf)
+                
+            # Apply audio bitrate when not using copy
+            if audio_codec != 'copy':
+                output_options['b:a'] = audio_bitrate
         
         # Configure output
         stream = ffmpeg.output(stream, output_path, **output_options)
         
         # Get the ffmpeg command for logging
         cmd = ffmpeg.compile(stream)
-        print(f"Running ffmpeg command: {' '.join(cmd)}")
+        logger.info(f"Running ffmpeg command: {' '.join(cmd)}")
         
         # Run the conversion
         ffmpeg.run(stream, overwrite_output=True, capture_stdout=True, capture_stderr=True)
         
         # Clean up input file
         os.remove(input_filename)
-        print(f"Media conversion successful: {output_path} to format {output_format}")
+        logger.info(f"Media conversion successful: {output_path} to format {output_format}")
 
         # Ensure the output file exists locally before attempting upload
         if not os.path.exists(output_path):
@@ -86,7 +115,31 @@ def process_media_convert(media_url, job_id, output_format='mp4', video_codec='c
         return output_path
 
     except Exception as e:
-        print(f"Media conversion failed: {str(e)}")
-        if isinstance(e, subprocess.CalledProcessError) and hasattr(e, 'stderr'):
-            print(f"FFmpeg error details: {e.stderr.decode('utf-8')}")
-        raise 
+        error_msg = f"Media conversion failed: {str(e)}"
+        logger.error(error_msg)
+        
+        # Handle ffmpeg errors specially to provide more context
+        if hasattr(e, 'stderr') and e.stderr:
+            stderr_output = e.stderr.decode('utf-8') if isinstance(e.stderr, bytes) else str(e.stderr)
+            detailed_error = f"FFmpeg error details: {stderr_output}"
+            logger.error(detailed_error)
+            # Raise with combined error info for better debugging
+            raise Exception(f"{error_msg} - {detailed_error}")
+        
+        # Clean up input file if it exists
+        if 'input_filename' in locals() and os.path.exists(input_filename):
+            try:
+                os.remove(input_filename)
+                logger.info(f"Cleaned up input file: {input_filename}")
+            except Exception as cleanup_error:
+                logger.error(f"Failed to clean up input file: {str(cleanup_error)}")
+                
+        # Clean up output file if it exists
+        if 'output_path' in locals() and os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+                logger.info(f"Cleaned up output file: {output_path}")
+            except Exception as cleanup_error:
+                logger.error(f"Failed to clean up output file: {str(cleanup_error)}")
+                
+        raise

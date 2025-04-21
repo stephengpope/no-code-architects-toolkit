@@ -1,237 +1,138 @@
-# Media Convert API Endpoint Documentation
+# Media Convert Endpoint Documentation
 
 ## 1. Overview
 
-The `/v1/media/convert` endpoint provides a service for converting media files from one format to another. It allows users to specify the desired output format and optionally set video and audio codecs. This endpoint is part of the v1 API structure and integrates with the application's queuing system to handle potentially resource-intensive conversion tasks asynchronously.
-
-The endpoint fits into the overall API structure as one of several media processing services, registered in the main application as the `v1_media_convert_bp` blueprint.
+The `/v1/media/convert` endpoint is part of the Flask API application and is responsible for converting media files (audio or video) from one format to another. This endpoint fits into the overall API structure as a part of the `v1` blueprint, which contains various media-related functionalities.
 
 ## 2. Endpoint
 
-- **URL**: `/v1/media/convert`
-- **Method**: `POST`
+**URL Path:** `/v1/media/convert`
+**HTTP Method:** `POST`
 
 ## 3. Request
 
 ### Headers
 
-- `x-api-key`: Required. Your API authentication key.
+- `x-api-key` (required): The API key for authentication.
 
 ### Body Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `media_url` | string | Yes | URL of the media file to convert (must be a valid URI) |
-| `format` | string | Yes | Desired output format (e.g., "mp4", "webm", "mov") |
-| `video_codec` | string | No | Video codec to use (defaults to "libx264") |
-| `video_preset` | string | No | Encoding preset for speed/quality tradeoff (defaults to "medium") |
-| `video_crf` | number | No | Constant Rate Factor for quality (0-51, default: 23, lower is better quality) |
-| `audio_codec` | string | No | Audio codec to use (defaults to "aac") |
-| `audio_bitrate` | string | No | Audio bitrate (defaults to "128k") |
-| `webhook_url` | string | No | URL to receive conversion completion notification (must be a valid URI) |
-| `id` | string | No | Custom identifier for tracking the request |
+The request body must be a JSON object with the following properties:
 
-### Example Requests
+- `media_url` (required, string): The URL of the media file to be converted.
+- `format` (required, string): The desired output format for the converted media file.
+- `video_codec` (optional, string): The video codec to be used for the conversion. Default is `libx264`.
+- `video_preset` (optional, string): The video preset to be used for the conversion. Default is `medium`.
+- `video_crf` (optional, number): The Constant Rate Factor (CRF) value for video encoding. Must be between 0 and 51. Default is 23.
+- `audio_codec` (optional, string): The audio codec to be used for the conversion. Default is `aac`.
+- `audio_bitrate` (optional, string): The audio bitrate to be used for the conversion. Default is `128k`.
+- `webhook_url` (optional, string): The URL to receive a webhook notification upon completion of the conversion process.
+- `id` (optional, string): An optional identifier for the conversion request.
 
-#### Video Conversion Example
+### Example Request
 
 ```json
 {
-  "media_url": "https://example.com/input-video.mp4",
-  "format": "mp4",
+  "media_url": "https://example.com/video.mp4",
+  "format": "avi",
   "video_codec": "libx264",
   "video_preset": "medium",
   "video_crf": 23,
   "audio_codec": "aac",
-  "audio_bitrate": "192k",
-  "webhook_url": "https://your-server.com/webhook",
-  "id": "custom-request-123"
+  "audio_bitrate": "128k",
+  "webhook_url": "https://example.com/webhook",
+  "id": "unique-request-id"
 }
 ```
-
-#### Audio Extraction Example
-
-```json
-{
-  "media_url": "https://example.com/input-video.mp4",
-  "format": "mp3",
-  "audio_bitrate": "320k",
-  "id": "audio-extraction-request"
-}
-```
-
-For audio-only formats (mp3, aac, wav, etc.), the appropriate audio codec will be automatically selected.
-
-### Example cURL Command
 
 ```bash
-curl -X POST https://api.example.com/v1/media/convert \
-  -H "Content-Type: application/json" \
-  -H "x-api-key: your-api-key" \
+curl -X POST \
+  https://api.example.com/v1/media/convert \
+  -H 'x-api-key: YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
   -d '{
-    "media_url": "https://example.com/input-video.mp4",
-    "format": "mp4",
+    "media_url": "https://example.com/video.mp4",
+    "format": "avi",
     "video_codec": "libx264",
     "video_preset": "medium",
     "video_crf": 23,
     "audio_codec": "aac",
-    "audio_bitrate": "192k",
-    "webhook_url": "https://your-server.com/webhook",
-    "id": "custom-request-123"
+    "audio_bitrate": "128k",
+    "webhook_url": "https://example.com/webhook",
+    "id": "unique-request-id"
   }'
 ```
 
 ## 4. Response
 
-### Success Response (Immediate)
+### Success Response
 
-If a webhook URL is provided, the API will queue the task and return an immediate 202 Accepted response:
-
-```json
-{
-  "code": 202,
-  "id": "custom-request-123",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "processing",
-  "pid": 12345,
-  "queue_id": 67890,
-  "max_queue_length": "unlimited",
-  "queue_length": 3,
-  "build_number": "1.0.0"
-}
-```
-
-### Success Response (Webhook or Direct)
-
-When the conversion is complete, the following response will be sent to the webhook URL (if provided) or returned directly (if no webhook URL):
+The success response will be a JSON object containing the URL of the converted media file uploaded to cloud storage, the endpoint path, and a status code of 200.
 
 ```json
 {
-  "endpoint": "/v1/media/convert",
   "code": 200,
-  "id": "custom-request-123",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "response": "https://storage.example.com/converted-file-123.mp4",
+  "id": "unique-request-id",
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "response": "https://cloud.example.com/converted-video.avi",
   "message": "success",
   "pid": 12345,
-  "queue_id": 67890,
-  "run_time": 5.234,
-  "queue_time": 1.123,
-  "total_time": 6.357,
-  "queue_length": 2,
+  "queue_id": 1234567890,
+  "run_time": 10.234,
+  "queue_time": 0.123,
+  "total_time": 10.357,
+  "queue_length": 0,
   "build_number": "1.0.0"
 }
 ```
 
 ### Error Responses
 
-#### Invalid Request (400 Bad Request)
+- **400 Bad Request**: Returned when the request payload is missing or invalid.
+- **401 Unauthorized**: Returned when the `x-api-key` header is missing or invalid.
+- **500 Internal Server Error**: Returned when an unexpected error occurs during the conversion process.
+
+Example error response:
 
 ```json
 {
   "code": 400,
-  "error": "Invalid request payload",
-  "details": "Required field 'media_url' is missing"
-}
-```
-
-#### Authentication Error (401 Unauthorized)
-
-```json
-{
-  "code": 401,
-  "error": "Authentication failed",
-  "message": "Invalid or missing API key"
-}
-```
-
-#### Queue Full (429 Too Many Requests)
-
-```json
-{
-  "code": 429,
-  "id": "custom-request-123",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "message": "MAX_QUEUE_LENGTH (100) reached",
+  "id": "unique-request-id",
+  "job_id": "a1b2c3d4-e5f6-g7h8-i9j0-k1l2m3n4o5p6",
+  "message": "Invalid request payload",
   "pid": 12345,
-  "queue_id": 67890,
-  "queue_length": 100,
-  "build_number": "1.0.0"
-}
-```
-
-#### Processing Error (500 Internal Server Error)
-
-```json
-{
-  "endpoint": "/v1/media/convert",
-  "code": 500,
-  "id": "custom-request-123",
-  "job_id": "550e8400-e29b-41d4-a716-446655440000",
-  "response": null,
-  "message": "Error downloading media file: Connection timeout",
-  "pid": 12345,
-  "queue_id": 67890,
-  "run_time": 2.345,
-  "queue_time": 0.567,
-  "total_time": 2.912,
-  "queue_length": 5,
+  "queue_id": 1234567890,
+  "queue_length": 0,
   "build_number": "1.0.0"
 }
 ```
 
 ## 5. Error Handling
 
-The endpoint handles several types of errors:
+The endpoint uses the `validate_payload` decorator to validate the request payload against a JSON schema. If the payload is missing or invalid, a 400 Bad Request error is returned.
 
-- **Validation Errors (400)**: Occur when the request payload doesn't match the required schema (missing required fields, invalid formats, or additional properties).
-- **Authentication Errors (401)**: Occur when the API key is invalid or missing.
-- **Queue Limit Errors (429)**: Occur when the processing queue is full (if MAX_QUEUE_LENGTH is set).
-- **Processing Errors (500)**: Occur during the media conversion process, such as:
-  - Invalid media URL
-  - Unsupported format
-  - Media download failures
-  - Conversion process failures
-  - Cloud storage upload failures
+The `authenticate` decorator is used to ensure that the request includes a valid `x-api-key` header. If the header is missing or invalid, a 401 Unauthorized error is returned.
 
-All errors include descriptive messages to help diagnose the issue.
+If an unexpected error occurs during the conversion process, a 500 Internal Server Error is returned, and the error is logged.
 
 ## 6. Usage Notes
 
-- The conversion process is queued by default, making it suitable for handling larger files without blocking.
-- When providing a `webhook_url`, you'll receive an immediate 202 response, and the final result will be sent to your webhook when processing completes.
-- Without a `webhook_url`, the request will still be queued but the response will be held until processing completes.
-- The default codecs (`libx264` for video and `aac` for audio) provide good compatibility with most formats.
-- The `video_preset` parameter controls the encoding speed/quality tradeoff. Options include: `ultrafast`, `superfast`, `veryfast`, `faster`, `fast`, `medium`, `slow`, `slower`, `veryslow`.
-- The `video_crf` parameter (0-51) controls quality - lower values mean better quality but larger files. 23 is a good default.
-- The `audio_bitrate` parameter sets the audio quality (e.g., "128k", "192k", "320k").
-- You can still use `"video_codec": "copy"` and `"audio_codec": "copy"` to copy streams without re-encoding, which is faster but may not be compatible with all format conversions.
-- For audio-only output formats (`mp3`, `aac`, `wav`, `flac`, `ogg`, `opus`), the service will automatically use the appropriate audio codec regardless of the codec you specify:
-  - `mp3`: Uses `libmp3lame` codec
-  - `aac`: Uses `aac` codec
-  - `opus`: Uses `libopus` codec
-  - `flac`: Uses `flac` codec
-  - `ogg`: Uses `libvorbis` codec
-  - `wav`: Uses `pcm_s16le` codec
-- The converted file is automatically uploaded to cloud storage, and the URL is provided in the response.
+- The `media_url` parameter must be a valid URL pointing to the media file to be converted.
+- The `format` parameter must be a valid media format supported by the conversion process.
+- The optional parameters (`video_codec`, `video_preset`, `video_crf`, `audio_codec`, `audio_bitrate`) allow you to customize the conversion settings.
+- If the `webhook_url` parameter is provided, a webhook notification will be sent to the specified URL upon completion of the conversion process.
+- The `id` parameter is optional and can be used to identify the conversion request.
 
 ## 7. Common Issues
 
-- **Unsupported Format Combinations**: Not all format and codec combinations are valid. For example, using an MP3 audio codec with a WebM container may fail.
-- **Large File Timeouts**: Very large files may time out during download or upload. Consider using more direct file transfer methods for extremely large files.
-- **Webhook Failures**: If your webhook endpoint is unavailable when the conversion completes, you may not receive the completion notification.
-- **Queue Congestion**: During high load periods, the queue may fill up, resulting in 429 responses.
-- **Invalid Media URLs**: The media URL must be directly accessible by the server. URLs requiring authentication or session cookies may fail.
+- Providing an invalid or inaccessible `media_url`.
+- Specifying an unsupported `format`.
+- Providing invalid values for the optional parameters (e.g., `video_crf` outside the valid range).
 
 ## 8. Best Practices
 
-- **Use Appropriate Settings**: Choose video/audio codecs and settings based on your needs:
-  - Use `"copy"` for both codecs when you just need to change the container format without re-encoding
-  - Use `"libx264"` with `"medium"` preset and CRF 23 for good quality/size balance for video
-  - For lower file sizes, increase CRF (e.g., 28) or use a faster preset
-  - For higher quality, decrease CRF (e.g., 18) or use a slower preset
-- **Include an ID**: Always include a unique `id` in your requests to help track and identify them, especially when using webhooks.
-- **Webhook Reliability**: Ensure your webhook endpoint is reliable and can handle the response payload. Implement retry logic on your webhook receiver.
-- **Format Selection**: Choose the output format based on your target platform requirements. For web use, WebM or MP4 are generally recommended.
-- **Monitor Queue Length**: If you're making many requests, monitor the `queue_length` in responses to avoid hitting queue limits.
-- **Handle Errors Gracefully**: Implement proper error handling in your application to deal with potential conversion failures.
+- Always validate the input parameters on the client-side before sending the request.
+- Use the `id` parameter to track and identify conversion requests.
+- Provide a `webhook_url` to receive notifications about the conversion process completion.
+- Monitor the API logs for any errors or issues during the conversion process.
+- Consider implementing rate limiting or queue management to handle high volumes of requests.

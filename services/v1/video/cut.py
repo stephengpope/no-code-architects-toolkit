@@ -21,6 +21,7 @@ import json
 import subprocess
 import logging
 import uuid
+import tempfile
 from services.file_management import download_file
 from services.cloud_storage import upload_file
 from config import LOCAL_STORAGE_PATH
@@ -74,15 +75,14 @@ def cut_media(video_url, cuts, job_id=None, video_codec='libx264', video_preset=
     input_filename = download_file(video_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
     logger.info(f"Downloaded video to local file: {input_filename}")
     
+    temp_files = []
+    
     try:
         # Get the file extension
         _, ext = os.path.splitext(input_filename)
         
         # Create output filename
         output_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_output{ext}")
-        
-        # Using a single FFmpeg command with filter_complex to remove segments
-        # This is much more efficient and reliable than concatenating segments
         
         # Get the duration of the input file
         probe_cmd = [
@@ -137,7 +137,7 @@ def cut_media(video_url, cuts, job_id=None, video_codec='libx264', video_preset=
             # Add the last segment
             merged_cuts.append((current_start, current_end))
         
-        logger.info(f"Merged cuts (segments to remove): {merged_cuts}")
+        logger.info(f"Processing cuts: {merged_cuts}")
         
         if not merged_cuts:
             logger.info("No valid cuts to apply, copying the original file")
@@ -147,43 +147,129 @@ def cut_media(video_url, cuts, job_id=None, video_codec='libx264', video_preset=
                 '-c', 'copy',
                 output_filename
             ]
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
         else:
-            # Build a select filter that excludes the segments we want to cut
-            # Format: not(between(t,start1,end1)+between(t,start2,end2)+...)
-            select_conditions = []
-            for start, end in merged_cuts:
-                select_conditions.append(f"between(t,{start},{end})")
+            # Switch to a different approach: extract segments and concatenate
+            segment_files = []
             
-            select_expr = "not(" + "+".join(select_conditions) + ")"
-            logger.info(f"Using select expression: {select_expr}")
+            # Create segments to keep
+            last_end = 0
+            for i, (start, end) in enumerate(merged_cuts):
+                # If there's a gap between last segment end and current segment start, extract it
+                if start > last_end:
+                    segment_file = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_segment_{i}{ext}")
+                    segment_files.append(segment_file)
+                    temp_files.append(segment_file)
+                    
+                    # Extract segment from last_end to start
+                    duration = start - last_end
+                    cmd = [
+                        'ffmpeg',
+                        '-i', input_filename,
+                        '-ss', str(last_end),
+                        '-t', str(duration),
+                        '-c:v', video_codec,
+                        '-preset', video_preset,
+                        '-crf', str(video_crf),
+                        '-c:a', audio_codec,
+                        '-b:a', audio_bitrate,
+                        '-pix_fmt', 'yuv420p',
+                        '-vsync', 'cfr',
+                        '-r', '30',
+                        '-avoid_negative_ts', 'make_zero',
+                        segment_file
+                    ]
+                    logger.info(f"Extracting segment {i}: {' '.join(cmd)}")
+                    process = subprocess.run(cmd, capture_output=True, text=True)
+                    
+                    if process.returncode != 0:
+                        logger.error(f"Error during segment {i} extraction: {process.stderr}")
+                        raise Exception(f"FFmpeg error: {process.stderr}")
+                
+                last_end = end
             
-            # Create the single FFmpeg command with filter_complex and specified encoding settings
-            cmd = [
-                'ffmpeg',
-                '-i', input_filename,
-                '-filter_complex',
-                f"[0:v]select='{select_expr}',setpts=N/FRAME_RATE/TB[v];[0:a]aselect='{select_expr}',asetpts=N/SR/TB[a]",
-                '-map', '[v]',
-                '-map', '[a]',
-                '-c:v', video_codec,
-                '-preset', video_preset,
-                '-crf', str(video_crf),
-                '-c:a', audio_codec,
-                '-b:a', audio_bitrate,
-                output_filename
-            ]
+            # Add final segment if needed
+            if last_end < file_duration:
+                segment_file = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_segment_final{ext}")
+                segment_files.append(segment_file)
+                temp_files.append(segment_file)
+                
+                cmd = [
+                    'ffmpeg',
+                    '-i', input_filename,
+                    '-ss', str(last_end),
+                    '-c:v', video_codec,
+                    '-preset', video_preset,
+                    '-crf', str(video_crf),
+                    '-c:a', audio_codec,
+                    '-b:a', audio_bitrate,
+                    '-pix_fmt', 'yuv420p',
+                    '-vsync', 'cfr',
+                    '-r', '30',
+                    '-avoid_negative_ts', 'make_zero',
+                    segment_file
+                ]
+                logger.info(f"Extracting final segment: {' '.join(cmd)}")
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if process.returncode != 0:
+                    logger.error(f"Error during final segment extraction: {process.stderr}")
+                    raise Exception(f"FFmpeg error: {process.stderr}")
+            
+            # If we have segments to concatenate
+            if segment_files:
+                # Create a concat file
+                concat_file = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_concat.txt")
+                temp_files.append(concat_file)
+                
+                with open(concat_file, 'w') as f:
+                    for segment in segment_files:
+                        f.write(f"file '{segment}'\n")
+                
+                # Concatenate the segments
+                cmd = [
+                    'ffmpeg',
+                    '-f', 'concat',
+                    '-safe', '0',
+                    '-i', concat_file,
+                    '-c:v', video_codec,
+                    '-preset', video_preset,
+                    '-crf', str(video_crf),
+                    '-c:a', audio_codec,
+                    '-b:a', audio_bitrate,
+                    '-vsync', 'cfr',
+                    '-r', '30',
+                    '-pix_fmt', 'yuv420p',
+                    '-movflags', '+faststart',
+                    output_filename
+                ]
+                logger.info(f"Concatenating segments: {' '.join(cmd)}")
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if process.returncode != 0:
+                    logger.error(f"Error during concatenation: {process.stderr}")
+                    raise Exception(f"FFmpeg error: {process.stderr}")
+            else:
+                # No segments to keep
+                with open(output_filename, 'wb') as f:
+                    # Create an empty file
+                    pass
         
-        logger.info(f"Running FFmpeg command: {' '.join(cmd)}")
+        # Clean up temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+                logger.info(f"Removed temporary file: {temp_file}")
         
-        # Run the FFmpeg command
-        subprocess.run(cmd, check=True, stderr=subprocess.PIPE)
-        
-        # Return the path to the output file (route will handle upload)
         return output_filename, input_filename
         
     except Exception as e:
         logger.error(f"Video cut operation failed: {str(e)}")
         # Clean up all temporary files if they exist
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+                
         if 'input_filename' in locals() and os.path.exists(input_filename):
             os.remove(input_filename)
                     

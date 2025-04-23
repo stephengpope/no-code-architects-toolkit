@@ -171,6 +171,7 @@ def create_app():
     from routes.v1.video.cut import v1_video_cut_bp
     from routes.v1.video.split import v1_video_split_bp
     from routes.v1.video.trim import v1_video_trim_bp
+    from routes.v1.media.metadata import v1_media_metadata_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -196,6 +197,7 @@ def create_app():
     app.register_blueprint(v1_video_cut_bp)
     app.register_blueprint(v1_video_split_bp)
     app.register_blueprint(v1_video_trim_bp)
+    app.register_blueprint(v1_media_metadata_bp)
 
     return app
 

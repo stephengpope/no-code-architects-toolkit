@@ -2,6 +2,14 @@
 
 **Implemented by:** [Harrison Fisher](https://github.com/HarrisonFisher)
 
+## ⚠️ Disclaimer
+- This endpoint is **not intended to bypass CAPTCHAs, Cloudflare**, or other anti-bot protections.
+- Please **do not create issues or requests** asking for CAPTCHA or Cloudflare bypass features.
+- It will not work for sites with such defenses, and attempting to automate against protected sites could result in your IP address being blacklisted by Cloudflare or similar services.
+- The screenshot endpoint supports custom HTML, JavaScript, and CSS input for flexible rendering and automation, as an alternative to using a URL.
+- This feature should only be used on sites you own or have explicit permission to automate.
+
+
 ## 1. Overview
 
 The `/v1/playwright/screenshot` endpoint allows you to capture screenshots of web pages using the Playwright browser automation library. It supports advanced options such as viewport size, device emulation, cookies, headers, element targeting, and more. Screenshots are uploaded to cloud storage, and the resulting URL is returned. This endpoint is part of the v1 API suite and is registered in the main Flask application as a blueprint.

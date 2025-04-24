@@ -89,6 +89,8 @@ logger = logging.getLogger(__name__)
         },
         "omit_background": {"type": "boolean", "default": False},
         "selector": {"type": "string"},
+        "js": {"type": "string"},
+        "css": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },

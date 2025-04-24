@@ -80,6 +80,13 @@ def take_screenshot(data: dict, job_id=None):
             if data.get("delay"):
                 page.wait_for_timeout(data["delay"])
 
+            # Inject custom CSS if provided
+            if data.get("css"):
+                page.add_style_tag(content=data["css"])
+            # Inject custom JS if provided
+            if data.get("js"):
+                page.add_script_tag(content=data["js"])
+
             screenshot_io = BytesIO()
 
             # Take a screenshot of a specific element or the full page

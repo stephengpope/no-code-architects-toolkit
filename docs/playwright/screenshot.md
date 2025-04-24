@@ -42,6 +42,8 @@ The request body must be a JSON object with the following properties:
 - `selector` (string, optional): CSS selector for a specific element to screenshot.
 - `webhook_url` (string, optional): If provided, results are sent to this URL asynchronously.
 - `id` (string, optional): Custom identifier for the request.
+- `js` (string, optional): JavaScript code to inject into the page before taking the screenshot.
+- `css` (string, optional): CSS code to inject into the page before taking the screenshot.
 
 #### Example Request
 
@@ -50,6 +52,8 @@ The request body must be a JSON object with the following properties:
   "url": "https://example.com",
   "viewport_width": 1280,
   "viewport_height": 720,
+  "js": "document.body.style.background = 'red';",
+  "css": "body { font-size: 30px; }",
   "full_page": true,
   "format": "png",
   "delay": 500,
@@ -80,8 +84,27 @@ curl -X POST \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "js": "document.body.style.background = 'red';",
+    "css": "body { font-size: 30px; }",
     "full_page": true,
     "format": "png",
+    "delay": 500,
+    "device_scale_factor": 2,
+    "user_agent": "CustomAgent/1.0",
+    "cookies": [
+      {"name": "sessionid", "value": "abc123", "domain": "example.com"}
+    ],
+    "headers": {"X-Test": "yes"},
+    "quality": 90,
+    "clip": {"x": 0, "y": 0, "width": 800, "height": 600},
+    "timeout": 10000,
+    "wait_until": "networkidle",
+    "wait_for_selector": "#main",
+    "emulate": {"color_scheme": "dark"},
+    "omit_background": true,
+    "selector": "#main-content",
     "webhook_url": "https://your-webhook.com/callback",
     "id": "custom-job-123"
   }' \

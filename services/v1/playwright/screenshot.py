@@ -39,8 +39,8 @@ def take_screenshot(data: dict, job_id=None):
         browser = p.chromium.launch(headless=True)
         try:
             context = browser.new_context(
-                viewport={"width": data.get("width", 1280), "height": data.get("height", 720)},
-                device_scale_factor=data.get("device_scale", 1),
+                viewport={"width": data.get("viewport_width", 1280), "height": data.get("viewport_height", 720)},
+                device_scale_factor=data.get("device_scale_factor", 1),
                 user_agent=data.get("user_agent")
             )
             page = context.new_page()
@@ -83,10 +83,10 @@ def take_screenshot(data: dict, job_id=None):
             screenshot_io = BytesIO()
 
             # Take a screenshot of a specific element or the full page
-            if data.get("element_selector"):
-                element = page.locator(data["element_selector"])
+            if data.get("selector"):
+                element = page.locator(data["selector"])
                 if element.count() == 0:
-                    raise ValueError(f"Element '{data['element_selector']}' not found on the page.")
+                    raise ValueError(f"Element '{data['selector']}' not found on the page.")
                 screenshot = element.screenshot(
                     type=data.get("format", "png"),
                     quality=data.get("quality") if data.get("format") == "jpeg" else None,

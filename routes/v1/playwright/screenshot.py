@@ -41,12 +41,12 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "url": {"type": "string", "format": "uri"},
-        "width": {"type": "integer", "minimum": 1},
-        "height": {"type": "integer", "minimum": 1},
+        "viewport_width": {"type": "integer", "minimum": 1},
+        "viewport_height": {"type": "integer", "minimum": 1},
         "full_page": {"type": "boolean", "default": False},
         "format": {"type": "string", "enum": ["png", "jpeg"], "default": "png"},
         "delay": {"type": "integer", "minimum": 0},
-        "device_scale": {"type": "number", "minimum": 0.1},
+        "device_scale_factor": {"type": "number", "minimum": 1},
         "user_agent": {"type": "string"},
         "cookies": {
             "type": "array",
@@ -88,7 +88,7 @@ logger = logging.getLogger(__name__)
             }
         },
         "omit_background": {"type": "boolean", "default": False},
-        "element_selector": {"type": "string"},
+        "selector": {"type": "string"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },

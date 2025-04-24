@@ -23,12 +23,12 @@ The `/v1/playwright/screenshot` endpoint allows you to capture screenshots of we
 The request body must be a JSON object with the following properties:
 
 - `url` (string, required): The URL of the web page to capture.
-- `width` (integer, optional): Viewport width in pixels.
-- `height` (integer, optional): Viewport height in pixels.
+- `viewport_width` (integer, optional): Viewport width in pixels.
+- `viewport_height` (integer, optional): Viewport height in pixels.
 - `full_page` (boolean, optional): Capture the full scrollable page. Default: `false`.
 - `format` (string, optional): Image format, either `png` or `jpeg`. Default: `png`.
 - `delay` (integer, optional): Delay in milliseconds before taking the screenshot.
-- `device_scale` (number, optional): Device scale factor (e.g., 2 for retina).
+- `device_scale_factor` (number, optional): Device scale factor (e.g., 2 for retina).
 - `user_agent` (string, optional): Custom user agent string.
 - `cookies` (array, optional): List of cookies to set. Each cookie is an object with `name`, `value`, and `domain`.
 - `headers` (object, optional): Additional HTTP headers to set.
@@ -39,7 +39,7 @@ The request body must be a JSON object with the following properties:
 - `wait_for_selector` (string, optional): Wait for a selector before screenshot.
 - `emulate` (object, optional): Emulation options, e.g., `{ "color_scheme": "dark" }`.
 - `omit_background` (boolean, optional): Hide default white background. Default: `false`.
-- `element_selector` (string, optional): CSS selector for a specific element to screenshot.
+- `selector` (string, optional): CSS selector for a specific element to screenshot.
 - `webhook_url` (string, optional): If provided, results are sent to this URL asynchronously.
 - `id` (string, optional): Custom identifier for the request.
 
@@ -48,12 +48,12 @@ The request body must be a JSON object with the following properties:
 ```json
 {
   "url": "https://example.com",
-  "width": 1280,
-  "height": 720,
+  "viewport_width": 1280,
+  "viewport_height": 720,
   "full_page": true,
   "format": "png",
   "delay": 500,
-  "device_scale": 2,
+  "device_scale_factor": 2,
   "user_agent": "CustomAgent/1.0",
   "cookies": [
     {"name": "sessionid", "value": "abc123", "domain": "example.com"}
@@ -66,7 +66,7 @@ The request body must be a JSON object with the following properties:
   "wait_for_selector": "#main",
   "emulate": {"color_scheme": "dark"},
   "omit_background": true,
-  "element_selector": "#main-content",
+  "selector": "#main-content",
   "webhook_url": "https://your-webhook.com/callback",
   "id": "custom-job-123"
 }
@@ -150,14 +150,14 @@ Example error response:
 
 - If `webhook_url` is provided, the request is processed asynchronously and the result is sent to the webhook.
 - Screenshots are always uploaded to cloud storage; the response contains the file URL.
-- Use `element_selector` to capture a specific element instead of the full page.
+- Use `selector` to capture a specific element instead of the full page.
 - The `clip` parameter allows capturing a specific region.
 - The endpoint enforces strict payload validation.
 
 ## 7. Common Issues
 
 - Invalid or inaccessible URL.
-- Selector not found (if using `wait_for_selector` or `element_selector`).
+- Selector not found (if using `wait_for_selector` or `selector`).
 - Cookie domain mismatch.
 - Timeout errors for slow-loading pages.
 - Invalid API key.

@@ -33,68 +33,85 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ---
 
-## Features of the No-Code Architects Toolkit API
+## API Endpoints
 
-Each feature is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
+Each endpoint is supported by robust payload validation and detailed API documentation to facilitate easy integration and usage.
 
-### Advanced Media Manipulation
+### Audio
 
-#### 1. `/v1/ffmpeg/compose`
-- **Description**: Provides a flexible way to compose and manipulate media files using FFmpeg. Supports complex media operations like transcoding, concatenation, and filtering.
-- **Documentation Link**: [FFmpeg Compose Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)
+- **[`/v1/audio/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/audio/concatenate.md)**
+  - Combines multiple audio files into a single audio file.
 
----
+### Code
 
-### Video Processing
+- **[`/v1/code/execute/python`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)**
+  - Executes Python code remotely and returns the execution results.
 
-#### 2. `/v1/video/caption`
-- **Description**: Adds captions to a video file, including options for font, position, and styling. It also supports automated language detection and custom replacements in captions.
-- **Documentation Link**: [Video Caption Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)
+### FFmpeg
 
-#### 3. `/v1/video/concatenate`
-- **Description**: Combines multiple video files into a single video file. The input files are concatenated in the specified order, and the final video is uploaded to cloud storage.
-- **Documentation Link**: [Video Concatenate Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)
+- **[`/v1/ffmpeg/compose`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)**
+  - Provides a flexible interface to FFmpeg for complex media processing operations.
 
----
+### Image
 
-### Code Execution
+- **[`/v1/image/convert/video`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)**
+  - Transforms a static image into a video with custom duration and zoom effects.
 
-#### 4. `/v1/code/execute/python`
-- **Description**: Executes Python code on the server in a controlled environment. Useful for scripting, prototyping, or dynamically running Python scripts with secure execution.
-- **Documentation Link**: [Execute Python Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)
+### Media
 
----
+- **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)**
+  - Converts media files from one format to another with customizable codec options.
 
-### Image Processing
+- **[`/v1/media/convert/mp3`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)**
+  - Converts various media formats specifically to MP3 audio.
 
-#### 5. `/v1/image/convert/video`
-- **Description**: Converts an image into a video file with configurable options like duration, frame rate, and zoom effects. Ideal for creating video slideshows or transitions.
-- **Documentation Link**: [Image to Video Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)
+- **[`/v1/BETA/media/download`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)**
+  - Downloads media content from various online sources using yt-dlp.
 
----
+- **[`/v1/media/feedback`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)**
+  - Provides a web interface for collecting and displaying feedback on media content.
 
-### Media Transformation
+- **[`/v1/media/transcribe`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)**
+  - Transcribes or translates audio/video content from a provided media URL.
 
-#### 6. `/v1/media/convert/mp3`
-- **Description**: Converts various media files (audio or video) to MP3 format with configurable bitrate and quality settings.
-- **Documentation Link**: [Media to MP3 Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)
+- **[`/v1/media/silence`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/silence.md)**
+  - Detects silence intervals in a given media file.
 
-#### 7. `/v1/media/transcribe`
-- **Description**: Transcribes audio files to text using advanced speech-to-text processing. Supports various languages and audio formats.
-- **Documentation Link**: [Audio Transcribe Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)
+- **[`/v1/media/metadata`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/metadata.md)**
+  - Extracts comprehensive metadata from media files including format, codecs, resolution, and bitrates.
 
+### S3
 
----
+- **[`/v1/s3/upload`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/s3/upload.md)**
+  - Uploads files to Amazon S3 storage by streaming directly from a URL.
 
-### Core Features
+### Toolkit
 
-#### 8. `/v1/toolkit/test`
-- **Description**: A basic endpoint to verify the availability and functionality of the API. Useful for initial setup and connection tests.
-- **Documentation Link**: [Test Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)
+- **[`/v1/toolkit/authenticate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)**
+  - Provides a simple authentication mechanism to validate API keys.
 
-#### 9. `/v1/toolkit/authenticate`
-- **Description**: Verifies the provided API key and authenticates the user. Returns a success message if the API key is valid.
-- **Documentation Link**: [Authenticate Endpoint Documentation](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)
+- **[`/v1/toolkit/test`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)**
+  - Verifies that the NCA Toolkit API is properly installed and functioning.
+
+### Video
+
+- **[`/v1/video/caption`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)**
+  - Adds customizable captions to videos with various styling options.
+
+- **[`/v1/video/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)**
+  - Combines multiple videos into a single continuous video file.
+
+- **[`/v1/video/thumbnail`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)**
+  - Extracts a thumbnail image from a specific timestamp in a video.
+
+- **[`/v1/video/cut`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/cut.md)**
+  - Cuts specified segments from a video file with optional encoding settings.
+
+- **[`/v1/video/split`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/split.md)**
+  - Splits a video into multiple segments based on specified start and end times.
+
+- **[`/v1/video/trim`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/trim.md)**
+  - Trims a video by keeping only the content between specified start and end times.
 
 ---
 
@@ -150,162 +167,84 @@ Each feature is supported by robust payload validation and detailed API document
 
 ---
 
+### Performance Tuning Variables
+
+#### `MAX_QUEUE_LENGTH`
+- **Purpose**: Limits the maximum number of concurrent tasks in the queue.
+- **Default**: 0 (unlimited)
+- **Recommendation**: Set to a value based on your server resources, e.g., 10-20 for smaller instances.
+
+#### `GUNICORN_WORKERS`
+- **Purpose**: Number of worker processes for handling requests.
+- **Default**: Number of CPU cores + 1
+- **Recommendation**: 2-4× number of CPU cores for CPU-bound workloads.
+
+#### `GUNICORN_TIMEOUT`
+- **Purpose**: Timeout (in seconds) for worker processes.
+- **Default**: 30
+- **Recommendation**: Increase for processing large media files (e.g., 300-600).
+
+---
+
+### Storage Configuration
+
+#### `LOCAL_STORAGE_PATH`
+- **Purpose**: Directory for temporary file storage during processing.
+- **Default**: /tmp
+- **Recommendation**: Set to a path with sufficient disk space for your expected workloads.
+
 ### Notes
 - Ensure all required environment variables are set based on the storage provider in use (GCP or S3-compatible). 
 - Missing any required variables will result in errors during runtime.
+- Performance variables can be tuned based on your workload and available resources.
 
 ### Run the Docker Container:
 
    ```bash
    docker run -d -p 8080:8080 \
+     # Authentication (required)
      -e API_KEY=your_api_key \
+     
+     # Cloud storage provider (choose one)
      -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
      -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+
+     # Or
+     -e S3_ENDPOINT_URL=https://nyc3.digitaloceanspaces.com \
+     -e S3_ACCESS_KEY=your_access_key \
+     -e S3_SECRET_KEY=your_secret_key \
+     -e S3_BUCKET_NAME=your_bucket_name \
+     -e S3_REGION=nyc3 \
+     
+     # Local storage configuration (optional)
+     -e LOCAL_STORAGE_PATH=/tmp \
+     
+     # Performance tuning (optional)
+     -e MAX_QUEUE_LENGTH=10 \
+     -e GUNICORN_WORKERS=4 \
+     -e GUNICORN_TIMEOUT=300 \
+     
      no-code-architects-toolkit
    ```
 
 ---
 
-# Installing on the Google Cloud Platform (GCP)
+## Installation Guides
 
-## 🎥 Video Instructions
+This API can be deployed to various cloud platforms:
 
-Watch **[Detailed Video Instructions](https://youtu.be/6bC93sek9v8)** to set up the No-Code Architects Toolkit API.
+- [Digital Ocean Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
+- [Google Cloud Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
 
-- Use the **Docker Image** below:
+## Testing the API
 
-  ```
-  stephengpope/no-code-architects-toolkit:latest
-  ```
-
-### Video Resources
-
-- **[Postman Template](https://bit.ly/49Gkh61)**
-- **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** 
-
-Or use the guide below walks you through the steps to install the NCA Toolkit API on GCP.
-
----
-
-## **Prerequisites**
-- A Google Cloud account. [Sign up here](https://cloud.google.com/) if you don't already have one.
-  - New users receive $300 in free credits.
-- Basic knowledge of GCP services such as Cloud Run and Cloud Storage.
-- A terminal or code editor for managing files.
-
----
-
-## **Step 1: Create a Google Cloud Project**
-1. Log into the [GCP Console](https://console.cloud.google.com/).
-2. Click on the **Project Selector** in the top navigation bar and select **New Project**.
-3. Enter a project name, such as `NCA Toolkit Project`.
-4. Click **Create**.
-
----
-
-## **Step 2: Enable Required APIs**
-Enable the following APIs:
-- **Cloud Storage API**
-- **Cloud Storage JSON API**
-- **Cloud Run API**
-
-### **How to Enable APIs:**
-1. In the GCP Console, navigate to **APIs & Services** > **Enable APIs and Services**.
-2. Search for each API, click on it, and enable it.
-
----
-
-## **Step 3: Create a Service Account**
-1. Navigate to **IAM & Admin** > **Service Accounts** in the GCP Console.
-2. Click **+ Create Service Account**.
-   - Enter a name (e.g., `NCA Toolkit Service Account`).
-3. Assign the following roles to the service account:
-   - **Storage Admin**
-   - **Viewer**
-4. Click **Done** to create the service account.
-5. Open the service account details and navigate to the **Keys** tab.
-   - Click **Add Key** > **Create New Key**.
-   - Choose **JSON** format, download the file, and store it securely.
-
----
-
-## **Step 4: Create a Cloud Storage Bucket**
-1. Navigate to **Storage** > **Buckets** in the GCP Console.
-2. Click **+ Create Bucket**.
-   - Choose a unique bucket name (e.g., `nca-toolkit-bucket`).
-   - Leave default settings, but:
-     - Uncheck **Enforce public access prevention**.
-     - Set **Access Control** to **Uniform**.
-3. Click **Create** to finish.
-4. Go to the bucket permissions, and add **allUsers** as a principal with the role:
-   - **Storage Object Viewer**.
-5. Save changes.
-
----
-
-## **Step 5: Deploy on Google Cloud Run**
-
-### 1. Navigate to Cloud Run
-- Open the **Cloud Run** service in the **Google Cloud Console**.
-
-### 2. Create a New Service
-- Click **Create Service**.
-- Then **Deploy one revision from Docker Hub using the image below**:
-
-  ```
-  stephengpope/no-code-architects-toolkit:latest
-  ```
-
-### 3. Allow Unauthenticated Invocations
-- Check the box to **allow unauthenticated invocations**.
-
-### 4. Configure Resource Allocation
-- Set **Memory**: `16 GB`.
-- Set **CPU**: `4 CPUs`.
-- Set **CPU Allocation**: **Always Allocated**.
-
-### 5. Adjust Scaling Settings
-- **Minimum Instances**: `0` (to minimize cost during idle times).
-- **Maximum Instances**: `5` (adjustable based on expected load).
-
-### 6. Use Second-Generation Servers
-- Scroll to **Platform Version** and select **Second Generation**.
-- Second-generation servers offer better performance and feature support for advanced use cases.
-
-### 7. Add Environment Variables
-- Add the following environment variables:
-- `API_KEY`: Your API key (e.g., `Test123`).
-- `GCP_BUCKET_NAME`: The name of your Cloud Storage bucket.
-- `GCP_SA_CREDENTIALS`: The JSON key of your service account.
-  - Paste the **entire contents** of the downloaded JSON key file into this field.
-  - Ensure:
-    - Proper JSON formatting.
-    - No leading or trailing spaces.
-
-### 8. Configure Advanced Settings
-- Set the **Container Port**: Default to `8080`.
-- **Request Timeout**: `300 seconds` (to handle long-running requests).
-- Enable **Startup Boost** to improve performance for the first request after a cold start.
-
-### 9. Deploy the Service
-- Verify all settings and click **Create**.
-- The deployment process might take a few minutes. Once completed, a green checkmark should appear in the Cloud Run dashboard.
-
-By following these steps, the NCA Toolkit will be successfully deployed and accessible via Google Cloud Run with second-generation servers for optimal performance.
-
----
-
-## **Step 6: Test the Deployment**
-
-1. Install **[Postman Template](https://bit.ly/49Gkh61)** on your computer.
-2. Import the API example requests from the NCA Toolkit GitHub repository.
-3. Configure two environment variables in Postman:
-   - `base_url`: Your deployed Cloud Run service URL.
-   - `x-api-key`: The API key you configured in **Step 5**.
-4. Use the example requests to validate that the API is functioning correctly.
-5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to learn more.
-
-By following these steps, your NCA Toolkit API should be successfully deployed on Google Cloud Platform.
+1. Install the **[Postman Template](https://bit.ly/49Gkhl)** on your computer
+2. Import the API example requests from the template
+3. Configure your environment variables in Postman:
+   - `base_url`: Your deployed API URL
+   - `x-api-key`: Your API key configured during installation
+4. Use the example requests to validate that the API is functioning correctly
+5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to explore additional features
 
 ---
 
@@ -335,4 +274,4 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).

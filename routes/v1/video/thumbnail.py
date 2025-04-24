@@ -57,7 +57,7 @@ def generate_thumbnail(job_id, data):
         logger.info(f"Job {job_id}: Thumbnail uploaded to cloud storage at {file_url}")
 
         # Return the URL of the uploaded thumbnail
-        return {"file_url": file_url}, "/v1/video/thumbnail", 200
+        return file_url, "/v1/video/thumbnail", 200
         
     except Exception as e:
         logger.error(f"Job {job_id}: Error during thumbnail extraction - {str(e)}")

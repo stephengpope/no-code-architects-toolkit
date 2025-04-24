@@ -25,7 +25,7 @@ from services.authentication import authenticate
 from services.cloud_storage import upload_file
 import os
 
-v1_media_convert_mp3_bp = Blueprint('v1_media_convert', __name__)
+v1_media_convert_mp3_bp = Blueprint('v1_media_convert_mp3', __name__)
 logger = logging.getLogger(__name__)
 
 @v1_media_convert_mp3_bp.route('/v1/media/convert/mp3', methods=['POST'])

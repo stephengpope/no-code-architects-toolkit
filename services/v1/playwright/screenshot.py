@@ -52,17 +52,25 @@ def take_screenshot(data: dict, job_id=None):
             # Validate and set cookies
             if data.get("cookies"):
                 from urllib.parse import urlparse
-                url_domain = urlparse(data["url"]).hostname
-                if not url_domain:
-                    raise ValueError("Invalid URL provided.")
+                url_domain = None
+                if data.get("url"):
+                    url_domain = urlparse(data["url"]).hostname
+                elif data.get("html"):
+                    # fallback: allow cookies if domain is set, but skip strict validation
+                    url_domain = None
                 for cookie in data["cookies"]:
                     cookie_domain = cookie["domain"].lstrip(".")
-                    if not (url_domain == cookie_domain or url_domain.endswith(f".{cookie_domain}")):
+                    if url_domain and not (url_domain == cookie_domain or url_domain.endswith(f".{cookie_domain}")):
                         raise ValueError(f"Cookie domain '{cookie['domain']}' does not match or is not a parent domain of URL domain '{url_domain}'.")
                 context.add_cookies(data["cookies"])
 
-            # Navigate to the URL
-            page.goto(data["url"], timeout=data.get("timeout", 30000), wait_until=data.get("wait_until", "load"))
+            # Set page content from html or navigate to url
+            if data.get("html"):
+                page.set_content(data["html"])
+            elif data.get("url"):
+                page.goto(data["url"], timeout=data.get("timeout", 30000), wait_until=data.get("wait_until", "load"))
+            else:
+                raise ValueError("Either 'url' or 'html' must be provided.")
 
             # Wait for a selector if specified
             if data.get("wait_for_selector"):
@@ -89,6 +97,10 @@ def take_screenshot(data: dict, job_id=None):
 
             screenshot_io = BytesIO()
 
+            # Ensure omit_background is only used with PNG
+            if data.get("omit_background", False) and data.get("format", "png") == "jpeg":
+                raise ValueError("The 'omit_background' option is not supported for JPEG format.")
+
             # Take a screenshot of a specific element or the full page
             if data.get("selector"):
                 element = page.locator(data["selector"])
@@ -97,7 +109,7 @@ def take_screenshot(data: dict, job_id=None):
                 screenshot = element.screenshot(
                     type=data.get("format", "png"),
                     quality=data.get("quality") if data.get("format") == "jpeg" else None,
-                    omit_background=data.get("omit_background", False)
+                    omit_background=data.get("omit_background")
                 )
             else:
                 # Validate clip dimensions if provided
@@ -110,12 +122,8 @@ def take_screenshot(data: dict, job_id=None):
                     type=data.get("format", "png"),
                     quality=data.get("quality") if data.get("format") == "jpeg" else None,
                     clip=data.get("clip"),
-                    omit_background=data.get("omit_background", False)
+                    omit_background=data.get("omit_background")
                 )
-
-            # Ensure omit_background is only used with PNG
-            if data.get("omit_background", False) and data.get("format", "png") == "jpeg":
-                raise ValueError("The 'omit_background' option is not supported for JPEG format.")
 
             screenshot_io.write(screenshot)
             screenshot_io.seek(0)

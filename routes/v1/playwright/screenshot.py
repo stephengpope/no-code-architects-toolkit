@@ -41,6 +41,7 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "url": {"type": "string", "format": "uri"},
+        "html": {"type": "string"},
         "viewport_width": {"type": "integer", "minimum": 1},
         "viewport_height": {"type": "integer", "minimum": 1},
         "full_page": {"type": "boolean", "default": False},
@@ -94,7 +95,11 @@ logger = logging.getLogger(__name__)
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
-    "required": ["url"],
+    "oneOf": [
+        {"required": ["url"]},
+        {"required": ["html"]}
+    ],
+    "not": {"required": ["url", "html"]},
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)

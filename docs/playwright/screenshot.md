@@ -23,6 +23,8 @@ The `/v1/playwright/screenshot` endpoint allows you to capture screenshots of we
 The request body must be a JSON object with the following properties:
 
 - `url` (string, required): The URL of the web page to capture.
+- `html` (string, optional): Raw HTML content to render and capture.  
+  **Note:** Either `url` or `html` must be provided, but not both.
 - `viewport_width` (integer, optional): Viewport width in pixels.
 - `viewport_height` (integer, optional): Viewport height in pixels.
 - `full_page` (boolean, optional): Capture the full scrollable page. Default: `false`.

@@ -44,11 +44,10 @@ def create_app():
             pid = os.getpid()  # Get the PID of the actual processing thread
             
             # Log job status as running
-            log_job_status(job_id, "running", {
+            log_job_status(job_id, {
+                "job_status": "running",
                 "queue_id": queue_id,
-                "process_id": pid,
-                "start_time": queue_start_time,
-                "run_time": run_start_time
+                "process_id": pid
             })
             
             response = task_func()
@@ -72,14 +71,14 @@ def create_app():
             }
             
             # Log job status as done
-            log_job_status(job_id, "done", {
-                "queue_id": queue_id,
-                "process_id": pid,
-                "run_time": round(run_time, 3),
+            log_job_status(job_id, {
+                "job_status": "done",
                 "response": response_data
             })
 
-            send_webhook(data.get("webhook_url"), response_data)
+            # Only send webhook if webhook_url has an actual value (not None)
+            if data.get("webhook_url") is not None:
+                send_webhook(data.get("webhook_url"), response_data)
 
             task_queue.task_done()
 
@@ -98,10 +97,10 @@ def create_app():
                 if bypass_queue or 'webhook_url' not in data:
                     
                     # Log job status as running immediately (bypassing queue)
-                    log_job_status(job_id, "running", {
+                    log_job_status(job_id, {
+                        "job_status": "running",
                         "queue_id": queue_id,
-                        "process_id": pid,
-                        "start_time": start_time
+                        "process_id": pid
                     })
                     
                     response = f(job_id=job_id, data=data, *args, **kwargs)
@@ -123,10 +122,8 @@ def create_app():
                     }
                     
                     # Log job status as done
-                    log_job_status(job_id, "done", {
-                        "queue_id": queue_id,
-                        "process_id": pid,
-                        "run_time": round(run_time, 3),
+                    log_job_status(job_id, {
+                        "job_status": "done",
                         "response": response_obj
                     })
                     
@@ -145,20 +142,18 @@ def create_app():
                         }
                         
                         # Log the queue overflow error
-                        log_job_status(job_id, "error", {
-                            "queue_id": queue_id,
-                            "process_id": pid,
-                            "start_time": start_time,
+                        log_job_status(job_id, {
+                            "job_status": "done",
                             "response": error_response
                         })
                         
                         return error_response, 429
                     
                     # Log job status as queued
-                    log_job_status(job_id, "queued", {
+                    log_job_status(job_id, {
+                        "job_status": "queued",
                         "queue_id": queue_id,
-                        "process_id": pid,
-                        "start_time": start_time
+                        "process_id": pid
                     })
                     
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))

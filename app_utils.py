@@ -39,14 +39,13 @@ def validate_payload(schema):
         return decorated_function
     return decorator
 
-def log_job_status(job_id, status, data=None):
+def log_job_status(job_id, data):
     """
     Log job status to a file in the STORAGE_PATH/jobs folder
     
     Args:
         job_id (str): The unique job ID
-        status (str): Current job status (queued, running, done)
-        data (dict): Additional data to include in the log
+        data (dict): Data to write to the log file
     """
     jobs_dir = os.path.join(LOCAL_STORAGE_PATH, 'jobs')
     
@@ -57,15 +56,9 @@ def log_job_status(job_id, status, data=None):
     # Create or update the job log file
     job_file = os.path.join(jobs_dir, f"{job_id}.json")
     
-    # Prepare log data
-    log_data = {
-        "status": status,
-        **data
-    }
-    
-    # Write to file
+    # Write data directly to file
     with open(job_file, 'w') as f:
-        json.dump(log_data, f, indent=2)
+        json.dump(data, f, indent=2)
 
 def queue_task_wrapper(bypass_queue=False):
     def decorator(f):

@@ -131,19 +131,7 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ---
 
-### Google Cloud Platform (GCP) Environment Variables
-
-#### `GCP_SA_CREDENTIALS`
-- **Purpose**: The JSON credentials for the GCP Service Account.
-- **Requirement**: Mandatory if using GCP storage.
-
-#### `GCP_BUCKET_NAME`
-- **Purpose**: The name of the GCP storage bucket.
-- **Requirement**: Mandatory if using GCP storage.
-
----
-
-### S3-Compatible Storage Environment Variable
+### S3-Compatible Storage Environment Variables
 
 #### `S3_ENDPOINT_URL`
 - **Purpose**: Endpoint URL for the S3-compatible service.
@@ -164,6 +152,18 @@ Each endpoint is supported by robust payload validation and detailed API documen
 #### `S3_REGION`
 - **Purpose**: The region for the S3-compatible storage service.
 - **Requirement**: Mandatory if using S3-compatible storage, "None" is acceptible for some s3 providers.
+
+---
+
+### Google Cloud Storage (GCP) Environment Variables
+
+#### `GCP_SA_CREDENTIALS`
+- **Purpose**: The JSON credentials for the GCP Service Account.
+- **Requirement**: Mandatory if using GCP storage.
+
+#### `GCP_BUCKET_NAME`
+- **Purpose**: The name of the GCP storage bucket.
+- **Requirement**: Mandatory if using GCP storage.
 
 ---
 
@@ -206,15 +206,21 @@ Each endpoint is supported by robust payload validation and detailed API documen
      -e API_KEY=your_api_key \
      
      # Cloud storage provider (choose one)
-     -e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
-     -e GCP_BUCKET_NAME=your_gcs_bucket_name \
+
+     # s3
+     #
+     #-e S3_ENDPOINT_URL=https://nyc3.digitaloceanspaces.com \
+     #-e S3_ACCESS_KEY=your_access_key \
+     #-e S3_SECRET_KEY=your_secret_key \
+     #-e S3_BUCKET_NAME=your_bucket_name \
+     #-e S3_REGION=nyc3 \
 
      # Or
-     -e S3_ENDPOINT_URL=https://nyc3.digitaloceanspaces.com \
-     -e S3_ACCESS_KEY=your_access_key \
-     -e S3_SECRET_KEY=your_secret_key \
-     -e S3_BUCKET_NAME=your_bucket_name \
-     -e S3_REGION=nyc3 \
+
+     # GCP Storage
+     #
+     #-e GCP_SA_CREDENTIALS='{"your":"service_account_json"}' \
+     #-e GCP_BUCKET_NAME=your_gcs_bucket_name \
      
      # Local storage configuration (optional)
      -e LOCAL_STORAGE_PATH=/tmp \
@@ -255,9 +261,11 @@ Outside of that you are not charged.
 
 #### Requests exceeding 5+ minutes can be problemactic because 
 
-GCP Run will terminal long rununing processes (whether you use the webhook_url or not).
+GCP Run will terminal long rununing processes, which happens when processing larger files (whether you use the webhook_url or not).
 
-However it's great for processing large numbers of smaller requests. They also have a GPU option that might be usable for better performance (untested).
+However, when your processing times are lower than 5 minutes (e.g. you're processing smaller files) it works great! The performance is great and as soon as you stop making requests you stop paying.
+
+They also have a GPU option that might be usable for better performance (untested).
 
 - [Google Cloud RUN Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
 

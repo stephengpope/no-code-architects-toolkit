@@ -233,8 +233,41 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 This API can be deployed to various cloud platforms:
 
-- [Digital Ocean Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
-- [Google Cloud Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
+### Digital Ocean
+
+The Digital Ocean App platform is pretty easy to set up and get going, but it can cost more then other cloud providers.
+
+#### Important: Long running processes
+
+You need to use the "webhook_url" (for any request that exceeds 1 min) in your API payload to avoid timeouts due to CloudFlair proxy timeout.
+
+If you use the webhook_url, there is no limit to the processing length.
+
+- [Digital Ocean App Platform Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
+
+### Google Cloud RUN Platform
+
+Sometimes difficult for people to install (especially on Google Business Workspaces), lots of detailed security exceptions.
+
+However this is one of the cheapest options with great performance because you're only charged when the NCA Toolkit is processesing a request.
+
+Outside of that you are not charged.
+
+#### Requests exceeding 5+ minutes can be problemactic because 
+
+GCP Run will terminal long rununing processes (whether you use the webhook_url or not).
+
+However it's great for processing large numbers of smaller requests. They also have a GPU option that might be usable for better performance (untested).
+
+- [Google Cloud RUN Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
+
+### General Docker Instructions
+
+You can use these instructions to deploy the NCA Toolkit to any linux server (on any platform)
+
+You can more easily control performance and cost this way, but requires more technical skill to get up and running (not much though).
+
+- [General Docker Compose Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.md)
 
 ## Testing the API
 

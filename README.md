@@ -259,11 +259,11 @@ However this is one of the cheapest options with great performance because you'r
 
 Outside of that you are not charged.
 
-#### Requests exceeding 5+ minutes can be problemactic because 
+#### Imporatnt: Requests exceeding 5+ minutes can be problemactic 
 
-GCP Run will terminal long rununing processes, which happens when processing larger files (whether you use the webhook_url or not).
+GCP Run will terminate long rununing processes, which can happen when processing larger files (whether you use the webhook_url or not).
 
-However, when your processing times are lower than 5 minutes (e.g. you're processing smaller files) it works great! The performance is great and as soon as you stop making requests you stop paying.
+However, when your processing times are consistant lower than 5 minutes (e.g. you're only process smaller files), it works great! The performance is also great and as soon as you stop making requests you stop paying.
 
 They also have a GPU option that might be usable for better performance (untested).
 

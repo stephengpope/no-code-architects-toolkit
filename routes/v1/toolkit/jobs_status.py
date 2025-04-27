@@ -28,8 +28,9 @@ from app_utils import queue_task_wrapper, validate_payload
 v1_toolkit_jobs_status_bp = Blueprint('v1_toolkit_jobs_status', __name__)
 logger = logging.getLogger(__name__)
 
-# Schema for the request payload
-jobs_status_schema = {
+@v1_toolkit_jobs_status_bp.route('/v1/toolkit/jobs/status', methods=['POST'])
+@authenticate
+@validate_payload({
     "type": "object",
     "properties": {
         "since_seconds": {
@@ -37,11 +38,7 @@ jobs_status_schema = {
             "description": "Number of seconds to look back for jobs"
         }
     }
-}
-
-@v1_toolkit_jobs_status_bp.route('/v1/toolkit/jobs/status', methods=['GET'])
-@authenticate
-@validate_payload(jobs_status_schema)
+})
 @queue_task_wrapper(bypass_queue=True)
 def get_all_jobs_status(job_id, data):
     """

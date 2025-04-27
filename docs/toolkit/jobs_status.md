@@ -19,19 +19,7 @@ The `/v1/toolkit/jobs/status` endpoint is part of the Toolkit API and is used to
 
 - `since_seconds` (optional, number): The number of seconds to look back for jobs. If not provided, the default value is 600 seconds (10 minutes).
 
-The `validate_payload` decorator is used to validate the request payload against the following schema:
-
-```python
-{
-    "type": "object",
-    "properties": {
-        "since_seconds": {
-            "type": "number",
-            "description": "Number of seconds to look back for jobs"
-        }
-    }
-}
-```
+The JSON payload is completely optional. If no payload is provided or if the payload is empty, the endpoint will use the default value of 600 seconds.
 
 ### Example Request
 
@@ -40,6 +28,17 @@ The `validate_payload` decorator is used to validate the request payload against
     "since_seconds": 3600
 }
 ```
+
+Or with no body:
+
+```bash
+curl -X POST \
+     -H "x-api-key: YOUR_API_KEY" \
+     -H "Content-Type: application/json" \
+     http://your-api-url/v1/toolkit/jobs/status
+```
+
+With body:
 
 ```bash
 curl -X POST \
@@ -119,7 +118,6 @@ The response will be a JSON object containing the job statuses for all jobs with
 ## 5. Error Handling
 
 - Missing or invalid `x-api-key` header: The `authenticate` decorator will return a 401 Unauthorized error.
-- Invalid request payload: The `validate_payload` decorator will return a 400 Bad Request error if the payload does not match the specified schema.
 - Jobs directory not found: The endpoint will return a 404 Not Found error if the jobs directory is not found.
 - Exception during job status retrieval: The endpoint will return a 500 Internal Server Error if an exception occurs while retrieving the job statuses.
 
@@ -133,13 +131,11 @@ The main `app.py` file includes error handling for queue overflow (429 Too Many 
 ## 7. Common Issues
 
 - Providing an invalid `x-api-key` header will result in an authentication error.
-- Submitting an invalid request payload will result in a 400 Bad Request error.
 - If the jobs directory is not found or an exception occurs during job status retrieval, the endpoint will return an error.
 
 ## 8. Best Practices
 
 - Always include the `x-api-key` header with a valid API key for authentication.
-- Validate the request payload to ensure it matches the expected schema.
 - Monitor the job statuses regularly to keep track of the progress and completion of submitted jobs.
 - Adjust the `since_seconds` parameter based on your monitoring requirements to retrieve job statuses within a specific time range.
 - Implement error handling and logging mechanisms to track and troubleshoot any issues that may arise.

@@ -30,15 +30,6 @@ logger = logging.getLogger(__name__)
 
 @v1_toolkit_jobs_status_bp.route('/v1/toolkit/jobs/status', methods=['POST'])
 @authenticate
-@validate_payload({
-    "type": "object",
-    "properties": {
-        "since_seconds": {
-            "type": "number",
-            "description": "Number of seconds to look back for jobs"
-        }
-    }
-})
 @queue_task_wrapper(bypass_queue=True)
 def get_all_jobs_status(job_id, data):
     """
@@ -56,7 +47,10 @@ def get_all_jobs_status(job_id, data):
     
     try:
         # Get time range parameter (default to 600 seconds/10 minutes if not provided)
-        since_seconds = data.get("since_seconds", 600)
+        since_seconds = 600
+        if data and "since_seconds" in data:
+            since_seconds = data.get("since_seconds")
+            
         cutoff_time = time.time() - since_seconds
         
         # Construct the path to the jobs directory

@@ -24,10 +24,10 @@ from config import LOCAL_STORAGE_PATH
 from services.authentication import authenticate
 from app_utils import queue_task_wrapper
 
-v1_job_status_bp = Blueprint('v1_job_status', __name__)
+v1_toolkit_job_status_bp = Blueprint('v1_toolkit_job_status', __name__)
 logger = logging.getLogger(__name__)
 
-@v1_job_status_bp.route('/v1/job/<status_id>/status', methods=['GET'])
+@v1_toolkit_job_status_bp.route('/v1/toolkit/job/<status_id>/status', methods=['GET'])
 @authenticate
 @queue_task_wrapper(bypass_queue=True)
 def get_job_status(job_id, data, status_id=None):
@@ -38,12 +38,12 @@ def get_job_status(job_id, data, status_id=None):
         job_id (str): Job ID assigned by queue_task_wrapper (unused)
         data (dict): Request data (unused)
         status_id (str): The job ID to look up from URL path
-        
+    
     Returns:
         Tuple of (job_status_data, endpoint_string, status_code)
     """
     logger.info(f"Retrieving status for job {status_id}")
-    endpoint = f"/v1/job/{status_id}/status"
+    endpoint = f"/v1/toolkit/job/{status_id}/status"
     
     try:
         # Construct the path to the job status file

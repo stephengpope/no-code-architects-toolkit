@@ -46,8 +46,10 @@ def create_app():
             # Log job status as running
             log_job_status(job_id, {
                 "job_status": "running",
+                "job_id": job_id,
                 "queue_id": queue_id,
-                "process_id": pid
+                "process_id": pid,
+                "response": None
             })
             
             response = task_func()
@@ -73,11 +75,14 @@ def create_app():
             # Log job status as done
             log_job_status(job_id, {
                 "job_status": "done",
+                "job_id": job_id,
+                "queue_id": queue_id,
+                "process_id": pid,
                 "response": response_data
             })
 
-            # Only send webhook if webhook_url has an actual value (not None)
-            if data.get("webhook_url") is not None:
+            # Only send webhook if webhook_url has an actual value (not an empty string)
+            if data.get("webhook_url") and data.get("webhook_url") != "":
                 send_webhook(data.get("webhook_url"), response_data)
 
             task_queue.task_done()
@@ -99,8 +104,10 @@ def create_app():
                     # Log job status as running immediately (bypassing queue)
                     log_job_status(job_id, {
                         "job_status": "running",
+                        "job_id": job_id,
                         "queue_id": queue_id,
-                        "process_id": pid
+                        "process_id": pid,
+                        "response": None
                     })
                     
                     response = f(job_id=job_id, data=data, *args, **kwargs)
@@ -124,6 +131,9 @@ def create_app():
                     # Log job status as done
                     log_job_status(job_id, {
                         "job_status": "done",
+                        "job_id": job_id,
+                        "queue_id": queue_id,
+                        "process_id": pid,
                         "response": response_obj
                     })
                     
@@ -144,6 +154,9 @@ def create_app():
                         # Log the queue overflow error
                         log_job_status(job_id, {
                             "job_status": "done",
+                            "job_id": job_id,
+                            "queue_id": queue_id,
+                            "process_id": pid,
                             "response": error_response
                         })
                         
@@ -152,8 +165,10 @@ def create_app():
                     # Log job status as queued
                     log_job_status(job_id, {
                         "job_status": "queued",
+                        "job_id": job_id,
                         "queue_id": queue_id,
-                        "process_id": pid
+                        "process_id": pid,
+                        "response": None
                     })
                     
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
@@ -220,7 +235,7 @@ def create_app():
     from routes.v1.video.split import v1_video_split_bp
     from routes.v1.video.trim import v1_video_trim_bp
     from routes.v1.media.metadata import v1_media_metadata_bp
-    from routes.v1.job.status import v1_job_status_bp
+    from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -247,7 +262,7 @@ def create_app():
     app.register_blueprint(v1_video_split_bp)
     app.register_blueprint(v1_video_trim_bp)
     app.register_blueprint(v1_media_metadata_bp)
-    app.register_blueprint(v1_job_status_bp)
+    app.register_blueprint(v1_toolkit_job_status_bp)
 
     return app
 

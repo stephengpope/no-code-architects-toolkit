@@ -24,6 +24,7 @@ import uuid
 import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
+from app_utils import log_job_status  # Import the log_job_status function
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -41,6 +42,16 @@ def create_app():
             queue_time = time.time() - queue_start_time
             run_start_time = time.time()
             pid = os.getpid()  # Get the PID of the actual processing thread
+            
+            # Log job status as running
+            log_job_status(job_id, {
+                "job_status": "running",
+                "job_id": job_id,
+                "queue_id": queue_id,
+                "process_id": pid,
+                "response": None
+            })
+            
             response = task_func()
             run_time = time.time() - run_start_time
             total_time = time.time() - queue_start_time
@@ -60,8 +71,19 @@ def create_app():
                 "queue_length": task_queue.qsize(),
                 "build_number": BUILD_NUMBER  # Add build number to response
             }
+            
+            # Log job status as done
+            log_job_status(job_id, {
+                "job_status": "done",
+                "job_id": job_id,
+                "queue_id": queue_id,
+                "process_id": pid,
+                "response": response_data
+            })
 
-            send_webhook(data.get("webhook_url"), response_data)
+            # Only send webhook if webhook_url has an actual value (not an empty string)
+            if data.get("webhook_url") and data.get("webhook_url") != "":
+                send_webhook(data.get("webhook_url"), response_data)
 
             task_queue.task_done()
 
@@ -79,9 +101,19 @@ def create_app():
                 
                 if bypass_queue or 'webhook_url' not in data:
                     
+                    # Log job status as running immediately (bypassing queue)
+                    log_job_status(job_id, {
+                        "job_status": "running",
+                        "job_id": job_id,
+                        "queue_id": queue_id,
+                        "process_id": pid,
+                        "response": None
+                    })
+                    
                     response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
-                    return {
+                    
+                    response_obj = {
                         "code": response[2],
                         "id": data.get("id"),
                         "job_id": job_id,
@@ -94,10 +126,21 @@ def create_app():
                         "queue_id": queue_id,
                         "queue_length": task_queue.qsize(),
                         "build_number": BUILD_NUMBER  # Add build number to response
-                    }, response[2]
+                    }
+                    
+                    # Log job status as done
+                    log_job_status(job_id, {
+                        "job_status": "done",
+                        "job_id": job_id,
+                        "queue_id": queue_id,
+                        "process_id": pid,
+                        "response": response_obj
+                    })
+                    
+                    return response_obj, response[2]
                 else:
                     if MAX_QUEUE_LENGTH > 0 and task_queue.qsize() >= MAX_QUEUE_LENGTH:
-                        return {
+                        error_response = {
                             "code": 429,
                             "id": data.get("id"),
                             "job_id": job_id,
@@ -106,7 +149,27 @@ def create_app():
                             "queue_id": queue_id,
                             "queue_length": task_queue.qsize(),
                             "build_number": BUILD_NUMBER  # Add build number to response
-                        }, 429
+                        }
+                        
+                        # Log the queue overflow error
+                        log_job_status(job_id, {
+                            "job_status": "done",
+                            "job_id": job_id,
+                            "queue_id": queue_id,
+                            "process_id": pid,
+                            "response": error_response
+                        })
+                        
+                        return error_response, 429
+                    
+                    # Log job status as queued
+                    log_job_status(job_id, {
+                        "job_status": "queued",
+                        "job_id": job_id,
+                        "queue_id": queue_id,
+                        "process_id": pid,
+                        "response": None
+                    })
                     
                     task_queue.put((job_id, data, lambda: f(job_id=job_id, data=data, *args, **kwargs), start_time))
                     
@@ -172,6 +235,8 @@ def create_app():
     from routes.v1.video.split import v1_video_split_bp
     from routes.v1.video.trim import v1_video_trim_bp
     from routes.v1.media.metadata import v1_media_metadata_bp
+    from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
+    from routes.v1.toolkit.jobs_status import v1_toolkit_jobs_status_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -198,6 +263,8 @@ def create_app():
     app.register_blueprint(v1_video_split_bp)
     app.register_blueprint(v1_video_trim_bp)
     app.register_blueprint(v1_media_metadata_bp)
+    app.register_blueprint(v1_toolkit_job_status_bp)
+    app.register_blueprint(v1_toolkit_jobs_status_bp)
 
     return app
 

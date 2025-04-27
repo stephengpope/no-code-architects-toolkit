@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 @v1_toolkit_test_bp.route('/v1/toolkit/test', methods=['GET'])
 @authenticate
-@queue_task_wrapper(bypass_queue=False)
+@queue_task_wrapper(bypass_queue=True)
 def test_api(job_id, data):
     logger.info(f"Job {job_id}: Testing NCA Toolkit API setup")
     

@@ -90,14 +90,14 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **[`/v1/toolkit/authenticate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)**
   - Provides a simple authentication mechanism to validate API keys.
 
+- **[`/v1/toolkit/test`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)**
+  - Verifies that the NCA Toolkit API is properly installed and functioning.
+
 - **[`/v1/toolkit/job/status`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/job_status.md)**
   - Retrieves the status of a specific job by its ID.
 
 - **[`/v1/toolkit/jobs/status`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/jobs_status.md)**
   - Retrieves the status of all jobs within a specified time range.
-
-- **[`/v1/toolkit/test`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)**
-  - Verifies that the NCA Toolkit API is properly installed and functioning.
 
 ### Video
 

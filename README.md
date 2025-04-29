@@ -285,7 +285,7 @@ You can more easily control performance and cost this way, but requires more tec
 
 ## Testing the API
 
-1. Install the **[Postman Template](https://bit.ly/49Gkhl)** on your computer
+1. Install the **[Postman Template](https://bit.ly/49Gkh61)** on your computer
 2. Import the API example requests from the template
 3. Configure your environment variables in Postman:
    - `base_url`: Your deployed API URL

@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "image_url": {"type": "string", "format": "uri"},
-        "length": {"type": "number", "minimum": 1, "maximum": 60},
+        "length": {"type": "number", "minimum": 0.1, "maximum": 60},
         "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
         "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
         "webhook_url": {"type": "string", "format": "uri"},

@@ -1,0 +1,22 @@
+# .github/workflows/deploy‑minio.yml
+name: Deploy NCA Toolkit to MinIO
+
+on:
+  push:
+    branches: [main]          # เปลี่ยนเป็น branch ที่คุณต้องการ
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4        # ดึงซอร์สออกมาก่อน
+
+      - name: Upload to MinIO
+        uses: lovellfelix/minio-deploy-action@v1
+        with:
+          endpoint: ${{ secrets.MINIO_ENDPOINT }}      # เช่น https://minio.example.com:9000
+          access_key: ${{ secrets.MINIO_ACCESS_KEY }}
+          secret_key: ${{ secrets.MINIO_SECRET_KEY }}
+          bucket: 'nca-toolkit'        # ← ใส่ให้ตรงกับที่คุณสร้าง
+          source_dir: '.'              # อัปทุกไฟล์ใน repo (เปลี่ยนเป็น dist/ หรือ build/ ได้)
+          target_dir: '/'              # วางไว้ที่ root ของบัคเก็ต (ใส่ path ย่อยได้ถ้าต้องการ)

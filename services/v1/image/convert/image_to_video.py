@@ -24,27 +24,37 @@ from PIL import Image
 from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 
-def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, webhook_url=None):
+def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, webhook_url=None, orientation=None):
     try:
         # Download the image file
         image_path = download_file(image_url, LOCAL_STORAGE_PATH)
         logger.info(f"Downloaded image to {image_path}")
 
-        # Get image dimensions using Pillow
-        with Image.open(image_path) as img:
-            width, height = img.size
-        logger.info(f"Original image dimensions: {width}x{height}")
-
         # Prepare the output path
         output_path = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.mp4")
 
-        # Determine orientation and set appropriate dimensions
-        if width > height:
-            scale_dims = "7680:4320"
-            output_dims = "1920x1080"
-        else:
+        # Determine orientation and set appropriate dimensions based on parameter or default to landscape
+        if orientation == 'portrait':
             scale_dims = "4320:7680"
             output_dims = "1080x1920"
+            logger.info(f"Using specified portrait orientation.")
+        else:
+            # Default to landscape if orientation is not specified or invalid
+            if orientation != 'landscape' and orientation is not None:
+                 logger.warning(f"Invalid orientation specified: '{orientation}'. Defaulting to landscape.")
+            else:
+                 logger.info(f"Using landscape orientation (specified or default).")
+            orientation = 'landscape' # Ensure orientation variable is set for logging/potential future use
+            scale_dims = "7680:4320"
+            output_dims = "1920x1080"
+
+        # Get image dimensions using Pillow (for logging/potential future use, not for dimension setting)
+        try:
+            with Image.open(image_path) as img:
+                width, height = img.size
+            logger.info(f"Original image dimensions: {width}x{height}")
+        except Exception as img_err:
+            logger.warning(f"Could not read image dimensions: {img_err}")
 
         # Calculate total frames and zoom factor
         total_frames = int(length * frame_rate)

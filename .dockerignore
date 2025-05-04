@@ -7,6 +7,7 @@ __pycache__/
 # Ignore environment and config files
 .env
 .env_variables.json
+.env_shell.json
 
 # Ignore version control and editor files
 .git/

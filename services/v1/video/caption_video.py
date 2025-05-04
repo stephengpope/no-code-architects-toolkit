@@ -649,7 +649,68 @@ def process_subtitle_events(transcription_result, style_type, settings, replace_
     """
     return srt_to_ass(transcription_result, style_type, settings, replace_dict, video_resolution)
 
-def process_captioning_v1(video_url, captions, settings, replace, job_id, language='auto'):
+def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
+    """
+    Remove subtitle lines/blocks that overlap with exclude_time_ranges.
+    Supports 'ass' and 'srt' subtitle_type.
+    """
+
+    def parse_ass_time(ass_time):
+        """Parse ASS time format H:MM:SS.cc to seconds (float)."""
+        try:
+            h, m, rest = ass_time.split(":")
+            s, cs = rest.split(".")
+            return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100
+        except Exception:
+            return 0
+    
+    if not exclude_time_ranges:
+        return sub_content
+    if subtitle_type == 'ass':
+        def parse_ass_time(ass_time):
+            try:
+                h, m, rest = ass_time.split(":")
+                s, cs = rest.split(".")
+                return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100
+            except Exception:
+                return 0
+        lines = sub_content.splitlines()
+        filtered_lines = []
+        for line in lines:
+            if line.startswith("Dialogue:"):
+                parts = line.split(",", 10)
+                if len(parts) > 3:
+                    start = parse_ass_time(parts[1])
+                    end = parse_ass_time(parts[2])
+                    overlap = False
+                    for rng in exclude_time_ranges:
+                        if 'start' in rng and 'end' in rng:
+                            if start < rng['end'] and end > rng['start']:
+                                overlap = True
+                                break
+                    if overlap:
+                        continue
+            filtered_lines.append(line)
+        return "\n".join(filtered_lines)
+    elif subtitle_type == 'srt':
+        subtitles = list(srt.parse(sub_content))
+        filtered = []
+        for sub in subtitles:
+            start = sub.start.total_seconds()
+            end = sub.end.total_seconds()
+            overlap = False
+            for rng in exclude_time_ranges:
+                if 'start' in rng and 'end' in rng:
+                    if start < rng['end'] and end > rng['start']:
+                        overlap = True
+                        break
+            if not overlap:
+                filtered.append(sub)
+        return srt.compose(filtered)
+    else:
+        return sub_content
+
+def process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language='auto'):
     """
     Captioning process with transcription fallback and multiple styles.
     Integrates with the updated logic for positioning and alignment.
@@ -756,6 +817,14 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
                 return {"error": subtitle_content['error'], "available_fonts": subtitle_content.get('available_fonts', [])}
             else:
                 return {"error": subtitle_content['error']}
+
+        # After subtitle_content is generated and before saving to file:
+        if exclude_time_ranges:
+            subtitle_content = filter_subtitle_lines(subtitle_content, exclude_time_ranges, subtitle_type)
+            if subtitle_type == 'ass':
+                logger.info(f"Job {job_id}: Filtered ASS Dialogue lines due to exclude_time_ranges.")
+            elif subtitle_type == 'srt':
+                logger.info(f"Job {job_id}: Filtered SRT subtitle blocks due to exclude_time_ranges.")
 
         # Save the subtitle content
         subtitle_filename = f"{job_id}.{subtitle_type}"

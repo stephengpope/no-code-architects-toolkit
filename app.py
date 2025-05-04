@@ -237,6 +237,7 @@ def create_app():
     from routes.v1.media.metadata import v1_media_metadata_bp
     from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
     from routes.v1.toolkit.jobs_status import v1_toolkit_jobs_status_bp
+    from routes.v1.image.effects.image_effects_video import v1_image_effects_video_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -265,10 +266,21 @@ def create_app():
     app.register_blueprint(v1_media_metadata_bp)
     app.register_blueprint(v1_toolkit_job_status_bp)
     app.register_blueprint(v1_toolkit_jobs_status_bp)
+    app.register_blueprint(v1_image_effects_video_bp) # Register new blueprint
 
     return app
 
-app = create_app()
 
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+
+if __name__ == "__main__":
+    # Use environment variables or defaults for Gunicorn settings
+    bind_ip = os.environ.get('GUNICORN_BIND_IP', '0.0.0.0')
+    bind_port = os.environ.get('GUNICORN_BIND_PORT', '8080')
+    workers = os.environ.get('GUNICORN_WORKERS', '4') # Default to 4 workers
+    timeout = os.environ.get('GUNICORN_TIMEOUT', '300') # Default to 300 seconds timeout
+
+    # Command to run Gunicorn
+    gunicorn_command = f"gunicorn -w {workers} -b {bind_ip}:{bind_port} -t {timeout} app:create_app()"
+
+    # Execute the Gunicorn command
+    os.system(gunicorn_command)

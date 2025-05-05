@@ -1,6 +1,3 @@
-
-```
-
 ![Original Logo Symbol](https://github.com/user-attachments/assets/75173cf4-2502-4710-998b-6b81740ae1bd)
 
 # No-Code Architects Toolkit API 
@@ -556,4 +553,3 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 
 This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).
 
-```

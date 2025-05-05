@@ -1,4 +1,6 @@
 
+```
+
 ![Original Logo Symbol](https://github.com/user-attachments/assets/75173cf4-2502-4710-998b-6b81740ae1bd)
 
 # No-Code Architects Toolkit API 
@@ -56,6 +58,9 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 - **[`/v1/image/convert/video`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)**
   - Transforms a static image into a video with custom duration and zoom effects.
+
+- **[`/v1/image/effects/video`](https://github.com/fahimanwer/no-code-architects-toolkit/blob/main/docs/image/effects/image_effects_video.md)**
+  - Creates a video from an image with dynamic effects like zoom-in-out or panning.
 
 ### Media
 
@@ -255,7 +260,7 @@ You need to use the "webhook_url" (for any request that exceeds 1 min) in your A
 
 If you use the webhook_url, there is no limit to the processing length.
 
-- [Digital Ocean App Platform Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
+- Digital Ocean App Platform Installation Guide - Deploy the API on Digital Ocean App Platform
 
 ### Google Cloud RUN Platform
 
@@ -265,7 +270,7 @@ However this is one of the cheapest options with great performance because you'r
 
 Outside of that you are not charged.
 
-#### Imporatnt: Requests exceeding 5+ minutes can be problemactic 
+#### Imporatnt: Requests exceeding 5+ minutes can be problemactic
 
 GCP Run will terminate long rununing processes, which can happen when processing larger files (whether you use the webhook_url or not).
 
@@ -273,7 +278,7 @@ However, when your processing times are consistant lower than 5 minutes (e.g. yo
 
 They also have a GPU option that might be usable for better performance (untested).
 
-- [Google Cloud RUN Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
+- Google Cloud RUN Platform (GCP) Installation Guide - Deploy the API on Google Cloud Run
 
 ### General Docker Instructions
 
@@ -281,17 +286,17 @@ You can use these instructions to deploy the NCA Toolkit to any linux server (on
 
 You can more easily control performance and cost this way, but requires more technical skill to get up and running (not much though).
 
-- [General Docker Compose Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.md)
+- General Docker Compose Installation Guide
 
 ## Testing the API
 
-1. Install the **[Postman Template](https://bit.ly/49Gkhl)** on your computer
+1. Install the **Postman Template** on your computer
 2. Import the API example requests from the template
 3. Configure your environment variables in Postman:
    - `base_url`: Your deployed API URL
    - `x-api-key`: Your API key configured during installation
 4. Use the example requests to validate that the API is functioning correctly
-5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to explore additional features
+5. Use the **NCA Toolkit API GPT** to explore additional features
 
 ---
 
@@ -317,8 +322,8 @@ Thank you for your contributions!
 
 Get courses, community, support daily calls and more.
 
-Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)** today!
+Join the **No-Code Architects Community** today!
 
 ## License
 
-This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).
+This project is licensed under the GNU General Public License v2.0 (GPL-2.0).

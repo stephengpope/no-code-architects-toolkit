@@ -43,86 +43,314 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 - **[`/v1/audio/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/audio/concatenate.md)**
   - Combines multiple audio files into a single audio file.
+  - Example Payload:
+    ```json
+    {
+      "audio_urls": [
+        { "audio_url": "https://example.com/audio1.mp3" },
+        { "audio_url": "https://example.com/audio2.mp3" }
+      ],
+      "webhook_url": "https://your-webhook-endpoint.com/callback",
+      "id": "custom-request-id-123"
+    }
+    ```
 
 ### Code
 
 - **[`/v1/code/execute/python`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/code/execute/execute_python.md)**
   - Executes Python code remotely and returns the execution results.
+  - Example Payload:
+    ```json
+    {
+        "code": "print('Hello, World!')",
+        "timeout": 10,
+        "webhook_url": "https://example.com/webhook",
+        "id": "unique-request-id"
+    }
+    ```
 
 ### FFmpeg
 
 - **[`/v1/ffmpeg/compose`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/ffmpeg/ffmpeg_compose.md)**
   - Provides a flexible interface to FFmpeg for complex media processing operations.
+  - Example Payload (Note: See documentation for details on filter structure):
+    ```json
+    {
+      "inputs": [
+        { "file_url": "https://example.com/video1.mp4" }
+      ],
+      "filters": [
+        { "filter": "hflip" } 
+      ],
+      "outputs": [
+        {
+          "options": [
+            { "option": "-c:v", "argument": "libx264" },
+            { "option": "-crf", "argument": 23 }
+          ]
+        }
+      ],
+      "webhook_url": "https://example.com/webhook",
+      "id": "unique-request-id"
+    }
+    ```
 
 ### Image
 
 - **[`/v1/image/convert/video`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)**
   - Transforms a static image into a video with custom duration and zoom effects.
+  - Example Payload:
+    ```json
+    {
+        "image_url": "https://example.com/image.jpg",
+        "length": 10,
+        "frame_rate": 24,
+        "zoom_speed": 5,
+        "orientation": "landscape",
+        "webhook_url": "https://example.com/webhook",
+        "id": "request-123"
+    }
+    ```
 
 - **[`/v1/image/effects/video`](https://github.com/fahimanwer/no-code-architects-toolkit/blob/main/docs/image/effects/image_effects_video.md)**
   - Creates a video from an image with dynamic effects like zoom-in-out or panning.
+  - Example Payload (Zoom In/Out):
+    ```json
+    {
+        "image_url": "https://example.com/image.jpg",
+        "effect_type": "zoom_in_out",
+        "length": 10,
+        "orientation": "landscape",
+        "id": "request-zoom"
+    }
+    ```
 
 ### Media
 
 - **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)**
   - Converts media files from one format to another with customizable codec options.
+  - Example Payload:
+    ```json
+    {
+      "media_url": "https://example.com/video.mp4",
+      "format": "avi",
+      "video_codec": "libx264",
+      "audio_codec": "aac",
+      "webhook_url": "https://example.com/webhook",
+      "id": "unique-request-id"
+    }
+    ```
 
 - **[`/v1/media/convert/mp3`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_to_mp3.md)**
   - Converts various media formats specifically to MP3 audio.
+  - Example Payload:
+    ```json
+    {
+        "media_url": "https://example.com/video.mp4",
+        "webhook_url": "https://example.com/webhook",
+        "id": "unique-request-id",
+        "bitrate": "192k"
+    }
+    ```
 
 - **[`/v1/BETA/media/download`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/download.md)**
   - Downloads media content from various online sources using yt-dlp.
+  - Example Payload:
+    ```json
+    {
+      "media_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+      "webhook_url": "https://example.com/webhook",
+      "id": "custom-request-123",
+      "format": {
+        "quality": "best",
+        "resolution": "720p"
+      },
+      "audio": {
+        "extract": true,
+        "format": "mp3"
+      }
+    }
+    ```
 
 - **[`/v1/media/feedback`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/feedback.md)**
-  - Provides a web interface for collecting and displaying feedback on media content.
+  - Provides a web interface for collecting and displaying feedback on media content. (GET endpoint, no JSON payload)
 
 - **[`/v1/media/transcribe`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/media_transcribe.md)**
   - Transcribes or translates audio/video content from a provided media URL.
+  - Example Payload:
+    ```json
+    {
+      "media_url": "https://example.com/media/file.mp3",
+      "task": "transcribe",
+      "include_text": true,
+      "include_srt": true,
+      "response_type": "cloud",
+      "webhook_url": "https://your-webhook.com/callback",
+      "id": "custom-job-123"
+    }
+    ```
 
 - **[`/v1/media/silence`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/silence.md)**
   - Detects silence intervals in a given media file.
+  - Example Payload:
+    ```json
+    {
+        "media_url": "https://example.com/audio.mp3",
+        "start": "00:00:10.0",
+        "end": "00:01:00.0",
+        "duration": 0.5,
+        "webhook_url": "https://example.com/webhook",
+        "id": "unique-request-id"
+    }
+    ```
 
 - **[`/v1/media/metadata`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/metadata.md)**
   - Extracts comprehensive metadata from media files including format, codecs, resolution, and bitrates.
+  - Example Payload:
+    ```json
+    {
+      "media_url": "https://example.com/media.mp4",
+      "webhook_url": "https://example.com/webhook",
+      "id": "custom-id"
+    }
+    ```
 
 ### S3
 
 - **[`/v1/s3/upload`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/s3/upload.md)**
   - Uploads files to Amazon S3 storage by streaming directly from a URL.
+  - Example Payload:
+    ```json
+    {
+      "file_url": "https://example.com/path/to/file.mp4",
+      "filename": "custom-name.mp4",
+      "public": true
+    }
+    ```
 
 ### Toolkit
 
 - **[`/v1/toolkit/authenticate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/authenticate.md)**
-  - Provides a simple authentication mechanism to validate API keys.
+  - Provides a simple authentication mechanism to validate API keys. (GET endpoint, uses `X-API-Key` header, no JSON payload)
 
 - **[`/v1/toolkit/test`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/test.md)**
-  - Verifies that the NCA Toolkit API is properly installed and functioning.
+  - Verifies that the NCA Toolkit API is properly installed and functioning. (GET endpoint, uses `X-API-Key` header, no JSON payload)
 
 - **[`/v1/toolkit/job/status`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/job_status.md)**
   - Retrieves the status of a specific job by its ID.
+  - Example Payload:
+    ```json
+    {
+        "job_id": "e6d7f3c0-9c9f-4b8a-b7c3-f0e3c9f6b9d7"
+    }
+    ```
 
 - **[`/v1/toolkit/jobs/status`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/toolkit/jobs_status.md)**
   - Retrieves the status of all jobs within a specified time range.
+  - Example Payload (Optional):
+    ```json
+    {
+        "since_seconds": 3600 
+    }
+    ```
 
 ### Video
 
 - **[`/v1/video/caption`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)**
   - Adds customizable captions to videos with various styling options.
+  - Example Payload (Auto-transcribe):
+    ```json
+    {
+        "video_url": "https://example.com/video.mp4",
+        "settings": {
+            "style": "karaoke",
+            "line_color": "#FFFFFF",
+            "word_color": "#FFFF00"
+        },
+        "webhook_url": "https://example.com/webhook"
+    }
+    ```
 
 - **[`/v1/video/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)**
   - Combines multiple videos into a single continuous video file.
+  - Example Payload:
+    ```json
+    {
+        "video_urls": [
+            {"video_url": "https://example.com/video1.mp4"},
+            {"video_url": "https://example.com/video2.mp4"}
+        ],
+        "webhook_url": "https://example.com/webhook",
+        "id": "request-123"
+    }
+    ```
 
 - **[`/v1/video/thumbnail`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/thumbnail.md)**
   - Extracts a thumbnail image from a specific timestamp in a video.
+  - Example Payload:
+    ```json
+    {
+      "video_url": "https://example.com/video.mp4",
+      "second": 30,
+      "webhook_url": "https://your-service.com/webhook",
+      "id": "custom-request-123"
+    }
+    ```
 
 - **[`/v1/video/cut`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/cut.md)**
   - Cuts specified segments from a video file with optional encoding settings.
+  - Example Payload:
+    ```json
+    {
+      "video_url": "https://example.com/video.mp4",
+      "cuts": [
+        {
+          "start": "00:00:10.000",
+          "end": "00:00:20.000"
+        },
+        {
+          "start": "00:00:30.000",
+          "end": "00:00:40.000"
+        }
+      ],
+      "webhook_url": "https://example.com/webhook",
+      "id": "unique-request-id"
+    }
+    ```
 
 - **[`/v1/video/split`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/split.md)**
   - Splits a video into multiple segments based on specified start and end times.
+  - Example Payload:
+    ```json
+    {
+      "video_url": "https://example.com/video.mp4",
+      "splits": [
+        {
+          "start": "00:00:10.000",
+          "end": "00:00:20.000"
+        },
+        {
+          "start": "00:00:30.000",
+          "end": "00:00:40.000"
+        }
+      ],
+      "webhook_url": "https://example.com/webhook",
+      "id": "unique-request-id"
+    }
+    ```
 
 - **[`/v1/video/trim`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/trim.md)**
   - Trims a video by keeping only the content between specified start and end times.
+  - Example Payload:
+    ```json
+    {
+      "video_url": "https://example.com/video.mp4",
+      "start": "00:01:00",
+      "end": "00:03:00",
+      "webhook_url": "https://example.com/webhook",
+      "id": "unique-request-id"
+    }
+    ```
 
 ---
 
@@ -260,7 +488,7 @@ You need to use the "webhook_url" (for any request that exceeds 1 min) in your A
 
 If you use the webhook_url, there is no limit to the processing length.
 
-- Digital Ocean App Platform Installation Guide - Deploy the API on Digital Ocean App Platform
+- [Digital Ocean App Platform Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
 
 ### Google Cloud RUN Platform
 
@@ -270,7 +498,7 @@ However this is one of the cheapest options with great performance because you'r
 
 Outside of that you are not charged.
 
-#### Imporatnt: Requests exceeding 5+ minutes can be problemactic
+#### Imporatnt: Requests exceeding 5+ minutes can be problemactic 
 
 GCP Run will terminate long rununing processes, which can happen when processing larger files (whether you use the webhook_url or not).
 
@@ -278,7 +506,7 @@ However, when your processing times are consistant lower than 5 minutes (e.g. yo
 
 They also have a GPU option that might be usable for better performance (untested).
 
-- Google Cloud RUN Platform (GCP) Installation Guide - Deploy the API on Google Cloud Run
+- [Google Cloud RUN Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
 
 ### General Docker Instructions
 
@@ -286,17 +514,17 @@ You can use these instructions to deploy the NCA Toolkit to any linux server (on
 
 You can more easily control performance and cost this way, but requires more technical skill to get up and running (not much though).
 
-- General Docker Compose Installation Guide
+- [General Docker Compose Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.md)
 
 ## Testing the API
 
-1. Install the **Postman Template** on your computer
+1. Install the **[Postman Template](https://bit.ly/49Gkhl)** on your computer
 2. Import the API example requests from the template
 3. Configure your environment variables in Postman:
    - `base_url`: Your deployed API URL
    - `x-api-key`: Your API key configured during installation
 4. Use the example requests to validate that the API is functioning correctly
-5. Use the **NCA Toolkit API GPT** to explore additional features
+5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to explore additional features
 
 ---
 
@@ -322,8 +550,10 @@ Thank you for your contributions!
 
 Get courses, community, support daily calls and more.
 
-Join the **No-Code Architects Community** today!
+Join the **[No-Code Architects Community](https://www.skool.com/no-code-architects)** today!
 
 ## License
 
-This project is licensed under the GNU General Public License v2.0 (GPL-2.0).
+This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).
+
+```

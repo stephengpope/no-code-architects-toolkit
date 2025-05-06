@@ -25,7 +25,6 @@ import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 from app_utils import log_job_status  # Import the log_job_status function
-from routes.v1.audio.audio_duration import v1_audio_duration_bp
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -238,6 +237,7 @@ def create_app():
     from routes.v1.media.metadata import v1_media_metadata_bp
     from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
     from routes.v1.toolkit.jobs_status import v1_toolkit_jobs_status_bp
+    from routes.v1.media.media_duration import v1_media_duration_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -266,7 +266,7 @@ def create_app():
     app.register_blueprint(v1_media_metadata_bp)
     app.register_blueprint(v1_toolkit_job_status_bp)
     app.register_blueprint(v1_toolkit_jobs_status_bp)
-    app.register_blueprint(v1_audio_duration_bp)
+    app.register_blueprint(v1_media_duration_bp)
 
     return app
 

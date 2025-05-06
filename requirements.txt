@@ -18,4 +18,3 @@ boto3
 Pillow
 matplotlib
 yt-dlp
-mutagen

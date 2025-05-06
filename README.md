@@ -348,6 +348,17 @@ Each endpoint is supported by robust payload validation and detailed API documen
       "id": "unique-request-id"
     }
     ```
+    - **[`/v1/video/get-scenes`](https://github.com/fahimanwer/no-code-architects-toolkit/blob/main/docs/video/get_scenes.md)**
+  - Extracts frames (thumbnails) from multiple specified timestamps in a video.
+  - Example Payload:
+    ```json
+    {
+        "video_url": "https://example.com/my_video.mp4",
+        "timestamps": [5, 15.5, 25],
+        "id": "local-video-scenes",
+        "webhook_url": "https://example.com/webhook"
+    }
+    ```
 
 ---
 

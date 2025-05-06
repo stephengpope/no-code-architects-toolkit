@@ -348,7 +348,8 @@ Each endpoint is supported by robust payload validation and detailed API documen
       "id": "unique-request-id"
     }
     ```
-    - **[`/v1/video/get-scenes`](https://github.com/fahimanwer/no-code-architects-toolkit/blob/main/docs/video/get_scenes.md)**
+
+- **[`/v1/video/get-scenes`](https://github.com/fahimanwer/no-code-architects-toolkit/blob/main/docs/video/get_scenes.md)**
   - Extracts frames (thumbnails) from multiple specified timestamps in a video.
   - Example Payload:
     ```json
@@ -536,6 +537,82 @@ You can more easily control performance and cost this way, but requires more tec
 
 ---
 
+## Development Workflow & Disk Space Management
+
+Developing new features or fixing bugs typically involves building and testing Docker images. Over time, this can lead to an accumulation of old images and build cache, consuming significant disk space. Here's a recommended workflow and tips for managing disk usage:
+
+### Managing Docker Disk Space
+
+It's good practice to periodically clean up unused Docker resources:
+
+*   **Prune unused images, containers, and networks:**
+    ```bash
+    docker system prune -a
+    ```
+    (Use with caution: this will remove all stopped containers, all networks not used by at least one container, all dangling images, and all dangling build cache.)
+
+*   **List images to identify old/large ones:**
+    ```bash
+    docker images
+    ```
+
+*   **Remove specific images by ID or tag:**
+    ```bash
+    docker rmi <IMAGE_ID_OR_TAG>
+    ```
+
+*   **Prune build cache:**
+    ```bash
+    docker builder prune
+    ```
+
+### Feature Development Workflow
+
+1.  **Create a new branch:** Start by creating a new branch in your local Git repository for the feature or fix (e.g., `git checkout -b feature/my-new-endpoint`).
+2.  **Implement changes:** Make your code changes (e.g., add new service logic, routes, update `app.py`).
+3.  **Update Documentation:** Create or update any relevant documentation files in the `/docs` directory and ensure the main `README.md` is updated to reflect new endpoints or significant changes in behavior, including example payloads.
+4.  **Local Testing:**
+    *   **Build a local Docker image:**
+        ```bash
+        docker build -t nca-toolkit-dev . 
+        ```
+        (Use a temporary tag like `nca-toolkit-dev` to avoid conflicting with official tags).
+    *   **Run the local image:**
+        ```bash
+        docker run -d -p 8080:8080 --name nca-toolkit-test -e API_KEY=your_test_key [other_env_vars_as_needed] nca-toolkit-dev
+        ```
+    *   Thoroughly test the new feature using Postman or cURL. Check container logs (`docker logs nca-toolkit-test -f`) for errors.
+    *   Stop and remove the test container: `docker stop nca-toolkit-test && docker rm nca-toolkit-test`.
+5.  **Commit Changes:** Once satisfied, commit your changes to your feature branch with clear commit messages.
+6.  **Push to GitHub:**
+    *   Push your feature branch to your fork on GitHub.
+    *   Create a Pull Request against the `main` branch of the `fahimanwer/no-code-architects-toolkit` repository (or the appropriate upstream repository if contributing to `stephengpope/no-code-architects-toolkit`).
+7.  **Update Docker Hub (After PR Merge - Optional for Personal Use):**
+    *   Once your changes are merged into the `main` branch of your primary repository (e.g., `fahimanwer/no-code-architects-toolkit`), you can build the official image and push it to your Docker Hub.
+    *   Ensure your local `main` branch is up to date: `git checkout main && git pull origin main`.
+    *   **Build the image:**
+        ```bash
+        docker build -t yourdockerhubusername/repositoryname:latest -t yourdockerhubusername/repositoryname:version_tag .
+        # Example:
+        # docker build -t fahimanwer18/nca-toolkit-fahim:latest -t fahimanwer18/nca-toolkit-fahim:0.2.0 .
+        ```
+    *   **Log in to Docker Hub:**
+        ```bash
+        docker login
+        ```
+    *   **Push the image:**
+        ```bash
+        docker push yourdockerhubusername/repositoryname:latest
+        docker push yourdockerhubusername/repositoryname:version_tag
+        # Example:
+        # docker push fahimanwer18/nca-toolkit-fahim:latest
+        # docker push fahimanwer18/nca-toolkit-fahim:0.2.0
+        ```
+
+By following these steps, you can keep your development environment clean and ensure that your GitHub and Docker Hub repositories stay synchronized with tested features.
+
+---
+
 ## Contributing To the NCA Toolkit API
 
 We welcome contributions from the public! If you'd like to contribute to this project, please follow these steps:
@@ -563,4 +640,3 @@ Join the **[No-Code Architects Community](https://www.skool.com/no-code-architec
 ## License
 
 This project is licensed under the [GNU General Public License v2.0 (GPL-2.0)](LICENSE).
-

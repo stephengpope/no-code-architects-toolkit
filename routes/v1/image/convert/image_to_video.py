@@ -36,6 +36,7 @@ logger = logging.getLogger(__name__)
         "length": {"type": "number", "minimum": 0.1, "maximum": 60},
         "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
         "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
+        "orientation": {"type": "string", "enum": ["landscape", "portrait"]},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -48,6 +49,7 @@ def image_to_video(job_id, data):
     length = data.get('length', 5)
     frame_rate = data.get('frame_rate', 30)
     zoom_speed = data.get('zoom_speed', 3) / 100
+    orientation = data.get('orientation')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
@@ -56,7 +58,7 @@ def image_to_video(job_id, data):
     try:
         # Process image to video conversion
         output_filename = process_image_to_video(
-            image_url, length, frame_rate, zoom_speed, job_id, webhook_url
+            image_url, length, frame_rate, zoom_speed, job_id, webhook_url, orientation
         )
 
         # Upload the resulting file using the unified upload_file() method
@@ -71,3 +73,4 @@ def image_to_video(job_id, data):
     except Exception as e:
         logger.error(f"Job {job_id}: Error processing image to video: {str(e)}", exc_info=True)
         return str(e), "/v1/image/convert/video", 500
+

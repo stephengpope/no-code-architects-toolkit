@@ -25,6 +25,7 @@ The request body must be in JSON format and should include the following paramet
 | `length`    | number | No       | The desired length of the video in seconds (default: 5).    |
 | `frame_rate`| integer| No       | The frame rate of the output video (default: 30).           |
 | `zoom_speed`| number | No       | The speed of the zoom effect (0-100, default: 3).           |
+| `orientation`| string | No       | Desired output video orientation: "landscape" (1920x1080) or "portrait" (1080x1920). Defaults to landscape if omitted or invalid. |
 | `webhook_url`| string| No       | The URL to receive a webhook notification upon completion.  |
 | `id`        | string | No       | An optional identifier for the request.                      |
 
@@ -35,9 +36,10 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
     "type": "object",
     "properties": {
         "image_url": {"type": "string", "format": "uri"},
-        "length": {"type": "number", "minimum": 1, "maximum": 60},
+        "length": {"type": "number", "minimum": 0.1, "maximum": 60},
         "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
         "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
+        "orientation": {"type": "string", "enum": ["landscape", "portrait"]},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -54,6 +56,7 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
     "length": 10,
     "frame_rate": 24,
     "zoom_speed": 5,
+    "orientation": "landscape",
     "webhook_url": "https://example.com/webhook",
     "id": "request-123"
 }
@@ -63,7 +66,7 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
 curl -X POST \
      -H "x-api-key: YOUR_API_KEY" \
      -H "Content-Type: application/json" \
-     -d '{"image_url": "https://example.com/image.jpg", "length": 10, "frame_rate": 24, "zoom_speed": 5, "webhook_url": "https://example.com/webhook", "id": "request-123"}' \
+     -d '{"image_url": "https://example.com/image.jpg", "length": 10, "frame_rate": 24, "zoom_speed": 5, "orientation": "landscape", "webhook_url": "https://example.com/webhook", "id": "request-123"}' \
      http://your-api-endpoint/v1/image/convert/video
 ```
 
@@ -139,9 +142,10 @@ The endpoint handles the following types of errors:
 ## 6. Usage Notes
 
 - The `image_url` parameter must be a valid URL pointing to an image file.
-- The `length` parameter specifies the duration of the output video in seconds and must be between 1 and 60.
+- The `length` parameter specifies the duration of the output video in seconds and must be between 0.1 and 60.
 - The `frame_rate` parameter specifies the frame rate of the output video and must be between 15 and 60.
 - The `zoom_speed` parameter controls the speed of the zoom effect and must be between 0 and 100.
+- The `orientation` parameter (optional) forces the output to "landscape" (1920x1080) or "portrait" (1080x1920). Defaults to landscape.
 - The `webhook_url` parameter is optional and can be used to receive a notification when the conversion is complete.
 - The `id` parameter is optional and can be used to identify the request.
 

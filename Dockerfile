@@ -165,7 +165,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install openai-whisper && \
-    pip install jsonschema 
+    pip install jsonschema && \
+    pip install yt-dlp
 
 # Create the appuser 
 RUN useradd -m appuser 

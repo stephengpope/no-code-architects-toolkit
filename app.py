@@ -237,6 +237,7 @@ def create_app():
     from routes.v1.media.metadata import v1_media_metadata_bp
     from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
     from routes.v1.toolkit.jobs_status import v1_toolkit_jobs_status_bp
+    from routes.v1.audio.speech import v1_audio_speech_bp
 
     app.register_blueprint(v1_ffmpeg_compose_bp)
     app.register_blueprint(v1_media_transcribe_bp)
@@ -265,6 +266,7 @@ def create_app():
     app.register_blueprint(v1_media_metadata_bp)
     app.register_blueprint(v1_toolkit_job_status_bp)
     app.register_blueprint(v1_toolkit_jobs_status_bp)
+    app.register_blueprint(v1_audio_speech_bp)
 
     return app
 

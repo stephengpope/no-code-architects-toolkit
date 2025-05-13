@@ -23,8 +23,10 @@ import threading
 import uuid
 import os
 import time
+import json
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 from app_utils import log_job_status  # Import the log_job_status function
+from services.gcp_toolkit import trigger_cloud_run_job
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -98,8 +100,81 @@ def create_app():
                 data = request.json if request.is_json else {}
                 pid = os.getpid()  # Get PID for non-queued tasks
                 start_time = time.time()
-                
-                if bypass_queue or 'webhook_url' not in data:
+
+                if os.environ.get("CLOUD_RUN_JOB_NAME") and data.get("webhook_url"):
+                    try:
+                        overrides = {
+                            'container_overrides': [
+                                {
+                                    'env': [
+                                        # Environment variables to pass to the Cloud Run job
+                                        {
+                                            'name': 'CLOUD_RUN_JOB_PATH',
+                                            'value': request.path # Endpoint to call
+                                        },
+                                        {
+                                            'name': 'CLOUD_RUN_JOB_PAYLOAD',
+                                            'value': json.dumps(data)  # Payload as a string
+                                        },
+                                    ]
+                                }
+                            ],
+                            'task_count': 1
+                        }
+
+                        # Call trigger_cloud_run_job with the overrides dictionary
+                        response = trigger_cloud_run_job(
+                            job_name=os.environ.get("CLOUD_RUN_JOB_NAME"),
+                            location=os.environ.get("CLOUD_RUN_JOB_LOCATION", "us-central1"),
+                            overrides=overrides  # Pass overrides to the job
+                        )
+
+                        if not response.get("job_submitted"):
+                            raise Exception(f"Cloud Run trigger failed: {response}")
+
+                        # Prepare the response object
+                        response_obj = {
+                            "code": 200,
+                            "id": data.get("id"),
+                            "job_id": job_id,
+                            "message": response,
+                            "job_name": os.environ.get("CLOUD_RUN_JOB_NAME"),
+                            "location": os.environ.get("CLOUD_RUN_JOB_LOCATION", "us-central1"),
+                            "pid": pid,
+                            "queue_id": "cloud-run",
+                            "build_number": BUILD_NUMBER
+                        }
+                        log_job_status(job_id, {
+                            "job_status": "submitted",
+                            "job_id": job_id,
+                            "queue_id": "cloud-run",
+                            "process_id": pid,
+                            "response": response_obj
+                        })
+                        return response_obj, 200  # Return 200 since it's a submission success
+
+                    except Exception as e:
+                        error_response = {
+                            "code": 500,
+                            "id": data.get("id"),
+                            "job_id": job_id,
+                            "message": f"Cloud Run job trigger failed: {str(e)}",
+                            "job_name": os.environ.get("CLOUD_RUN_JOB_NAME"),
+                            "location": os.environ.get("CLOUD_RUN_JOB_LOCATION", "us-central1"),
+                            "pid": pid,
+                            "queue_id": "cloud-run",
+                            "build_number": BUILD_NUMBER
+                        }
+                        log_job_status(job_id, {
+                            "job_status": "failed",
+                            "job_id": job_id,
+                            "queue_id": "cloud-run",
+                            "process_id": pid,
+                            "response": error_response
+                        })
+                        return error_response, 500
+
+                elif bypass_queue or 'webhook_url' not in data:
                     
                     # Log job status as running immediately (bypassing queue)
                     log_job_status(job_id, {

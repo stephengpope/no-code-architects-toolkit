@@ -116,7 +116,7 @@ def discover_and_register_blueprints(app, base_dir='routes'):
             if module_path.endswith('__init__'):
                 continue
                 
-            logger.info(f"Attempting to import module: {module_path}")
+            #logger.info(f"Attempting to import module: {module_path}")
             
             # Import the module
             module = importlib.import_module(module_path)
@@ -124,12 +124,13 @@ def discover_and_register_blueprints(app, base_dir='routes'):
             # Find all Blueprint instances in the module
             for name, obj in inspect.getmembers(module):
                 if isinstance(obj, Blueprint) and obj not in registered_blueprints:
-                    logger.info(f"Registering blueprint: {name} from {module_path}")
+                    pid = os.getpid()
+                    logger.info(f"PID {pid} Registering: {module_path}")
                     app.register_blueprint(obj)
                     registered_blueprints.add(obj)
             
         except Exception as e:
             logger.error(f"Error importing module {module_path}: {str(e)}")
     
-    logger.info(f"Registered {len(registered_blueprints)} blueprints")
+    logger.info(f"PID {pid} Registered {len(registered_blueprints)} blueprints")
     return registered_blueprints

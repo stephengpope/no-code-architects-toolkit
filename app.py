@@ -24,7 +24,7 @@ import uuid
 import os
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
-from app_utils import log_job_status  # Import the log_job_status function
+from app_utils import log_job_status, discover_and_register_blueprints  # Import the discover_and_register_blueprints function
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 
@@ -189,82 +189,12 @@ def create_app():
 
     app.queue_task = queue_task
 
-    # Import blueprints
-    from routes.media_to_mp3 import convert_bp
-    from routes.transcribe_media import transcribe_bp
-    from routes.combine_videos import combine_bp
-    from routes.audio_mixing import audio_mixing_bp
-    from routes.gdrive_upload import gdrive_upload_bp
-    from routes.authenticate import auth_bp
-    from routes.caption_video import caption_bp 
-    from routes.extract_keyframes import extract_keyframes_bp
-    from routes.image_to_video import image_to_video_bp
-    
-
-    # Register blueprints
-    app.register_blueprint(convert_bp)
-    app.register_blueprint(transcribe_bp)
-    app.register_blueprint(combine_bp)
-    app.register_blueprint(audio_mixing_bp)
-    app.register_blueprint(gdrive_upload_bp)
-    app.register_blueprint(auth_bp)
-    app.register_blueprint(caption_bp)
-    app.register_blueprint(extract_keyframes_bp)
-    app.register_blueprint(image_to_video_bp)
-    
-    
-
-    # version 1.0
-    from routes.v1.ffmpeg.ffmpeg_compose import v1_ffmpeg_compose_bp
-    from routes.v1.media.media_transcribe import v1_media_transcribe_bp
-    from routes.v1.media.feedback import v1_media_feedback_bp
-    from routes.v1.media.convert.media_to_mp3 import v1_media_convert_mp3_bp
-    from routes.v1.video.concatenate import v1_video_concatenate_bp
-    from routes.v1.video.caption_video import v1_video_caption_bp
-    from routes.v1.image.convert.image_to_video import v1_image_convert_video_bp
-    from routes.v1.toolkit.test import v1_toolkit_test_bp
-    from routes.v1.toolkit.authenticate import v1_toolkit_auth_bp
-    from routes.v1.code.execute.execute_python import v1_code_execute_bp
-    from routes.v1.s3.upload import v1_s3_upload_bp
-    from routes.v1.video.thumbnail import v1_video_thumbnail_bp
-    from routes.v1.media.download import v1_media_download_bp
-    from routes.v1.media.convert.media_convert import v1_media_convert_bp
-    from routes.v1.audio.concatenate import v1_audio_concatenate_bp
-    from routes.v1.media.silence import v1_media_silence_bp
-    from routes.v1.video.cut import v1_video_cut_bp
-    from routes.v1.video.split import v1_video_split_bp
-    from routes.v1.video.trim import v1_video_trim_bp
-    from routes.v1.media.metadata import v1_media_metadata_bp
-    from routes.v1.toolkit.job_status import v1_toolkit_job_status_bp
-    from routes.v1.toolkit.jobs_status import v1_toolkit_jobs_status_bp
-
-    app.register_blueprint(v1_ffmpeg_compose_bp)
-    app.register_blueprint(v1_media_transcribe_bp)
-    app.register_blueprint(v1_media_feedback_bp)
-    
-    # Register a special route for Next.js root asset paths
+    # Register special route for Next.js root asset paths first
     from routes.v1.media.feedback import create_root_next_routes
     create_root_next_routes(app)
     
-    app.register_blueprint(v1_media_convert_mp3_bp)
-    app.register_blueprint(v1_video_concatenate_bp)
-    app.register_blueprint(v1_video_caption_bp)
-    app.register_blueprint(v1_image_convert_video_bp)
-    app.register_blueprint(v1_toolkit_test_bp)
-    app.register_blueprint(v1_toolkit_auth_bp)
-    app.register_blueprint(v1_code_execute_bp)
-    app.register_blueprint(v1_s3_upload_bp)
-    app.register_blueprint(v1_video_thumbnail_bp)
-    app.register_blueprint(v1_media_download_bp)
-    app.register_blueprint(v1_media_convert_bp)
-    app.register_blueprint(v1_audio_concatenate_bp)
-    app.register_blueprint(v1_media_silence_bp)
-    app.register_blueprint(v1_video_cut_bp)
-    app.register_blueprint(v1_video_split_bp)
-    app.register_blueprint(v1_video_trim_bp)
-    app.register_blueprint(v1_media_metadata_bp)
-    app.register_blueprint(v1_toolkit_job_status_bp)
-    app.register_blueprint(v1_toolkit_jobs_status_bp)
+    # Use the discover_and_register_blueprints function to register all blueprints
+    discover_and_register_blueprints(app)
 
     return app
 

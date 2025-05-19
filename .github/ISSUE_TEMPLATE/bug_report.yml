@@ -19,7 +19,7 @@ body:
     attributes:
       label: Reproduction Steps
       description: >
-         What you did to make it happen.
+         What you did to make it happen. Include any request payloads, API calls, or specific commands used.
     validations:
       required: true
   - type: textarea
@@ -31,11 +31,23 @@ body:
       required: false
   - type: textarea
     attributes:
-      label: Screenshots
+      label: Screenshots and relevant files
       description: >
-         If applicable, add screenshots to help explain your problem.
+         If applicable, add screenshots or relevant files to help explain your problem.
     validations:
       required: false
+  - type: dropdown
+    id: platform
+    attributes:
+      label: "Platform"
+      description: "Select the platform where you encountered this bug"
+      options:
+        - "Google Cloud Platform"
+        - "Digital Ocean"
+        - "Local"
+        - "Other"
+    validations:
+      required: true
   - type: dropdown
     id: assign
     attributes:

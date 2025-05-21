@@ -309,6 +309,10 @@ We welcome contributions from the public! If you'd like to contribute to this pr
 1. Ensure any install or build dependencies are removed before the end of the layer when doing a build.
 2. Update the README.md with details of changes to the interface, this includes new environment variables, exposed ports, useful file locations and container parameters.
 
+### Adding New Routes
+
+If you want to add new API endpoints, check out our [Adding Routes Guide](docs/adding_routes.md) to learn how to use the dynamic route registration system.
+
 Thank you for your contributions!
 
 ---

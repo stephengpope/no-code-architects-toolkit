@@ -66,3 +66,71 @@ def queue_task_wrapper(bypass_queue=False):
             return current_app.queue_task(bypass_queue=bypass_queue)(f)(*args, **kwargs)
         return wrapper
     return decorator
+
+def discover_and_register_blueprints(app, base_dir='routes'):
+    """
+    Dynamically discovers and registers all Flask blueprints in the routes directory.
+    Recursively searches all subdirectories for Python modules containing Blueprint instances.
+    
+    Args:
+        app (Flask): The Flask application instance
+        base_dir (str): Base directory to start searching for blueprints (default: 'routes')
+    """
+    import importlib
+    import pkgutil
+    import inspect
+    import sys
+    import os
+    from flask import Blueprint
+    import logging
+    import glob
+
+    logger = logging.getLogger(__name__)
+    logger.info(f"Discovering blueprints in {base_dir}")
+    
+    # Add the current working directory to sys.path if it's not already there
+    cwd = os.getcwd()
+    if cwd not in sys.path:
+        sys.path.insert(0, cwd)
+    
+    # Get the absolute path to the base directory
+    if not os.path.isabs(base_dir):
+        base_dir = os.path.join(cwd, base_dir)
+    
+    registered_blueprints = set()
+    
+    # Find all Python files in the routes directory, including subdirectories
+    python_files = glob.glob(os.path.join(base_dir, '**', '*.py'), recursive=True)
+    logger.info(f"Found {len(python_files)} Python files in {base_dir}")
+    
+    for file_path in python_files:
+        try:
+            # Convert file path to import path
+            rel_path = os.path.relpath(file_path, cwd)
+            # Remove .py extension
+            module_path = os.path.splitext(rel_path)[0]
+            # Convert path separators to dots for import
+            module_path = module_path.replace(os.path.sep, '.')
+            
+            # Skip __init__.py files
+            if module_path.endswith('__init__'):
+                continue
+                
+            #logger.info(f"Attempting to import module: {module_path}")
+            
+            # Import the module
+            module = importlib.import_module(module_path)
+            
+            # Find all Blueprint instances in the module
+            for name, obj in inspect.getmembers(module):
+                if isinstance(obj, Blueprint) and obj not in registered_blueprints:
+                    pid = os.getpid()
+                    logger.info(f"PID {pid} Registering: {module_path}")
+                    app.register_blueprint(obj)
+                    registered_blueprints.add(obj)
+            
+        except Exception as e:
+            logger.error(f"Error importing module {module_path}: {str(e)}")
+    
+    logger.info(f"PID {pid} Registered {len(registered_blueprints)} blueprints")
+    return registered_blueprints

@@ -22,9 +22,13 @@ from services.webhook import send_webhook
 import threading
 import uuid
 import os
+import whisper
 import time
 from version import BUILD_NUMBER  # Import the BUILD_NUMBER
 from app_utils import log_job_status, discover_and_register_blueprints  # Import the discover_and_register_blueprints function
+
+os.environ.setdefault("WHISPER_CACHE_DIR", "/app/whisper_cache")
+model = whisper.load_model("base")   # < 80 MB, fits in 2 GB RAM
 
 MAX_QUEUE_LENGTH = int(os.environ.get('MAX_QUEUE_LENGTH', 0))
 

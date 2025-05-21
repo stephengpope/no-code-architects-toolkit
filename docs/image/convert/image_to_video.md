@@ -42,7 +42,7 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
         "id": {"type": "string"}
     },
     "required": ["image_url"],
-    "additionalProperties": False
+    "additionalProperties": false
 }
 ```
 

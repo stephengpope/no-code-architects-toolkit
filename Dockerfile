@@ -176,7 +176,7 @@ RUN chown appuser:appuser /app
 # Important: Switch to the appuser before downloading the model
 USER appuser
 
-RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
+# RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
 
 # Copy the rest of the application code
 COPY . .

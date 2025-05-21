@@ -48,7 +48,7 @@ def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, we
             output_dims = "1080x1920"
 
         # Calculate total frames and zoom factor
-        total_frames = int(length * frame_rate)
+        total_frames = float(length * frame_rate)
         zoom_factor = 1 + (zoom_speed * length)
 
         logger.info(f"Using scale dimensions: {scale_dims}, output dimensions: {output_dims}")

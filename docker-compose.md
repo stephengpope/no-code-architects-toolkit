@@ -136,9 +136,9 @@ API_KEY=your_api_key_here
 #
 #S3_ACCESS_KEY=your_access_key
 #S3_SECRET_KEY=your_secret_key
-#S3_ENDPOINT=https://your-endpoint-url
+#S3_ENDPOINT_URL=https://your-endpoint-url
 #S3_REGION=your-region
-#S3_BUCKET=your-bucket-name
+#S3_BUCKET_NAME=your-bucket-name
 
 
 # Google Cloud Storage Env Variables

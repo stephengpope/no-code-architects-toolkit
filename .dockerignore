@@ -1,0 +1,25 @@
+# Ignore Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore environment and config files
+.env
+.env_variables.json
+.env_shell.json
+
+# Ignore version control and editor files
+.git/
+.vscode/
+.DS_Store
+
+# Ignore scripts and documentation not needed in image
+README.md
+local.sh
+generate_vector.sh
+docs/
+
+# Ignore repository/configuration files not needed in image
+.github/
+.gitignore

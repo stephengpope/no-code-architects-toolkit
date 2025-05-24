@@ -104,6 +104,9 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **[`/v1/video/caption`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/caption_video.md)**
   - Adds customizable captions to videos with various styling options.
 
+- **[`/v1/video/youtube_transcript`](docs/video/youtube_transcript.md)**
+  - Fetches the transcript for a given YouTube video. Supports output in JSON, plain text, or SRT subtitle format.
+
 - **[`/v1/video/concatenate`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/video/concatenate.md)**
   - Combines multiple videos into a single continuous video file.
 

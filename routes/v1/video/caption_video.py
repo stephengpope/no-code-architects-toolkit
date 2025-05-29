@@ -87,7 +87,8 @@ logger = logging.getLogger(__name__)
         },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "language": {"type": "string"}
+        "language": {"type": "string"},
+        "initial_prompt": {"type": "string"}
     },
     "required": ["video_url"],
     "additionalProperties": False
@@ -101,6 +102,7 @@ def caption_video_v1(job_id, data):
     webhook_url = data.get('webhook_url')
     id = data.get('id')
     language = data.get('language', 'auto')
+    initial_prompt = data.get('initial_prompt')
 
     logger.info(f"Job {job_id}: Received v1 captioning request for {video_url}")
     logger.info(f"Job {job_id}: Settings received: {settings}")
@@ -112,7 +114,7 @@ def caption_video_v1(job_id, data):
         # This ensures position and alignment remain independent keys.
         
         # Process video with the enhanced v1 service
-        output = process_captioning_v1(video_url, captions, settings, replace, job_id, language)
+        output = process_captioning_v1(video_url, captions, settings, replace, job_id, language, initial_prompt)
         
         if isinstance(output, dict) and 'error' in output:
             # Check if this is a font-related error by checking for 'available_fonts' key

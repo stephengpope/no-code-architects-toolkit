@@ -29,7 +29,7 @@ from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line=None):
+def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line=None, initial_prompt=None):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
     input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
@@ -52,6 +52,8 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
         # Add language specification if provided
         if language:
             options["language"] = language
+        if initial_prompt:
+            options["initial_prompt"] = initial_prompt
 
         result = model.transcribe(input_filename, **options)
         

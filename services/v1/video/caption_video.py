@@ -62,7 +62,7 @@ def rgb_to_ass_color(rgb_color):
             return f"&H00{b:02X}{g:02X}{r:02X}"
     return "&H00FFFFFF"
 
-def generate_transcription(video_path, language='auto'):
+def generate_transcription(video_path, language='auto', initial_prompt=None):
     try:
         model = whisper.load_model("base")
         transcription_options = {
@@ -71,6 +71,8 @@ def generate_transcription(video_path, language='auto'):
         }
         if language != 'auto':
             transcription_options['language'] = language
+        if initial_prompt:
+            transcription_options['initial_prompt'] = initial_prompt
         result = model.transcribe(video_path, **transcription_options)
         logger.info(f"Transcription generated successfully for video: {video_path}")
         return result
@@ -649,7 +651,7 @@ def process_subtitle_events(transcription_result, style_type, settings, replace_
     """
     return srt_to_ass(transcription_result, style_type, settings, replace_dict, video_resolution)
 
-def process_captioning_v1(video_url, captions, settings, replace, job_id, language='auto'):
+def process_captioning_v1(video_url, captions, settings, replace, job_id, language='auto', initial_prompt=None):
     """
     Captioning process with transcription fallback and multiple styles.
     Integrates with the updated logic for positioning and alignment.
@@ -743,7 +745,7 @@ def process_captioning_v1(video_url, captions, settings, replace, job_id, langua
         else:
             # No captions provided, generate transcription
             logger.info(f"Job {job_id}: No captions provided, generating transcription.")
-            transcription_result = generate_transcription(video_path, language=language)
+            transcription_result = generate_transcription(video_path, language=language, initial_prompt=initial_prompt)
             # Generate ASS based on chosen style
             subtitle_content = process_subtitle_events(transcription_result, style_type, style_options, replace_dict, video_resolution)
             subtitle_type = 'ass'

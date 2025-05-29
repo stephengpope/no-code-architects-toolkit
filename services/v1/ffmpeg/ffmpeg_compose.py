@@ -106,6 +106,7 @@ def process_ffmpeg_compose(data, job_id):
             command.append(str(option["argument"]))
     
     # Add inputs
+    input_paths = []
     for input_data in data["inputs"]:
         if "options" in input_data:
             for option in input_data["options"]:
@@ -113,6 +114,7 @@ def process_ffmpeg_compose(data, job_id):
                 if "argument" in option and option["argument"] is not None:
                     command.append(str(option["argument"]))
         input_path = download_file(input_data["file_url"], LOCAL_STORAGE_PATH)
+        input_paths.append(input_path)
         command.extend(["-i", input_path])
     
     # Add filters
@@ -145,8 +147,7 @@ def process_ffmpeg_compose(data, job_id):
         raise Exception(f"FFmpeg command failed: {e.stderr}")
     
     # Clean up input files
-    for input_data in data["inputs"]:
-        input_path = os.path.join(LOCAL_STORAGE_PATH, os.path.basename(input_data["file_url"]))
+    for input_path in input_paths:
         if os.path.exists(input_path):
             os.remove(input_path)
     

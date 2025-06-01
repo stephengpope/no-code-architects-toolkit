@@ -10,19 +10,21 @@ v1_video_youtube_transcript_bp = Blueprint('v1_video_youtube_transcript', __name
 @validate_payload({
     "type": "object",
     "properties": {
-        "video_url": {"type": "string"},
+        "youtube_url": {"type": "string"},
         "languages": {"type": "array", "items": {"type": "string"}},
-        "format": {"type": "string", "enum": ["json", "plain", "srt"]}
+        "format": {"type": "string", "enum": ["json", "plain", "srt"]},
+        "response_type": {"type": "string", "enum": ["direct", "cloud"]}
     },
-    "required": ["video_url"],
+    "required": ["youtube_url"],
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
 def youtube_transcript(job_id, data):
-    video_url = data['video_url']
+    youtube_url = data['youtube_url']
     languages = data.get('languages')
     format = data.get('format', 'json')
-    result = fetch_youtube_transcript(video_url, languages, format)
+    response_type = data.get('response_type', 'direct')
+    result = fetch_youtube_transcript(youtube_url, languages, format, response_type, job_id)
     if "error" in result:
         return result, "/v1/video/youtube/transcript", 400
     return result, "/v1/video/youtube/transcript", 200 

@@ -19,6 +19,7 @@
 import os
 import subprocess
 import json
+import re
 from services.file_management import download_file
 from config import LOCAL_STORAGE_PATH
 
@@ -118,8 +119,21 @@ def process_ffmpeg_compose(data, job_id):
         command.extend(["-i", input_path])
     
     # Add filters
+    subtitles_paths = []  # Track downloaded subtitles/filter files
     if data.get("filters"):
-        filter_complex = ";".join(filter_obj["filter"] for filter_obj in data["filters"])
+        new_filters = []
+        for filter_obj in data["filters"]:
+            filter_str = filter_obj["filter"]
+            def replace_subtitles_url(match):
+                url = match.group(1)
+                local_path = download_file(url, LOCAL_STORAGE_PATH)
+                subtitles_paths.append(local_path)
+                fixed_path = local_path.replace('\\', '/')
+                return f"subtitles='{fixed_path}"  # keep the opening quote
+            # Regex: subtitles='<url>' or subtitles="<url>"
+            filter_str = re.sub(r"subtitles=['\"]([^'\"]+)", replace_subtitles_url, filter_str)
+            new_filters.append(filter_str)
+        filter_complex = ";".join(new_filters)
         command.extend(["-filter_complex", filter_complex])
     
     # Add outputs
@@ -150,7 +164,10 @@ def process_ffmpeg_compose(data, job_id):
     for input_path in input_paths:
         if os.path.exists(input_path):
             os.remove(input_path)
-    
+    # Clean up subtitles/filter files
+    for subtitles_path in subtitles_paths:
+        if os.path.exists(subtitles_path):
+            os.remove(subtitles_path)
     # Get metadata if requested
     metadata = []
     if data.get("metadata"):

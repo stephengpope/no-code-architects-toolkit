@@ -66,13 +66,28 @@ def fetch_youtube_transcript(youtube_url, languages=None, format="json", respons
         
         # Handle response type
         if response_type == "cloud":
+            # Define file extensions for different formats
+            format_extensions = {
+                "json": ".json",
+                "plain": ".txt",
+                "srt": ".srt"
+            }
+            file_extension = format_extensions.get(format, ".json")  # Default to .json if format is unknown
+
             # Create a temporary file and upload it to cloud storage
-            temp_file_path = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_transcript.json")
+            temp_file_path = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_transcript{file_extension}")
             
             try:
                 # Write transcript data to temporary file
                 with open(temp_file_path, 'w', encoding='utf-8') as f:
-                    json.dump(transcript_data, f, ensure_ascii=False, indent=2)
+                    if format == "json":
+                        json.dump(transcript_data, f, ensure_ascii=False, indent=2)
+                    elif format == "plain":
+                        f.write(transcript_data["transcript"])
+                    elif format == "srt":
+                        f.write(transcript_data["transcript"])
+                    else: # Should not happen given the format validation, but good to have a fallback
+                        json.dump(transcript_data, f, ensure_ascii=False, indent=2)
                 
                 # Upload to cloud storage
                 cloud_url = upload_file(temp_file_path)

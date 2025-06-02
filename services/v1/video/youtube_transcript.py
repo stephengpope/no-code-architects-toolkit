@@ -81,12 +81,14 @@ def fetch_youtube_transcript(youtube_url, languages=None, format="json", respons
                 # Write transcript data to temporary file
                 with open(temp_file_path, 'w', encoding='utf-8') as f:
                     if format == "json":
+                        # For cloud JSON, dump the list of segments directly
                         json.dump(transcript_data["transcript"], f, ensure_ascii=False, indent=2)
                     elif format == "plain":
                         f.write(transcript_data["transcript"])
                     elif format == "srt":
                         f.write(transcript_data["transcript"])
                     else: # Should not happen given the format validation, but good to have a fallback
+                        # Fallback to dumping the whole transcript_data if format is somehow unknown here
                         json.dump(transcript_data, f, ensure_ascii=False, indent=2)
                 
                 # Upload to cloud storage

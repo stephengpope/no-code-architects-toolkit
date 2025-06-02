@@ -81,7 +81,7 @@ def fetch_youtube_transcript(youtube_url, languages=None, format="json", respons
                 # Write transcript data to temporary file
                 with open(temp_file_path, 'w', encoding='utf-8') as f:
                     if format == "json":
-                        json.dump(transcript_data, f, ensure_ascii=False, indent=2)
+                        json.dump(transcript_data["transcript"], f, ensure_ascii=False, indent=2)
                     elif format == "plain":
                         f.write(transcript_data["transcript"])
                     elif format == "srt":

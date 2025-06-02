@@ -56,12 +56,11 @@ def take_screenshot(data: dict, job_id=None):
                 if data.get("url"):
                     url_domain = urlparse(data["url"]).hostname
                 elif data.get("html"):
-                    # fallback: allow cookies if domain is set, but skip strict validation
                     url_domain = None
                 for cookie in data["cookies"]:
                     cookie_domain = cookie["domain"].lstrip(".")
                     if url_domain and not (url_domain == cookie_domain or url_domain.endswith(f".{cookie_domain}")):
-                        raise ValueError(f"Cookie domain '{cookie['domain']}' does not match or is not a parent domain of URL domain '{url_domain}'.")
+                        raise Exception("COOKIE_DOMAIN_MISMATCH")
                 context.add_cookies(data["cookies"])
 
             # Set page content from html or navigate to url
@@ -70,14 +69,14 @@ def take_screenshot(data: dict, job_id=None):
             elif data.get("url"):
                 page.goto(data["url"], timeout=data.get("timeout", 30000), wait_until=data.get("wait_until", "load"))
             else:
-                raise ValueError("Either 'url' or 'html' must be provided.")
+                raise Exception("MISSING_URL_OR_HTML")
 
             # Wait for a selector if specified
             if data.get("wait_for_selector"):
                 try:
                     page.wait_for_selector(data["wait_for_selector"])
                 except Exception as e:
-                    raise ValueError(f"Selector '{data['wait_for_selector']}' not found: {e}")
+                    raise Exception("WAIT_FOR_SELECTOR_NOT_FOUND")
 
             # Emulate media features
             if data.get("emulate"):
@@ -99,13 +98,13 @@ def take_screenshot(data: dict, job_id=None):
 
             # Ensure omit_background is only used with PNG
             if data.get("omit_background", False) and data.get("format", "png") == "jpeg":
-                raise ValueError("The 'omit_background' option is not supported for JPEG format.")
+                raise Exception("OMIT_BACKGROUND_JPEG_UNSUPPORTED")
 
             # Take a screenshot of a specific element or the full page
             if data.get("selector"):
                 element = page.locator(data["selector"])
                 if element.count() == 0:
-                    raise ValueError(f"Element '{data['selector']}' not found on the page.")
+                    raise Exception("ELEMENT_NOT_FOUND")
                 screenshot = element.screenshot(
                     type=data.get("format", "png"),
                     quality=data.get("quality") if data.get("format") == "jpeg" else None,
@@ -116,7 +115,7 @@ def take_screenshot(data: dict, job_id=None):
                 if data.get("clip"):
                     clip = data["clip"]
                     if clip["x"] < 0 or clip["y"] < 0 or clip["width"] <= 0 or clip["height"] <= 0:
-                        raise ValueError("Invalid clip dimensions.")
+                        raise Exception("INVALID_CLIP_DIMENSIONS")
                 screenshot = page.screenshot(
                     full_page=data.get("full_page", False),
                     type=data.get("format", "png"),
@@ -132,6 +131,16 @@ def take_screenshot(data: dict, job_id=None):
             browser.close()
     except Exception as e:
         logger.error(f"Job {job_id}: Error taking screenshot: {str(e)}", exc_info=True)
-        return {"error": str(e)}
+        error_message = str(e)
+        error_map = {
+            "ELEMENT_NOT_FOUND": f"The selector '{data.get('selector')}' was not found on the page. Please check your selector.",
+            "INVALID_CLIP_DIMENSIONS": "Clip dimensions must be positive and non-negative.",
+            "COOKIE_DOMAIN_MISMATCH": "A cookie domain does not match or is not a parent of the URL domain.",
+            "OMIT_BACKGROUND_JPEG_UNSUPPORTED": "'omit_background' is only supported for PNG format.",
+            "MISSING_URL_OR_HTML": "You must provide either a 'url' or 'html' field.",
+            "WAIT_FOR_SELECTOR_NOT_FOUND": "The selector specified in 'wait_for_selector' was not found on the page."
+        }
+        error_message = error_map.get(error_message, str(e))
+        return {"error": error_message}
     finally:
         p.stop()

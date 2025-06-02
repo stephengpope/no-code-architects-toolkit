@@ -12,11 +12,11 @@
 
 ## 1. Overview
 
-The `/v1/image/screenshot-webpage` endpoint allows you to capture screenshots of web pages using the Playwright browser automation library. It supports advanced options such as viewport size, device emulation, cookies, headers, element targeting, and more. Screenshots are uploaded to cloud storage, and the resulting URL is returned. This endpoint is part of the v1 API suite and is registered in the main Flask application as a blueprint.
+The `/v1/playwright/screenshot` endpoint allows you to capture screenshots of web pages using the Playwright browser automation library. It supports advanced options such as viewport size, device emulation, cookies, headers, element targeting, and more. Screenshots are uploaded to cloud storage, and the resulting URL is returned. This endpoint is part of the v1 API suite and is registered in the main Flask application as a blueprint.
 
 ## 2. Endpoint
 
-- **URL Path:** `/v1/image/screenshot-webpage`
+- **URL Path:** `/v1/playwright/screenshot`
 - **HTTP Method:** `POST`
 
 ## 3. Request
@@ -59,30 +59,44 @@ The request body must be a JSON object with the following properties:
 
 ```json
 {
-  "url": "https://example.com",
-  "viewport_width": 1280,
-  "viewport_height": 720,
-  "js": "document.body.style.background = 'red';",
-  "css": "body { font-size: 30px; }",
-  "full_page": true,
-  "format": "png",
-  "delay": 500,
-  "device_scale_factor": 2,
-  "user_agent": "CustomAgent/1.0",
-  "cookies": [
-    {"name": "sessionid", "value": "abc123", "domain": "example.com"}
-  ],
-  "headers": {"X-Test": "yes"},
-  "quality": 90,
-  "clip": {"x": 0, "y": 0, "width": 800, "height": 600},
-  "timeout": 10000,
-  "wait_until": "networkidle",
-  "wait_for_selector": "#main",
-  "emulate": {"color_scheme": "dark"},
-  "omit_background": true,
-  "selector": "#main-content",
-  "webhook_url": "https://your-webhook.com/callback",
-  "id": "custom-job-123"
+    "url": "https://example.com",
+    "viewport_width": 1280,
+    "viewport_height": 720,
+    "js": "document.body.style.background = 'red';",
+    "css": "body { font-size: 30px; }",
+    "full_page": true,
+    "format": "png",
+    "delay": 500,
+    "device_scale_factor": 2,
+    "user_agent": "CustomAgent/1.0",
+    "cookies": [
+        {
+            "name": "test_cookie",
+            "value": "test_value",
+            "domain": "example.com",
+            "path": "/"
+        }
+    ],
+    "headers": {
+        "Accept-Language": "en-US,en;q=0.9"
+    },
+    "quality": 90,
+    "clip": {
+        "x": 0,
+        "y": 0,
+        "width": 800,
+        "height": 600
+    },
+    "timeout": 10000,
+    "wait_until": "networkidle",
+    "wait_for_selector": "#main-content",
+    "selector": "#main-content",
+    "emulate": {
+        "color_scheme": "dark"
+    },
+    "omit_background": true,
+    "webhook_url": "https://your-webhook.com/callback",
+    "id": "custom-job-123"
 }
 ```
 
@@ -104,21 +118,21 @@ curl -X POST \
     "device_scale_factor": 2,
     "user_agent": "CustomAgent/1.0",
     "cookies": [
-      {"name": "sessionid", "value": "abc123", "domain": "example.com"}
+      {"name": "test_cookie", "value": "test_value", "domain": "example.com", "path": "/}
     ],
-    "headers": {"X-Test": "yes"},
+    "headers": {"Accept-Language": "en-US,en;q=0.9"},
     "quality": 90,
     "clip": {"x": 0, "y": 0, "width": 800, "height": 600},
     "timeout": 10000,
     "wait_until": "networkidle",
-    "wait_for_selector": "#main",
+    "wait_for_selector": "#main-content",
+    "selector": "#main-content",
     "emulate": {"color_scheme": "dark"},
     "omit_background": true,
-    "selector": "#main-content",
     "webhook_url": "https://your-webhook.com/callback",
     "id": "custom-job-123"
   }' \
-  https://your-api-endpoint.com/v1/image/screenshot-webpage
+  https://your-api-endpoint.com/v1/playwright/screenshot
 ```
 
 ## 4. Response
@@ -129,7 +143,7 @@ The response is a JSON object containing the cloud storage URL of the screenshot
 
 ```json
 {
-  "endpoint": "/v1/image/screenshot-webpage",
+  "endpoint": "/v1/playwright/screenshot",
   "code": 200,
   "id": "custom-job-123",
   "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
@@ -156,7 +170,7 @@ Example error response:
 
 ```json
 {
-  "endpoint": "/v1/image/screenshot-webpage",
+  "endpoint": "/v1/playwright/screenshot",
   "code": 500,
   "id": "custom-job-123",
   "job_id": "d290f1ee-6c54-4b01-90e6-d701748f0851",

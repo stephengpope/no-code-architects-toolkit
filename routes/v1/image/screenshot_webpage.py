@@ -107,6 +107,9 @@ def screenshot(job_id, data):
     logger.info(f"Job {job_id}: Received screenshot request for {data.get('url')}")
     try:
         screenshot_io = take_screenshot(data, job_id)
+        if isinstance(screenshot_io, dict) and 'error' in screenshot_io:
+            logger.error(f"Job {job_id}: Screenshot error: {screenshot_io['error']}")
+            return {"error": screenshot_io['error']}, "/v1/image/screenshot-webpage", 400
         format = data.get("format", "png")
         temp_file_path = f"{job_id}_screenshot.{format}"
         with open(temp_file_path, "wb") as temp_file:

@@ -24,7 +24,7 @@ from app_utils import *
 from app_utils import validate_payload, queue_task_wrapper
 import logging
 import os
-from services.v1.playwright.screenshot import take_screenshot
+from services.v1.image.screenshot_webpage import take_screenshot
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 from playwright.sync_api import sync_playwright
@@ -35,7 +35,7 @@ v1_playwright_screenshot_bp = Blueprint('v1_playwright_screenshot', __name__)
 logger = logging.getLogger(__name__)
 
 
-@v1_playwright_screenshot_bp.route('/v1/playwright/screenshot', methods=['POST'])
+@v1_playwright_screenshot_bp.route('/v1/image/screenshot-webpage', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",

@@ -31,11 +31,11 @@ from playwright.sync_api import sync_playwright
 from io import BytesIO
 
 
-v1_playwright_screenshot_bp = Blueprint('v1_playwright_screenshot', __name__)
+v1_image_screenshot_webpage_bp = Blueprint('v1_image_screenshot_webpage', __name__)
 logger = logging.getLogger(__name__)
 
 
-@v1_playwright_screenshot_bp.route('/v1/image/screenshot-webpage', methods=['POST'])
+@v1_image_screenshot_webpage_bp.route('/v1/image/screenshot-webpage', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
@@ -114,7 +114,7 @@ def screenshot(job_id, data):
         cloud_url = upload_file(temp_file_path)
         os.remove(temp_file_path)
         logger.info(f"Job {job_id}: Screenshot successfully processed and uploaded.")
-        return cloud_url, "/v1/playwright/screenshot", 200
+        return cloud_url, "/v1/image/screenshot-webpage", 200
     except Exception as e:
         logger.error(f"Job {job_id}: Error processing screenshot: {str(e)}", exc_info=True)
-        return {"error": str(e)}, "/v1/playwright/screenshot", 500
+        return {"error": str(e)}, "/v1/image/screenshot-webpage", 500

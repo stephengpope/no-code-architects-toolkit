@@ -6,6 +6,15 @@ import tempfile
 import json
 from config import LOCAL_STORAGE_PATH
 from services.cloud_storage import upload_file
+import logging
+import time
+from flask import make_response
+
+logger = logging.getLogger(__name__)
+
+# Simple in-memory cache: {video_id: (timestamp, transcript_data)}
+TRANSCRIPT_CACHE = {}
+CACHE_DURATION_SECONDS = 3600  # 1 hour
 
 def extract_video_id(youtube_url):
     """
@@ -38,11 +47,61 @@ def fetch_youtube_transcript(youtube_url, languages=None, format="json", respons
     try:
         # Extract video ID from URL
         video_id = extract_video_id(youtube_url)
-        
-        transcript_obj = YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(languages or ['en'])
-        fetched_transcript = transcript_obj.fetch()
-        if fetched_transcript is None:
-            return {"error": "No transcript available for this video."}
+
+        # Check cache first
+        now = time.time()
+        cache_entry = TRANSCRIPT_CACHE.get(video_id)
+        if cache_entry:
+            cached_time, cached_transcript = cache_entry
+            if now - cached_time < CACHE_DURATION_SECONDS:
+                logger.info(f"Serving transcript for {video_id} from cache.")
+                fetched_transcript = cached_transcript
+            else:
+                logger.info(f"Cache expired for {video_id}, fetching new transcript.")
+                fetched_transcript = None
+        else:
+            fetched_transcript = None
+
+        if not fetched_transcript:
+            # Exponential backoff retry logic
+            max_retries = 3
+            backoff_times = [1, 2, 4]  # seconds
+            last_exception = None
+            for attempt in range(max_retries):
+                try:
+                    transcript_obj = YouTubeTranscriptApi.list_transcripts(video_id).find_transcript(languages or ['en'])
+                    fetched_transcript = transcript_obj.fetch()
+                    if fetched_transcript:
+                        break  # Success
+                except Exception as fetch_err:
+                    last_exception = fetch_err
+                    logger.warning(f"Transcript fetch attempt {attempt+1} failed: {fetch_err}")
+                    # Check for likely rate limit error
+                    err_str = str(fetch_err).lower()
+                    if "rate limit" in err_str or "429" in err_str:
+                        logger.error(f"Likely rate limit encountered: {fetch_err}")
+                        return make_response({"error": "YouTube is rate limiting transcript requests. Please wait and try again later."}, 429)
+                    # Exponential backoff
+                    if attempt < max_retries - 1:
+                        time.sleep(backoff_times[attempt])
+            else:
+                # All retries failed
+                err_str = str(last_exception).lower() if last_exception else ""
+                if "rate limit" in err_str or "429" in err_str:
+                    logger.error(f"Likely rate limit encountered after retries: {last_exception}")
+                    return make_response({"error": "YouTube is rate limiting transcript requests. Please wait and try again later."}, 429)
+                logger.error(f"Transcript fetch failed after retries: {last_exception}")
+                return make_response({"error": f"Transcript fetch failed: {last_exception}"}, 400)
+
+            # Defensive: check for None or empty list
+            if not fetched_transcript:
+                logger.error(f"Fetched transcript is empty or None for video_id {video_id}")
+                return make_response({"error": "No transcript available for this video. This may be due to YouTube rate limiting or the video not having captions enabled. Please try again later."}, 400)
+
+            # Log the raw transcript for debugging
+            logger.info(f"Fetched transcript for video_id {video_id}: {fetched_transcript}")
+            # Update cache
+            TRANSCRIPT_CACHE[video_id] = (now, fetched_transcript)
 
         if format == "plain":
             text = TextFormatter().format_transcript(fetched_transcript)

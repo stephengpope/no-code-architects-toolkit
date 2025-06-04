@@ -35,7 +35,7 @@ v1_image_screenshot_webpage_bp = Blueprint('v1_image_screenshot_webpage', __name
 logger = logging.getLogger(__name__)
 
 
-@v1_image_screenshot_webpage_bp.route('/v1/image/screenshot-webpage', methods=['POST'])
+@v1_image_screenshot_webpage_bp.route('/v1/image/screenshot/webpage', methods=['POST'])
 @authenticate
 @validate_payload({
     "type": "object",
@@ -109,7 +109,7 @@ def screenshot(job_id, data):
         screenshot_io = take_screenshot(data, job_id)
         if isinstance(screenshot_io, dict) and 'error' in screenshot_io:
             logger.error(f"Job {job_id}: Screenshot error: {screenshot_io['error']}")
-            return {"error": screenshot_io['error']}, "/v1/image/screenshot-webpage", 400
+            return {"error": screenshot_io['error']}, "/v1/image/screenshot/webpage", 400
         format = data.get("format", "png")
         temp_file_path = f"{job_id}_screenshot.{format}"
         with open(temp_file_path, "wb") as temp_file:
@@ -117,7 +117,7 @@ def screenshot(job_id, data):
         cloud_url = upload_file(temp_file_path)
         os.remove(temp_file_path)
         logger.info(f"Job {job_id}: Screenshot successfully processed and uploaded.")
-        return cloud_url, "/v1/image/screenshot-webpage", 200
+        return cloud_url, "/v1/image/screenshot/webpage", 200
     except Exception as e:
         logger.error(f"Job {job_id}: Error processing screenshot: {str(e)}", exc_info=True)
-        return {"error": str(e)}, "/v1/image/screenshot-webpage", 500
+        return {"error": str(e)}, "/v1/image/screenshot/webpage", 500

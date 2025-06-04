@@ -24,6 +24,7 @@ from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
 import logging
 import uuid
+from config import WHISPER_MODEL
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ def process_transcription(media_url, output_type, max_chars=56, language=None,):
     logger.info(f"Downloaded media to local file: {input_filename}")
 
     try:
-        model = whisper.load_model("base")
+        model = whisper.load_model(WHISPER_MODEL)
         logger.info("Loaded Whisper model")
 
         # result = model.transcribe(input_filename)

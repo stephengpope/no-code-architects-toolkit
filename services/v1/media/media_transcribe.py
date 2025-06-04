@@ -23,7 +23,7 @@ from datetime import timedelta
 from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
 import logging
-from config import LOCAL_STORAGE_PATH
+from config import LOCAL_STORAGE_PATH, WHISPER_MODEL
 
 # Set up logging
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
     try:
         # Load a larger model for better translation quality
         #model_size = "large" if task == "translate" else "base"
-        model_size = "base"
+        model_size = WHISPER_MODEL
         model = whisper.load_model(model_size)
         logger.info(f"Loaded Whisper {model_size} model")
 

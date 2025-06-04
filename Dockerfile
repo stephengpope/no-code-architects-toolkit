@@ -1,5 +1,7 @@
 # Base image
-FROM python:3.9-slim
+FROM nvidia/cuda:12.8.0-cudnn-devel-ubuntu24.04
+
+
 
 # Install system dependencies, build tools, and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -41,7 +43,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtool \
     libfribidi-dev \
     libharfbuzz-dev \
-    && rm -rf /var/lib/apt/lists/*
+    python3 \
+    python3-pip \
+    python3-venv \
+    && rm -rf /var/lib/apt/lists/* 
 
 # Install SRT from source (latest version using cmake)
 RUN git clone https://github.com/Haivision/srt.git && \
@@ -101,6 +106,14 @@ RUN git clone https://github.com/libass/libass.git && \
     ldconfig && \
     cd .. && rm -rf libass
 
+# Install ffnvcodec headers required for nvenc/nvdec
+RUN git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && \
+    cd nv-codec-headers && \
+    make -j$(nproc) && \
+    make install && \
+    cd .. && rm -rf nv-codec-headers
+
+
 # Build and install FFmpeg with all required features
 RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     cd ffmpeg && \
@@ -110,6 +123,10 @@ RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg && \
     LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
     ./configure --prefix=/usr/local \
         --enable-gpl \
+        --enable-nvenc \
+        --enable-cuda-nvcc \
+        --enable-cuvid \
+        --enable-nonfree \
         --enable-pthreads \
         --enable-neon \
         --enable-libaom \
@@ -162,10 +179,16 @@ RUN mkdir -p ${WHISPER_CACHE_DIR}
 COPY requirements.txt .
 
 # Install Python dependencies, upgrade pip 
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install openai-whisper && \
-    pip install jsonschema 
+RUN python3 -m venv /opt/venv && \
+    /opt/venv/bin/pip install --upgrade pip && \
+    /opt/venv/bin/pip install -r requirements.txt && \
+    /opt/venv/bin/pip install openai-whisper jsonschema ffmpeg-python torch 
+
+# Set environment path for venv
+ENV PATH="/opt/venv/bin:$PATH"
+ENV WHISPER_MODEL="base"
+
+RUN ffmpeg -version
 
 # Create the appuser 
 RUN useradd -m appuser 
@@ -176,7 +199,7 @@ RUN chown appuser:appuser /app
 # Important: Switch to the appuser before downloading the model
 USER appuser
 
-RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
+RUN /opt/venv/bin/python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model(os.environ.get('WHISPER_MODEL'))"
 
 # Copy the rest of the application code
 COPY . .
@@ -188,7 +211,7 @@ EXPOSE 8080
 ENV PYTHONUNBUFFERED=1
 
 RUN echo '#!/bin/bash\n\
-gunicorn --bind 0.0.0.0:8080 \
+/opt/venv/bin/gunicorn --bind 0.0.0.0:8080 \
     --workers ${GUNICORN_WORKERS:-2} \
     --timeout ${GUNICORN_TIMEOUT:-300} \
     --worker-class sync \

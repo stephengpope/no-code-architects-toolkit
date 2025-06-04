@@ -28,7 +28,7 @@ from services.file_management import download_file
 from services.cloud_storage import upload_file  # Ensure this import is present
 import requests  # Ensure requests is imported for webhook handling
 from urllib.parse import urlparse
-from config import LOCAL_STORAGE_PATH
+from config import LOCAL_STORAGE_PATH, WHISPER_MODEL
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -64,7 +64,7 @@ def rgb_to_ass_color(rgb_color):
 
 def generate_transcription(video_path, language='auto'):
     try:
-        model = whisper.load_model("base")
+        model = whisper.load_model(WHISPER_MODEL)
         transcription_options = {
             'word_timestamps': True,
             'verbose': True,

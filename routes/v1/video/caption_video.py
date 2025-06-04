@@ -90,10 +90,11 @@ logger = logging.getLogger(__name__)
             "items": {
                 "type": "object",
                 "properties": {
-                    "start": { "type": "number", "minimum": 0 },
-                    "end": { "type": "number", "minimum": 0 }
+                    "start": { "anyOf": [ { "type": "number", "minimum": 0 }, { "type": "string" } ] },
+                    "end": { "anyOf": [ { "type": "number", "minimum": 0 }, { "type": "string" } ] }
                 },
-                "required": ["start", "end"]
+                "required": ["start", "end"],
+                "additionalProperties": False
             }
         },
         "webhook_url": {"type": "string", "format": "uri"},

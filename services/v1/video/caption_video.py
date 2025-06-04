@@ -710,12 +710,36 @@ def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
     else:
         return sub_content
 
+def normalize_time_ranges(exclude_time_ranges):
+    """
+    Normalize start/end in exclude_time_ranges to floats if possible.
+    Throw an error if any value is less than 0 or if end <= start.
+    """
+    normalized = []
+    for rng in exclude_time_ranges:
+        start = rng.get('start')
+        end = rng.get('end')
+        try:
+            start_val = float(start)
+            end_val = float(end)
+            if start_val < 0 or end_val < 0:
+                raise ValueError(f"exclude_time_ranges contains negative value: start={start_val}, end={end_val}")
+            if end_val <= start_val:
+                raise ValueError(f"exclude_time_ranges: end ({end_val}) must be greater than start ({start_val})")
+            normalized.append({'start': start_val, 'end': end_val})
+        except (ValueError, TypeError) as e:
+            raise ValueError(f"Invalid exclude_time_ranges entry: {rng}. Error: {e}")
+    return normalized
+
 def process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language='auto'):
     """
     Captioning process with transcription fallback and multiple styles.
     Integrates with the updated logic for positioning and alignment.
     """
     try:
+        # Normalize exclude_time_ranges to ensure start/end are floats
+        exclude_time_ranges = normalize_time_ranges(exclude_time_ranges)
+
         if not isinstance(settings, dict):
             logger.error(f"Job {job_id}: 'settings' should be a dictionary.")
             return {"error": "'settings' should be a dictionary."}

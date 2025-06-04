@@ -35,7 +35,7 @@ v1_s3_upload_bp = Blueprint('v1_s3_upload', __name__)
         "file_url": {"type": "string", "format": "uri"},
         "filename": {"type": "string"},
         "public": {"type": "boolean"},
-        "headers": {"type": "object"}
+        "download_headers": {"type": "object"}
     },
     "required": ["file_url"]
 })
@@ -45,12 +45,12 @@ def s3_upload_endpoint(job_id, data):
         file_url = data.get('file_url')
         filename = data.get('filename')  # Optional, will default to original filename if not provided
         make_public = data.get('public', False)  # Default to private
-        headers = data.get('headers')  # Optional headers for authentication
+        download_headers = data.get('download_headers')  # Optional headers for authentication
         
         logger.info(f"Job {job_id}: Starting S3 streaming upload from {file_url}")
         
         # Call the service function to handle the upload
-        result = stream_upload_to_s3(file_url, filename, make_public, headers)
+        result = stream_upload_to_s3(file_url, filename, make_public, download_headers)
         
         logger.info(f"Job {job_id}: Successfully uploaded to S3")
         

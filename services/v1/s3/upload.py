@@ -52,7 +52,7 @@ def get_filename_from_url(url):
     
     return filename
 
-def stream_upload_to_s3(file_url, custom_filename=None, make_public=False, headers=None):
+def stream_upload_to_s3(file_url, custom_filename=None, make_public=False, download_headers=None):
     """
     Stream a file from a URL directly to S3 without saving to disk.
     
@@ -60,7 +60,7 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False, heade
         file_url (str): URL of the file to download
         custom_filename (str, optional): Custom filename for the uploaded file
         make_public (bool, optional): Whether to make the file publicly accessible
-        headers (dict, optional): Headers to include in the download request for authentication
+        download_headers (dict, optional): Headers to include in the download request for authentication
     
     Returns:
         dict: Information about the uploaded file
@@ -92,7 +92,7 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False, heade
         upload_id = multipart_upload['UploadId']
         
         # Stream the file from URL
-        response = requests.get(file_url, stream=True, headers=headers)
+        response = requests.get(file_url, stream=True, headers=download_headers)
         response.raise_for_status()
         
         # Process in chunks using multipart upload

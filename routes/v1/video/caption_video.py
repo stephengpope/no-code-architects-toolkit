@@ -85,6 +85,18 @@ logger = logging.getLogger(__name__)
                 "required": ["find", "replace"]
             }
         },
+        "exclude_time_ranges": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start": { "type": "string" },
+                    "end": { "type": "string" }
+                },
+                "required": ["start", "end"],
+                "additionalProperties": False
+            }
+        },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
         "language": {"type": "string"}
@@ -98,6 +110,7 @@ def caption_video_v1(job_id, data):
     captions = data.get('captions')
     settings = data.get('settings', {})
     replace = data.get('replace', [])
+    exclude_time_ranges = data.get('exclude_time_ranges', [])
     webhook_url = data.get('webhook_url')
     id = data.get('id')
     language = data.get('language', 'auto')
@@ -105,6 +118,7 @@ def caption_video_v1(job_id, data):
     logger.info(f"Job {job_id}: Received v1 captioning request for {video_url}")
     logger.info(f"Job {job_id}: Settings received: {settings}")
     logger.info(f"Job {job_id}: Replace rules received: {replace}")
+    logger.info(f"Job {job_id}: Exclude time ranges received: {exclude_time_ranges}")
 
     try:
         # Do NOT combine position and alignment. Keep them separate.
@@ -112,7 +126,7 @@ def caption_video_v1(job_id, data):
         # This ensures position and alignment remain independent keys.
         
         # Process video with the enhanced v1 service
-        output = process_captioning_v1(video_url, captions, settings, replace, job_id, language)
+        output = process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language)
         
         if isinstance(output, dict) and 'error' in output:
             # Check if this is a font-related error by checking for 'available_fonts' key

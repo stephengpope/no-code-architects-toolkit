@@ -31,9 +31,9 @@ The request body must be a JSON object with the following properties:
 - `id` (string, optional): An identifier for the request.
 - `language` (string, optional): The language code for the captions (e.g., "en", "fr"). Defaults to "auto".
 - `exclude_time_ranges` (array, optional): List of time ranges to skip when adding captions. Each item must be an object with:
-  - `start`: (number or string, required) The non-negative start time of the excluded range.
-  - `end`: (number or string, required) The non-negative end time, which must be strictly greater than `start`.
-  If `start` or `end` is negative, or if `end` is not greater than `start`, the request will return an error.
+  - `start`: (string, required) The start time of the excluded range, as a string timecode in `hh:mm:ss.ms` format (e.g., `00:01:23.456`).
+  - `end`: (string, required) The end time, as a string timecode in `hh:mm:ss.ms` format, which must be strictly greater than `start`.
+  If either value is not a valid timecode string, or if `end` is not greater than `start`, the request will return an error.
 
 #### Settings Schema
 
@@ -177,8 +177,8 @@ This minimal request will automatically transcribe the video and add white capti
         "font_size": 24
     },
     "exclude_time_ranges": [
-        { "start": 0, "end": 5 },
-        { "start": "10.5", "end": "15.0" }
+        { "start": "00:00:10.000", "end": "00:00:20.000" },
+        { "start": "00:00:30.000", "end": "00:00:40.000" }
     ]
 }
 ```
@@ -337,7 +337,7 @@ Additionally, the main application context (`app.py`) includes error handling fo
 - The `webhook_url` parameter is optional and can be used to receive a notification when the captioning process is complete.
 - The `id` parameter is optional and can be used to identify the request in webhook responses.
 - The `language` parameter is optional and can be used to specify the language of the captions for transcription. If not provided, the language will be automatically detected.
-- The `exclude_time_ranges` parameter can be used to specify time ranges to be excluded from captioning. Each range must have a non-negative `start` and `end` time, and `end` must be greater than `start`. Negative values are not allowed and will result in an error.
+- The `exclude_time_ranges` parameter can be used to specify time ranges to be excluded from captioning.
 
 ## 7. Common Issues
 

@@ -649,6 +649,23 @@ def process_subtitle_events(transcription_result, style_type, settings, replace_
     """
     return srt_to_ass(transcription_result, style_type, settings, replace_dict, video_resolution)
 
+def parse_time_string(time_str):
+    """Parse a time string in hh:mm:ss.ms or mm:ss.ms or ss.ms format to seconds (float)."""
+    import re
+    if not isinstance(time_str, str):
+        raise ValueError("Time value must be a string in hh:mm:ss.ms format.")
+    pattern = r"^(?:(\d+):)?(\d{1,2}):(\d{2}(?:\.\d{1,3})?)$"
+    match = re.match(pattern, time_str)
+    if not match:
+        # Try ss.ms only
+        try:
+            return float(time_str)
+        except Exception:
+            raise ValueError(f"Invalid time string: {time_str}")
+    h, m, s = match.groups(default="0")
+    total_seconds = int(h) * 3600 + int(m) * 60 + float(s)
+    return total_seconds
+
 def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
     """
     Remove subtitle lines/blocks that overlap with exclude_time_ranges.
@@ -656,24 +673,20 @@ def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
     """
 
     def parse_ass_time(ass_time):
-        """Parse ASS time format H:MM:SS.cc to seconds (float)."""
         try:
             h, m, rest = ass_time.split(":")
             s, cs = rest.split(".")
             return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100
         except Exception:
             return 0
-    
+    def parse_time_range(rng):
+        start = parse_time_string(rng['start'])
+        end = parse_time_string(rng['end'])
+        return {'start': start, 'end': end}
+    parsed_ranges = [parse_time_range(rng) for rng in exclude_time_ranges]
     if not exclude_time_ranges:
         return sub_content
     if subtitle_type == 'ass':
-        def parse_ass_time(ass_time):
-            try:
-                h, m, rest = ass_time.split(":")
-                s, cs = rest.split(".")
-                return int(h) * 3600 + int(m) * 60 + int(s) + int(cs) / 100
-            except Exception:
-                return 0
         lines = sub_content.splitlines()
         filtered_lines = []
         for line in lines:
@@ -683,11 +696,10 @@ def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
                     start = parse_ass_time(parts[1])
                     end = parse_ass_time(parts[2])
                     overlap = False
-                    for rng in exclude_time_ranges:
-                        if 'start' in rng and 'end' in rng:
-                            if start < rng['end'] and end > rng['start']:
-                                overlap = True
-                                break
+                    for rng in parsed_ranges:
+                        if start < rng['end'] and end > rng['start']:
+                            overlap = True
+                            break
                     if overlap:
                         continue
             filtered_lines.append(line)
@@ -699,37 +711,31 @@ def filter_subtitle_lines(sub_content, exclude_time_ranges, subtitle_type):
             start = sub.start.total_seconds()
             end = sub.end.total_seconds()
             overlap = False
-            for rng in exclude_time_ranges:
-                if 'start' in rng and 'end' in rng:
-                    if start < rng['end'] and end > rng['start']:
-                        overlap = True
-                        break
+            for rng in parsed_ranges:
+                if start < rng['end'] and end > rng['start']:
+                    overlap = True
+                    break
             if not overlap:
                 filtered.append(sub)
         return srt.compose(filtered)
     else:
         return sub_content
 
-def normalize_time_ranges(exclude_time_ranges):
-    """
-    Normalize start/end in exclude_time_ranges to floats if possible.
-    Throw an error if any value is less than 0 or if end <= start.
-    """
-    normalized = []
+def normalize_exclude_time_ranges(exclude_time_ranges):
+    norm = []
     for rng in exclude_time_ranges:
-        start = rng.get('start')
-        end = rng.get('end')
-        try:
-            start_val = float(start)
-            end_val = float(end)
-            if start_val < 0 or end_val < 0:
-                raise ValueError(f"exclude_time_ranges contains negative value: start={start_val}, end={end_val}")
-            if end_val <= start_val:
-                raise ValueError(f"exclude_time_ranges: end ({end_val}) must be greater than start ({start_val})")
-            normalized.append({'start': start_val, 'end': end_val})
-        except (ValueError, TypeError) as e:
-            raise ValueError(f"Invalid exclude_time_ranges entry: {rng}. Error: {e}")
-    return normalized
+        start = rng.get("start")
+        end = rng.get("end")
+        if not isinstance(start, str) or not isinstance(end, str):
+            raise ValueError("exclude_time_ranges start/end must be strings in hh:mm:ss.ms format.")
+        start_sec = parse_time_string(start)
+        end_sec = parse_time_string(end)
+        if start_sec < 0 or end_sec < 0:
+            raise ValueError("exclude_time_ranges start/end must be non-negative.")
+        if end_sec <= start_sec:
+            raise ValueError("exclude_time_ranges end must be strictly greater than start.")
+        norm.append({"start": start, "end": end})
+    return norm
 
 def process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language='auto'):
     """
@@ -738,7 +744,8 @@ def process_captioning_v1(video_url, captions, settings, replace, exclude_time_r
     """
     try:
         # Normalize exclude_time_ranges to ensure start/end are floats
-        exclude_time_ranges = normalize_time_ranges(exclude_time_ranges)
+        if exclude_time_ranges:
+            exclude_time_ranges = normalize_exclude_time_ranges(exclude_time_ranges)
 
         if not isinstance(settings, dict):
             logger.error(f"Job {job_id}: 'settings' should be a dictionary.")

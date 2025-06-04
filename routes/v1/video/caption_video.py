@@ -90,8 +90,8 @@ logger = logging.getLogger(__name__)
             "items": {
                 "type": "object",
                 "properties": {
-                    "start": { "anyOf": [ { "type": "number", "minimum": 0 }, { "type": "string" } ] },
-                    "end": { "anyOf": [ { "type": "number", "minimum": 0 }, { "type": "string" } ] }
+                    "start": { "type": "string" },
+                    "end": { "type": "string" }
                 },
                 "required": ["start", "end"],
                 "additionalProperties": False

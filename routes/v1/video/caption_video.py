@@ -19,7 +19,7 @@
 from flask import Blueprint, jsonify
 from app_utils import validate_payload, queue_task_wrapper
 import logging
-from services.v1.video.caption_video import process_captioning_v1
+from services.ass_toolkit import generate_ass_captions_v1
 from services.authentication import authenticate
 from services.cloud_storage import upload_file
 import os
@@ -126,7 +126,7 @@ def caption_video_v1(job_id, data):
         # This ensures position and alignment remain independent keys.
         
         # Process video with the enhanced v1 service
-        output = process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language)
+        output = generate_ass_captions_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language)
         
         if isinstance(output, dict) and 'error' in output:
             # Check if this is a font-related error by checking for 'available_fonts' key
@@ -137,9 +137,40 @@ def caption_video_v1(job_id, data):
                 # Non-font error scenario, do not return available_fonts
                 return {"error": output['error']}, "/v1/video/caption", 400
 
-        # If processing was successful, output is the file path
-        output_path = output
-        logger.info(f"Job {job_id}: Captioning process completed successfully")
+        # If processing was successful, output is the ASS file path
+        ass_path = output
+        logger.info(f"Job {job_id}: ASS file generated at {ass_path}")
+
+        # Prepare output filename and path for the rendered video
+        output_filename = f"{job_id}_captioned.mp4"
+        output_path = os.path.join(os.path.dirname(ass_path), output_filename)
+
+        # Download the video (if not already local)
+        video_path = None
+        try:
+            from services.file_management import download_file
+            from config import LOCAL_STORAGE_PATH
+            video_path = download_file(video_url, LOCAL_STORAGE_PATH)
+            logger.info(f"Job {job_id}: Video downloaded to {video_path}")
+        except Exception as e:
+            logger.error(f"Job {job_id}: Video download error: {str(e)}")
+            return {"error": str(e)}, "/v1/video/caption", 500
+
+        # Render the video with subtitles using FFmpeg
+        try:
+            import ffmpeg
+            ffmpeg.input(video_path).output(
+                output_path,
+                vf=f"subtitles='{ass_path}'",
+                acodec='copy'
+            ).run(overwrite_output=True)
+            logger.info(f"Job {job_id}: FFmpeg processing completed. Output saved to {output_path}")
+        except Exception as e:
+            logger.error(f"Job {job_id}: FFmpeg error: {str(e)}")
+            return {"error": f"FFmpeg error: {str(e)}"}, "/v1/video/caption", 500
+
+        # Clean up the ASS file after use
+        os.remove(ass_path)
 
         # Upload the captioned video
         cloud_url = upload_file(output_path)

@@ -737,10 +737,11 @@ def normalize_exclude_time_ranges(exclude_time_ranges):
         norm.append({"start": start, "end": end})
     return norm
 
-def process_captioning_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language='auto'):
+def generate_ass_captions_v1(video_url, captions, settings, replace, exclude_time_ranges, job_id, language='auto', PlayResX=None, PlayResY=None):
     """
     Captioning process with transcription fallback and multiple styles.
     Integrates with the updated logic for positioning and alignment.
+    If PlayResX and PlayResY are provided, use them for ASS generation; otherwise, get from video.
     """
     try:
         # Normalize exclude_time_ranges to ensure start/end are floats
@@ -804,9 +805,13 @@ def process_captioning_v1(video_url, captions, settings, replace, exclude_time_r
             # For non-font errors, do NOT include available_fonts
             return {"error": str(e)}
 
-        # Get video resolution
-        video_resolution = get_video_resolution(video_path)
-        logger.info(f"Job {job_id}: Video resolution detected = {video_resolution[0]}x{video_resolution[1]}")
+        # Get video resolution, unless provided
+        if PlayResX is not None and PlayResY is not None:
+            video_resolution = (PlayResX, PlayResY)
+            logger.info(f"Job {job_id}: Using provided PlayResX/PlayResY = {PlayResX}x{PlayResY}")
+        else:
+            video_resolution = get_video_resolution(video_path)
+            logger.info(f"Job {job_id}: Video resolution detected = {video_resolution[0]}x{video_resolution[1]}")
 
         # Determine style type
         style_type = style_options.get('style', 'classic').lower()
@@ -868,25 +873,7 @@ def process_captioning_v1(video_url, captions, settings, replace, exclude_time_r
             logger.error(f"Job {job_id}: Failed to save subtitle file: {str(e)}")
             return {"error": f"Failed to save subtitle file: {str(e)}"}
 
-        # Prepare output filename and path
-        output_filename = f"{job_id}_captioned.mp4"
-        output_path = os.path.join(LOCAL_STORAGE_PATH, output_filename)
-
-        # Process video with subtitles using FFmpeg
-        try:
-            ffmpeg.input(video_path).output(
-                output_path,
-                vf=f"subtitles='{subtitle_path}'",
-                acodec='copy'
-            ).run(overwrite_output=True)
-            logger.info(f"Job {job_id}: FFmpeg processing completed. Output saved to {output_path}")
-        except ffmpeg.Error as e:
-            stderr_output = e.stderr.decode('utf8') if e.stderr else 'Unknown error'
-            logger.error(f"Job {job_id}: FFmpeg error: {stderr_output}")
-            return {"error": f"FFmpeg error: {stderr_output}"}
-
-        return output_path
-
+        return subtitle_path
     except Exception as e:
-        logger.error(f"Job {job_id}: Error in process_captioning_v1: {str(e)}", exc_info=True)
+        logger.error(f"Job {job_id}: Error in generate_ass_captions_v1: {str(e)}", exc_info=True)
         return {"error": str(e)}

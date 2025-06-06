@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  ncat:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - APP_NAME=NCAToolkit
+      - APP_DEBUG=true
+      - APP_DOMAIN=localhost
+      - API_KEY=test_api_key_123
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - storage:/app/storage
+      - logs:/app/logs
+    restart: unless-stopped
+
+volumes:
+  storage:
+    driver: local
+  logs:
+    driver: local 

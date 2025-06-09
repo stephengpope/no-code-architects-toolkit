@@ -27,6 +27,23 @@ The `/v1/audio/speech` endpoint allows clients to convert text into speech using
 | `webhook_url` | String | No       | A URL to receive a callback notification when processing is complete. If provided, the request will be processed asynchronously. |
 | `id`          | String | No       | A custom identifier for tracking the request. |
 
+### Available Voices
+
+- For `edge-tts` (default TTS engine):
+  - Default voice: "en-US-AvaNeural"  - Supports a wide range of voices in multiple languages
+  - Many voices can be previewed at: https://tts.travisvn.com/ (note: this is a third-party site)
+  - Examples include: "en-US-AvaNeural", "en-GB-SoniaNeural", "es-ES-ElviraNeural", etc.
+  
+- For `streamlabs-polly`:
+  - Default voice: "Brian"
+  - Available voices:
+    ```
+    Brian, Emma, Russell, Joey, Matthew, Joanna, Kimberly, 
+    Amy, Geraint, Nicole, Justin, Ivy, Kendra, Salli, Raveena
+    ```
+
+> To get a complete list of available voices for either engine, make a request with an invalid voice name - the error response will include all valid voices.
+
 ### Example Request
 
 ```json
@@ -184,8 +201,7 @@ When processing is complete, a webhook will be sent to the provided URL with the
 ## Usage Notes
 
 1. **Asynchronous Processing**: For longer processing times (e.g., generating speech from large texts), it's recommended to use the `webhook_url` parameter for asynchronous processing.
-2. **Voice Availability**: The list of available voices depends on the TTS engine selected. Consult engine-specific documentation for available voices.
-3. **Queue Behavior**: If the system is under heavy load, requests with `webhook_url` will be queued. The `MAX_QUEUE_LENGTH` environment variable controls the maximum queue size.
+2. **Queue Behavior**: If the system is under heavy load, requests with `webhook_url` will be queued. The `MAX_QUEUE_LENGTH` environment variable controls the maximum queue size.
 
 ## Common Issues
 

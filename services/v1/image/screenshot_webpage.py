@@ -58,6 +58,7 @@ def take_screenshot(data: dict, job_id=None):
                 elif data.get("html"):
                     url_domain = None
                 for cookie in data["cookies"]:
+                    cookie.setdefault("path", "/")
                     cookie_domain = cookie["domain"].lstrip(".")
                     if url_domain and not (url_domain == cookie_domain or url_domain.endswith(f".{cookie_domain}")):
                         raise Exception("COOKIE_DOMAIN_MISMATCH")
@@ -100,6 +101,10 @@ def take_screenshot(data: dict, job_id=None):
             if data.get("omit_background", False) and data.get("format", "png") == "jpeg":
                 raise Exception("OMIT_BACKGROUND_JPEG_UNSUPPORTED")
 
+            # and doesn't support quality settings - quality parameter only works with JPEG
+            if data.get("format", "png") == "png" and data.get("quality") is not None:
+                raise Exception("QUALITY_PNG_UNSUPPORTED")
+            
             # Take a screenshot of a specific element or the full page
             if data.get("selector"):
                 element = page.locator(data["selector"])
@@ -107,7 +112,7 @@ def take_screenshot(data: dict, job_id=None):
                     raise Exception("ELEMENT_NOT_FOUND")
                 screenshot = element.screenshot(
                     type=data.get("format", "png"),
-                    quality=data.get("quality") if data.get("format") == "jpeg" else None,
+                    quality=data.get("quality"),
                     omit_background=data.get("omit_background")
                 )
             else:
@@ -119,7 +124,7 @@ def take_screenshot(data: dict, job_id=None):
                 screenshot = page.screenshot(
                     full_page=data.get("full_page", False),
                     type=data.get("format", "png"),
-                    quality=data.get("quality") if data.get("format") == "jpeg" else None,
+                    quality=data.get("quality"),
                     clip=data.get("clip"),
                     omit_background=data.get("omit_background")
                 )
@@ -138,7 +143,8 @@ def take_screenshot(data: dict, job_id=None):
             "COOKIE_DOMAIN_MISMATCH": "A cookie domain does not match or is not a parent of the URL domain.",
             "OMIT_BACKGROUND_JPEG_UNSUPPORTED": "'omit_background' is only supported for PNG format.",
             "MISSING_URL_OR_HTML": "You must provide either a 'url' or 'html' field.",
-            "WAIT_FOR_SELECTOR_NOT_FOUND": "The selector specified in 'wait_for_selector' was not found on the page."
+            "WAIT_FOR_SELECTOR_NOT_FOUND": "The selector specified in 'wait_for_selector' was not found on the page.",
+            "QUALITY_PNG_UNSUPPORTED": "'quality' is not supported for PNG (default format). Use JPEG format instead.",
         }
         error_message = error_map.get(error_message, str(e))
         return {"error": error_message}

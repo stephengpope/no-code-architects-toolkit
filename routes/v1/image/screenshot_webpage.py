@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
         "full_page": {"type": "boolean", "default": False},
         "format": {"type": "string", "enum": ["png", "jpeg"], "default": "png"},
         "delay": {"type": "integer", "minimum": 0},
-        "device_scale_factor": {"type": "number", "minimum": 1},
+        "device_scale_factor": {"type": "number", "minimum": 0.1},
         "user_agent": {"type": "string"},
         "cookies": {
             "type": "array",
@@ -57,8 +57,10 @@ logger = logging.getLogger(__name__)
                 "properties": {
                     "name": {"type": "string"},
                     "value": {"type": "string"},
-                    "domain": {"type": "string"}
-                }
+                    "domain": {"type": "string"},
+                    "path": {"type": "string", "default": "/"},
+                },
+                "additionalProperties": True
             }
         },
         "headers": {

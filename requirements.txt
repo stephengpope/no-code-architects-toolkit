@@ -12,7 +12,9 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 google-api-python-client
+google-api-core
 google-cloud-storage
+google-cloud-run
 psutil
 boto3
 Pillow

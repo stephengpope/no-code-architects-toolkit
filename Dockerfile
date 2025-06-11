@@ -41,6 +41,18 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libtool \
     libfribidi-dev \
     libharfbuzz-dev \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libxcomposite1 \
+    libxrandr2 \
+    libxdamage1 \
+    libgbm1 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libpangoft2-1.0-0 \
+    libgtk-3-0 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install SRT from source (latest version using cmake)
@@ -165,6 +177,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install openai-whisper && \
+    pip install playwright && \
     pip install jsonschema 
 
 # Create the appuser 
@@ -177,6 +190,9 @@ RUN chown appuser:appuser /app
 USER appuser
 
 RUN python -c "import os; print(os.environ.get('WHISPER_CACHE_DIR')); import whisper; whisper.load_model('base')"
+
+# Install Playwright Chromium browser as appuser
+RUN playwright install chromium
 
 # Copy the rest of the application code
 COPY . .

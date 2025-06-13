@@ -110,7 +110,7 @@ curl -X POST \
     "url": "https://example.com",
     "viewport_width": 1280,
     "viewport_height": 720,
-    "js": "document.body.style.background = 'red';",
+    "js": "document.body.style.background = '\''red'\'';",
     "css": "body { font-size: 30px; }",
     "full_page": true,
     "format": "png",
@@ -118,7 +118,7 @@ curl -X POST \
     "device_scale_factor": 2,
     "user_agent": "CustomAgent/1.0",
     "cookies": [
-      {"name": "test_cookie", "value": "test_value", "domain": "example.com", "path": "/}
+      {"name": "test_cookie", "value": "test_value", "domain": "example.com", "path": "/"}
     ],
     "headers": {"Accept-Language": "en-US,en;q=0.9"},
     "quality": 90,

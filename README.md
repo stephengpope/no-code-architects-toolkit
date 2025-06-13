@@ -57,6 +57,9 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **[`/v1/image/convert/video`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/convert/image_to_video.md)**
   - Transforms a static image into a video with custom duration and zoom effects.
 
+- **[`/v1/image/screenshot/webpage`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/image/screenshot_webpage.md)**
+  - Captures screenshots of web pages using Playwright with advanced options like viewport size, device emulation, and custom HTML/CSS/JS injection.
+
 ### Media
 
 - **[`/v1/media/convert`](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/media/convert/media_convert.md)**

@@ -73,7 +73,8 @@ The `/v1/BETA/media/download` endpoint provides a powerful interface for downloa
 "subtitles": {
   "download": boolean,     // Whether to download subtitles
   "languages": ["string"], // Array of language codes for subtitles
-  "formats": ["string"]    // Array of subtitle formats to download
+  "format": "string",      // Subtitle format to download (e.g., 'srt', 'vtt', 'json3')
+  "cloud_upload": boolean  // Whether to upload subtitles to cloud storage (defaults to true)
 }
 ```
 
@@ -106,6 +107,12 @@ The `/v1/BETA/media/download` endpoint provides a powerful interface for downloa
   },
   "thumbnails": {
     "download": true
+  },
+  "subtitles": {
+    "download": true,
+    "languages": ["en", "es-419"],
+    "format": "srt",
+    "cloud_upload": true
   }
 }
 ```
@@ -133,6 +140,12 @@ curl -X POST \
     },
     "thumbnails": {
       "download": true
+    },
+    "subtitles": {
+      "download": true,
+      "languages": ["en", "es-419"],
+      "format": "srt",
+      "cloud_upload": true
     }
   }'
 ```

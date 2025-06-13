@@ -9,7 +9,7 @@ import uuid
 from services.cloud_storage import upload_file
 from services.authentication import authenticate
 from services.file_management import download_file
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 v1_media_download_bp = Blueprint('v1_media_download', __name__)
 logger = logging.getLogger(__name__)
@@ -22,6 +22,7 @@ logger = logging.getLogger(__name__)
         "media_url": {"type": "string", "format": "uri"},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
+        "cookie": {"type": "string", "description": "Path to cookie file, URL to cookie file, or cookie string in Netscape format"},
         "format": {
             "type": "object",
             "properties": {
@@ -73,6 +74,7 @@ logger = logging.getLogger(__name__)
 @queue_task_wrapper(bypass_queue=False)
 def download_media(job_id, data):
     media_url = data['media_url']
+    cookie = data.get('cookie')
 
     format_options = data.get('format', {})
     audio_options = data.get('audio', {})
@@ -92,6 +94,20 @@ def download_media(job_id, data):
                 'quiet': True,
                 'no_warnings': True,
             }
+
+            # Add cookies if provided
+            if cookie:
+                if os.path.isfile(cookie):
+                    ydl_opts['cookiefile'] = cookie
+                elif urlparse(cookie).scheme in ('http', 'https'):
+                    # If cookie is a URL, download it first
+                    ydl_opts['cookiefile'] = download_file(cookie, temp_dir)
+                else:
+                    # If cookie is a string, write it to a temporary file
+                    cookie_file = os.path.join(temp_dir, 'cookies.txt')
+                    with open(cookie_file, 'w') as f:
+                        f.write(cookie)
+                    ydl_opts['cookiefile'] = cookie_file
 
             # Add format options if specified
             if format_options:

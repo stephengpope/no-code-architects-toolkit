@@ -30,6 +30,7 @@ The `/v1/BETA/media/download` endpoint provides a powerful interface for downloa
 |-----------|------|-------------|
 | `webhook_url` | string (URI format) | URL to receive the result when processing is complete |
 | `id` | string | Custom identifier for tracking the request |
+| `cookie` | string | Path to cookie file, URL to cookie file, or cookie string in Netscape format |
 
 #### Format Options (Optional)
 
@@ -92,6 +93,7 @@ The `/v1/BETA/media/download` endpoint provides a powerful interface for downloa
   "media_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
   "webhook_url": "https://example.com/webhook",
   "id": "custom-request-123",
+  "cookie": "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t0\tCONSENT\tYES+cb",
   "format": {
     "quality": "best",
     "resolution": "720p"
@@ -117,6 +119,7 @@ curl -X POST \
     "media_url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
     "webhook_url": "https://example.com/webhook",
     "id": "custom-request-123",
+    "cookie": "# Netscape HTTP Cookie File\n.youtube.com\tTRUE\t/\tFALSE\t0\tCONSENT\tYES+cb",
     "format": {
       "quality": "best",
       "resolution": "720p"

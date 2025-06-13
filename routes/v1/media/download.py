@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
         "cookie": {"type": "string", "description": "Path to cookie file, URL to cookie file, or cookie string in Netscape format"},
+        "cloud_upload": {"type": "boolean"},
         "format": {
             "type": "object",
             "properties": {
@@ -93,6 +94,7 @@ def download_media(job_id, data):
                 'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
                 'quiet': True,
                 'no_warnings': True,
+                'download': data.get('cloud_upload', True)
             }
 
             # Add cookies if provided
@@ -162,19 +164,21 @@ def download_media(job_id, data):
 
             # Download the media
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(media_url, download=True)
-                filename = ydl.prepare_filename(info)
+                info = ydl.extract_info(media_url, download=data.get('cloud_upload', True))
                 
-                # Upload to cloud storage
-                cloud_url = upload_file(filename)
-                
-                # Clean up the temporary file
-                os.remove(filename)
+                if not data.get('cloud_upload', True):
+                    media_url = info['url']
+                else:
+                    filename = ydl.prepare_filename(info)
+                    # Upload to cloud storage
+                    media_url = upload_file(filename)
+                    # Clean up the temporary file
+                    os.remove(filename)
 
                 # Prepare response
                 response = {
                     "media": {
-                        "media_url": cloud_url,
+                        "media_url": media_url,
                         "title": info.get('title'),
                         "format_id": info.get('format_id'),
                         "ext": info.get('ext'),

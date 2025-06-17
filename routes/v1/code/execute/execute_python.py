@@ -37,7 +37,17 @@ logger = logging.getLogger(__name__)
     "properties": {
         "code": {"type": "string"},
         "code_url": {"type": "string", "format": "uri"},
-        "env": {"type": "object", "additionalProperties": {"type": ["string", "number", "boolean"]}},
+        "env": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "value": {"type": "string"}
+                },
+                "required": ["name", "value"]
+            }
+        },
         "timeout": {"type": "integer", "minimum": 1, "maximum": 300},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
@@ -77,7 +87,8 @@ def execute_python(job_id, data):
         else:
             code = data['code']
         timeout = data.get('timeout', 30)
-        env = {str(k): str(v) for k, v in data.get('env', {}).items()}
+        # Convert env array to dictionary
+        env = {item['name']: str(item['value']) for item in data.get('env', [])}
         # Indent user code
         indented_code = textwrap.indent(code, '    ')
         

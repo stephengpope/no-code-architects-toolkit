@@ -20,6 +20,10 @@ The `/v1/code/execute/python` endpoint allows users to execute Python code on th
 The request body must be a JSON object with the following properties:
 
 - `code` (string, required): The Python code to be executed.
+- `code_url` (string, optional): URL to fetch the Python code from. Must be a valid URI.
+- `env` (array, optional): Array of environment variables to set for the execution. Each item must be an object with:
+  - `name` (string, required): The name of the environment variable
+  - `value` (string, required): The value of the environment variable
 - `timeout` (integer, optional): The maximum execution time in seconds, between 1 and 300. Default is 30 seconds.
 - `webhook_url` (string, optional): The URL to receive the execution result via a webhook.
 - `id` (string, optional): A unique identifier for the request.
@@ -31,12 +35,28 @@ The `validate_payload` directive in the routes file enforces the following JSON 
     "type": "object",
     "properties": {
         "code": {"type": "string"},
+        "code_url": {"type": "string", "format": "uri"},
+        "env": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "value": {"type": "string"}
+                },
+                "required": ["name", "value"]
+            }
+        },
         "timeout": {"type": "integer", "minimum": 1, "maximum": 300},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
-    "required": ["code"],
-    "additionalProperties": False
+    "oneOf": [
+        {"required": ["code"]},
+        {"required": ["code_url"]}
+    ],
+    "not": {"required": ["code", "code_url"]},
+    "additionalProperties": false
 }
 ```
 

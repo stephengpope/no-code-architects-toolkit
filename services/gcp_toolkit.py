@@ -19,8 +19,11 @@
 import os
 import json
 import logging
+import requests
 from google.oauth2 import service_account
 from google.cloud import storage
+from google.cloud.run_v2 import JobsClient, RunJobRequest, ExecutionsClient
+from google.protobuf.json_format import MessageToDict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -69,3 +72,59 @@ def upload_to_gcs(file_path, bucket_name=GCP_BUCKET_NAME):
     except Exception as e:
         logger.error(f"Error uploading file to GCS: {e}")
         raise
+
+
+
+def load_gcp_credentials(credentials=None):
+    credentials_info = None
+    if credentials:
+        if isinstance(credentials, str):
+            if credentials.startswith(('http://', 'https://')):
+                try:
+                    response = requests.get(credentials)
+                    response.raise_for_status()
+                    credentials_info = response.json()
+                except Exception as e:
+                    raise ValueError(f"Failed to fetch credentials from URL: {e}")
+            else:
+                try:
+                    credentials_info = json.loads(credentials)
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Failed to parse credentials JSON string: {e}")
+        else:
+            credentials_info = credentials
+
+    if not credentials_info:
+        json_str = os.environ.get("GCP_SA_CREDENTIALS")
+        if json_str:
+            try:
+                credentials_info = json.loads(json_str)
+            except json.JSONDecodeError:
+                raise ValueError("Failed to parse GCP_SA_CREDENTIALS from environment variable.")
+
+    if not credentials_info:
+        raise ValueError("GCP credentials must be provided either in the request payload or as the 'GCP_SA_CREDENTIALS' environment variable.")
+
+    try:
+        creds = service_account.Credentials.from_service_account_info(credentials_info)
+    except Exception as e:
+        raise ValueError(f"Failed to create credentials from provided info: {e}")
+    return credentials_info, creds
+
+def trigger_cloud_run_job(job_name, location="us-central1", credentials=None, overrides=None):
+    credentials_info, creds = load_gcp_credentials(credentials)
+    client = JobsClient(credentials=creds)
+
+    project_id = credentials_info.get("project_id")
+    if not project_id:
+        raise ValueError("'project_id' not found in GCP credentials.")
+        
+    job_path = f"projects/{project_id}/locations/{location}/jobs/{job_name}"
+
+    request = RunJobRequest(
+        name=job_path,
+        overrides=overrides,
+    )
+
+    operation = client.run_job(request=request)
+    return MessageToDict(operation.metadata._pb)

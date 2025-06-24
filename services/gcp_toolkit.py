@@ -128,3 +128,19 @@ def trigger_cloud_run_job(job_name, location="us-central1", credentials=None, ov
 
     operation = client.run_job(request=request)
     return MessageToDict(operation.metadata._pb)
+
+def get_job_status(name, credentials=None):
+    credentials_info, creds = load_gcp_credentials(credentials)
+    client = ExecutionsClient(credentials=creds)
+
+    execution = client.get_execution(name=name)
+    execution_dict = MessageToDict(execution._pb)
+
+    # Sort conditions by lastTransitionTime (newest first)
+    if "conditions" in execution_dict:
+        conditions = execution_dict["conditions"]
+        if conditions:
+            sorted_conditions = sorted(conditions, key=lambda x: x.get("lastTransitionTime", ""), reverse=True)
+            execution_dict["conditions"] = sorted_conditions
+
+    return execution_dict

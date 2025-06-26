@@ -13,7 +13,7 @@ services:
       - minio
       - minio-init
     extra_hosts:
-      - "localhost:host-gateway"
+      - "host.docker.internal:host-gateway"
     networks:
       - nca-network
 

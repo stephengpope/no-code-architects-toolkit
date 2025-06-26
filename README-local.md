@@ -5,6 +5,7 @@ This setup provides a local development environment for the No Code Architect To
 ## What's Included
 
 - **NCA Toolkit**: Built locally from Dockerfile (no pre-built image)
+- **n8n**: Workflow automation platform for connecting services
 - **MinIO**: S3-compatible object storage with web console
 - **No SSL/Traefik**: Simplified setup for local development
 
@@ -17,6 +18,7 @@ This setup provides a local development environment for the No Code Architect To
 
 2. **Access the applications:**
    - **NCA Toolkit**: http://localhost:8080
+   - **n8n**: http://localhost:5678
    - **MinIO Console**: http://localhost:9001 (minioadmin / minioadmin123)
 
 3. **View logs:**
@@ -69,19 +71,35 @@ docker compose -f docker-compose.local.yml up -d
 2. Login with `minioadmin` / `minioadmin123`
 3. Browse the `nca-toolkit-local` bucket
 
+## Service Communication
+
+- **n8n → NCA Toolkit**: `http://ncat:8080` (internal network)
+- **n8n → MinIO**: `http://minio:9000` (internal S3 API)
+- **NCA Toolkit → MinIO**: `http://localhost:9000` (via host-gateway)
+
+## Data Persistence
+
+- **Application storage**: Persisted in `storage` volume
+- **Application logs**: Persisted in `logs` volume  
+- **MinIO data**: Persisted in `minio_data` volume
+- **n8n data**: Persisted in `n8n_data` volume
+- **n8n files**: Shared via `./local-files` directory
+
 ## Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐
-│   NCA Toolkit   │    │     MinIO       │
-│   localhost:8080│────│  localhost:9000 │
-│                 │    │  (S3 API)       │
-└─────────────────┘    └─────────────────┘
-                              │
-                       ┌─────────────────┐
-                       │  MinIO Console  │
-                       │  localhost:9001 │
-                       └─────────────────┘
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   NCA Toolkit   │    │       n8n       │    │     MinIO       │
+│   localhost:8080│    │   localhost:5678│    │  localhost:9000 │
+│                 │    │                 │    │  (S3 API)       │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         └───────────────────────┼───────────────────────┘
+                                 │
+                      ┌─────────────────┐
+                      │  MinIO Console  │
+                      │  localhost:9001 │
+                      └─────────────────┘
 ```
 
 The setup uses a custom Docker network (`nca-network`) for service communication and exposes only necessary ports to the host.

@@ -47,12 +47,33 @@ services:
     networks:
       - nca-network
 
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=UTC
+      - N8N_SECURE_COOKIE=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./local-files:/files
+    networks:
+      - nca-network
+
 volumes:
   storage:
     driver: local
   logs:
     driver: local
   minio_data:
+    driver: local
+  n8n_data:
     driver: local
 
 networks:

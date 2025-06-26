@@ -1,0 +1,60 @@
+services:
+  ncat:
+    build: .
+    env_file:
+      - .env.local
+    ports:
+      - "8080:8080"
+    volumes:
+      - storage:/app/storage
+      - logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - minio
+      - minio-init
+    extra_hosts:
+      - "localhost:host-gateway"
+    networks:
+      - nca-network
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    networks:
+      - nca-network
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      /usr/bin/mc alias set myminio http://minio:9000 minioadmin minioadmin123;
+      /usr/bin/mc mb myminio/nca-toolkit-local --ignore-existing;
+      /usr/bin/mc anonymous set public myminio/nca-toolkit-local;
+      echo 'MinIO bucket nca-toolkit-local created and configured as public';
+      "
+    networks:
+      - nca-network
+
+volumes:
+  storage:
+    driver: local
+  logs:
+    driver: local
+  minio_data:
+    driver: local
+
+networks:
+  nca-network:
+    driver: bridge

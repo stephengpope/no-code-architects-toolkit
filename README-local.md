@@ -75,7 +75,7 @@ docker compose -f docker-compose.local.yml up -d
 
 - **n8n → NCA Toolkit**: `http://ncat:8080` (internal network)
 - **n8n → MinIO**: `http://minio:9000` (internal S3 API)
-- **NCA Toolkit → MinIO**: `http://localhost:9000` (via host-gateway)
+- **NCA Toolkit → MinIO**: `http://minio:9000` (internal network)
 
 ## Data Persistence
 

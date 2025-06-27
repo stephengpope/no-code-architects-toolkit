@@ -159,11 +159,75 @@ All services communicate through the `nca-network` Docker network:
 - **n8n → MinIO**: `http://minio:9000` (S3 API)
 - **NCA Toolkit → MinIO**: `http://minio:9000` (internal network)
 
-### Example n8n Workflow Integration
+### n8n Integration with NCA Toolkit
 
-To call the NCA Toolkit from n8n:
-- **URL**: `http://ncat:8080/v1/toolkit/test`
-- **Headers**: `x-api-key: local-dev-key-123`
+#### Quick Test Setup
+
+1. **Access n8n**: Open http://localhost:5678
+2. **Create a new workflow**
+3. **Add an HTTP Request node** with these settings:
+   - **Method**: GET
+   - **URL**: `http://ncat:8080/v1/toolkit/test`
+   - **Headers**: 
+     - Key: `x-api-key`
+     - Value: `local-dev-key-123`
+
+#### Example: Testing the Toolkit Connection
+
+**HTTP Request Node Configuration:**
+```json
+{
+  "method": "GET",
+  "url": "http://ncat:8080/v1/toolkit/test",
+  "headers": {
+    "x-api-key": "local-dev-key-123"
+  }
+}
+```
+
+**Expected Response:**
+```json
+{
+  "message": "NCA Toolkit is working correctly",
+  "status": "success"
+}
+```
+
+#### Example: Media Processing Workflow
+
+**HTTP Request Node for Media Transcription:**
+```json
+{
+  "method": "POST",
+  "url": "http://ncat:8080/v1/media/transcribe",
+  "headers": {
+    "x-api-key": "local-dev-key-123",
+    "Content-Type": "application/json"
+  },
+  "body": {
+    "media_url": "https://example.com/audio.mp3",
+    "language": "en",
+    "response_format": "json"
+  }
+}
+```
+
+#### All Available NCA Toolkit Endpoints
+
+Use the base URL `http://ncat:8080` with any of the API endpoints documented in the main README:
+
+- `http://ncat:8080/v1/toolkit/test` - Test connection
+- `http://ncat:8080/v1/media/transcribe` - Transcribe audio/video
+- `http://ncat:8080/v1/video/caption` - Add captions to videos
+- `http://ncat:8080/v1/image/screenshot/webpage` - Screenshot web pages
+- And all other endpoints listed in the main documentation
+
+#### Tips for n8n Integration
+
+1. **Always use the internal network URL**: `http://ncat:8080` (not `http://localhost:8080`)
+2. **Include the API key header**: `x-api-key: local-dev-key-123`
+3. **For file uploads**: Use the MinIO integration or webhook URLs for large files
+4. **Error handling**: Add error handling nodes to manage API timeouts or failures
 
 ---
 

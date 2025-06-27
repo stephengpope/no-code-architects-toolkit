@@ -286,6 +286,12 @@ You can more easily control performance and cost this way, but requires more tec
 
 - [General Docker Compose Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.md)
 
+### Local Development with MinIO and n8n
+
+For local development with integrated S3-compatible storage and workflow automation:
+
+- [Local Development with MinIO and n8n Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docker-compose.local.minio.n8n.md) - Complete local development environment with MinIO storage and n8n workflow automation
+
 ## Testing the API
 
 1. Install the **[Postman Template](https://bit.ly/49Gkh61)** on your computer

@@ -2,7 +2,7 @@ services:
   ncat:
     build: .
     env_file:
-      - .env.local
+      - .env.local.minio.n8n
     ports:
       - "8080:8080"
     volumes:

@@ -1,0 +1,44 @@
+services:
+  traefik:
+    image: "traefik"
+    restart: unless-stopped
+    command:
+      - "--api=true"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.mytlschallenge.acme.tlschallenge=true"
+      - "--certificatesresolvers.mytlschallenge.acme.email=${SSL_EMAIL}"
+      - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - traefik_data:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+  ncat:
+    image: stephengpope/no-code-architects-toolkit:latest
+    env_file:
+      - .env
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.ncat.rule=Host(`${APP_DOMAIN}`)
+      - traefik.http.routers.ncat.tls=true
+      - traefik.http.routers.ncat.entrypoints=web,websecure
+      - traefik.http.routers.ncat.tls.certresolver=mytlschallenge
+    volumes:
+      - storage:/var/www/html/storage/app
+      - logs:/var/www/html/storage/logs
+    restart: unless-stopped
+
+volumes:
+  traefik_data:
+    driver: local
+  storage:
+    driver: local
+  logs:
+    driver: local

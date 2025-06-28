@@ -10,6 +10,7 @@ from services.cloud_storage import upload_file
 from services.authentication import authenticate
 from services.file_management import download_file
 from urllib.parse import quote, urlparse
+import requests
 
 v1_media_download_bp = Blueprint('v1_media_download', __name__)
 logger = logging.getLogger(__name__)
@@ -57,7 +58,15 @@ logger = logging.getLogger(__name__)
             "properties": {
                 "download": {"type": "boolean"},
                 "languages": {"type": "array", "items": {"type": "string"}},
-                "formats": {"type": "array", "items": {"type": "string"}}
+                "format": {
+                    "type": "string",
+                    "enum": [
+                        "srt",      # SubRip Subtitle (most common)
+                        "vtt",      # Web Video Text Tracks
+                        "json3"     # YouTube's JSON format
+                    ]
+                },
+                "cloud_upload": {"type": "boolean"}
             }
         },
         "download": {
@@ -150,8 +159,8 @@ def download_media(job_id, data):
                 ydl_opts['writesubtitles'] = subtitle_options.get('download', False)
                 if subtitle_options.get('languages'):
                     ydl_opts['subtitleslangs'] = subtitle_options['languages']
-                if subtitle_options.get('formats'):
-                    ydl_opts['subtitlesformat'] = subtitle_options['formats']
+                if subtitle_options.get('format'):
+                    ydl_opts['subtitlesformat'] = subtitle_options['format']
 
             # Add download options if specified
             if download_options:
@@ -222,6 +231,56 @@ def download_media(job_id, data):
                             except Exception as e:
                                 logger.error(f"Error processing thumbnail: {str(e)}")
                                 continue
+
+                # Process subtitles if available
+                if 'subtitles' in info and subtitle_options.get('download', False):
+                    logger.info(f"Job {job_id}: Found subtitles in info: {info['subtitles']}")
+                    response["subtitles"] = {}  # Changed from array to object
+                    requested_languages = subtitle_options.get('languages', [])
+                    requested_format = subtitle_options.get('format', 'srt')
+                    subtitle_cloud_upload = subtitle_options.get('cloud_upload', True)  # Default to True
+                    
+                    # If no languages specified, use all available languages
+                    if not requested_languages:
+                        requested_languages = list(info['subtitles'].keys())
+                        logger.info(f"Job {job_id}: No languages specified, using all available: {requested_languages}")
+                    
+                    for lang, subtitle_list in info['subtitles'].items():
+                        # Skip if language not in requested list
+                        if lang not in requested_languages:
+                            continue
+                            
+                        try:
+                            logger.info(f"Job {job_id}: Processing subtitle for language {lang}")
+                            # Find the requested format
+                            subtitle_data = None
+                            for subtitle in subtitle_list:
+                                if subtitle['ext'] == requested_format:
+                                    subtitle_data = subtitle
+                                    break
+                                    
+                            if not subtitle_data:
+                                logger.warning(f"Job {job_id}: Requested format {requested_format} not available for {lang}")
+                                continue
+                            
+                            # If cloud upload is requested, download and upload the subtitle
+                            if subtitle_cloud_upload:
+                                try:
+                                    subtitle_path = download_file(subtitle_data['url'], temp_dir)
+                                    cloud_url = upload_file(subtitle_path)
+                                    subtitle_data['url'] = cloud_url
+                                except Exception as e:
+                                    logger.warning(f"Job {job_id}: Failed to download subtitle for {lang}: {str(e)}")
+                                    continue
+                            
+                            # Add subtitle data to response using language code as key
+                            response["subtitles"][lang] = subtitle_data
+                            logger.info(f"Job {job_id}: Successfully processed subtitle for {lang}")
+                        except Exception as e:
+                            logger.error(f"Job {job_id}: Error processing subtitle: {str(e)}")
+                            continue
+                else:
+                    logger.info(f"Job {job_id}: No subtitles found in info or download not requested")
                 
                 return response, "/v1/media/download", 200
 

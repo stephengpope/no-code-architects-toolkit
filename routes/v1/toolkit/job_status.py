@@ -44,7 +44,7 @@ def get_job_status(job_id, data):
     get_job_id = data.get('job_id')
 
     logger.info(f"Retrieving status for job {get_job_id}")
-    
+    endpoint = "/v1/toolkit/job/status"
     try:
         # Construct the path to the job status file
         job_file_path = os.path.join(LOCAL_STORAGE_PATH, 'jobs', f"{get_job_id}.json")
@@ -58,7 +58,7 @@ def get_job_status(job_id, data):
             job_status = json.load(file)
         
         # Return the job status file content directly
-        return job_status, "/v1/toolkit/job/status", 200
+        return job_status, endpoint, 200
         
     except Exception as e:
         logger.error(f"Error retrieving status for job {get_job_id}: {str(e)}")

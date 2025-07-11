@@ -88,7 +88,8 @@ def execute_python(job_id, data):
             code = data['code']
         timeout = data.get('timeout', 30)
         # Convert env array to dictionary
-        env = {item['name']: str(item['value']) for item in data.get('env', [])}
+        custom_env = {item['name']: str(item['value']) for item in data.get('env', [])}
+        env = None if not custom_env else {**os.environ, **custom_env}
         # Indent user code
         indented_code = textwrap.indent(code, '    ')
         

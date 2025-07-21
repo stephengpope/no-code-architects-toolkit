@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: nca-toolkit-api
+    env: docker
+    plan: free
+    region: oregon
+    branch: main
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    envVars:
+      - key: API_KEY
+        value: your_api_key_here
+      - key: GCP_BUCKET_NAME
+        value: your_bucket_name_here
+      - key: GCP_SA_CREDENTIALS
+        value: |
+          {
+            "type": "service_account",
+            "project_id": "...",
+            "private_key_id": "...",
+            "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+            "client_email": "...",
+            ...
+          }

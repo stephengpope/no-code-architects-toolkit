@@ -18,3 +18,4 @@ boto3
 Pillow
 matplotlib
 yt-dlp
+jsonschema>=4.0.0

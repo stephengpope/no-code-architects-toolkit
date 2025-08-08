@@ -24,6 +24,13 @@ API_KEY = os.environ.get('API_KEY')
 if not API_KEY:
     raise ValueError("API_KEY environment variable is not set")
 
+# Runpod API configuration
+RUNPOD_API_KEY = os.environ.get('RUNPOD_API_KEY')
+USE_RUNPOD = os.environ.get('USE_RUNPOD', 'false').lower() == 'true'
+RUNPOD_WEBHOOK_URL = os.environ.get('RUNPOD_WEBHOOK_URL')  # Optional webhook URL for async processing
+RUNPOD_MAX_WAIT_TIME = int(os.environ.get('RUNPOD_MAX_WAIT_TIME', '600'))  # Max wait time in seconds (default: 10 minutes)
+RUNPOD_POLL_INTERVAL = int(os.environ.get('RUNPOD_POLL_INTERVAL', '5'))  # Poll interval in seconds (default: 5 seconds)
+
 # Storage path setting
 LOCAL_STORAGE_PATH = os.environ.get('LOCAL_STORAGE_PATH', '/tmp')
 

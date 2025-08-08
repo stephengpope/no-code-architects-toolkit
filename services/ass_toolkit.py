@@ -26,9 +26,10 @@ import srt
 import re
 from services.file_management import download_file
 from services.cloud_storage import upload_file  # Ensure this import is present
+from services.runpod_whisper import transcribe_with_runpod
 import requests  # Ensure requests is imported for webhook handling
 from urllib.parse import urlparse
-from config import LOCAL_STORAGE_PATH
+from config import LOCAL_STORAGE_PATH, USE_RUNPOD, RUNPOD_API_KEY
 
 # Initialize logger
 logger = logging.getLogger(__name__)
@@ -64,16 +65,43 @@ def rgb_to_ass_color(rgb_color):
 
 def generate_transcription(video_path, language='auto'):
     try:
-        model = whisper.load_model("base")
-        transcription_options = {
-            'word_timestamps': True,
-            'verbose': True,
-        }
-        if language != 'auto':
-            transcription_options['language'] = language
-        result = model.transcribe(video_path, **transcription_options)
-        logger.info(f"Transcription generated successfully for video: {video_path}")
-        return result
+        # Choose transcription method based on configuration
+        if USE_RUNPOD and RUNPOD_API_KEY:
+            logger.info("Using Runpod API for transcription")
+            # For Runpod, we need to pass the video URL instead of local path
+            # Assuming video_path could be either a local path or URL
+            if video_path.startswith(('http://', 'https://')):
+                video_url = video_path
+            else:
+                # If it's a local path, we would need to upload it first
+                # For now, we'll assume URLs are passed when using Runpod
+                logger.warning("Runpod requires a URL, but local path provided. Falling back to local Whisper.")
+                model = whisper.load_model("base")
+                transcription_options = {
+                    'word_timestamps': True,
+                    'verbose': True,
+                }
+                if language != 'auto':
+                    transcription_options['language'] = language
+                result = model.transcribe(video_path, **transcription_options)
+                logger.info(f"Transcription generated successfully for video: {video_path}")
+                return result
+            
+            result = transcribe_with_runpod(video_url, model="turbo", language=language)
+            logger.info("Runpod transcription completed")
+            return result
+        else:
+            logger.info("Using local Whisper model for transcription")
+            model = whisper.load_model("base")
+            transcription_options = {
+                'word_timestamps': True,
+                'verbose': True,
+            }
+            if language != 'auto':
+                transcription_options['language'] = language
+            result = model.transcribe(video_path, **transcription_options)
+            logger.info(f"Transcription generated successfully for video: {video_path}")
+            return result
     except Exception as e:
         logger.error(f"Error in transcription: {str(e)}")
         raise

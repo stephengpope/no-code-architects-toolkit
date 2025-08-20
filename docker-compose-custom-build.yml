@@ -5,78 +5,18 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    hostname: 7f1388f0bda9
-    user: appuser
     environment:
-      - GPG_KEY=E3FF2839C048B25C084DEBE9B26995E310250568
       - API_KEY=${API_KEY}
-      - PYTHON_SHA256=8c136d199d3637a1fce98a16adc809c1d83c922d02d41f3614b34f8b6e7d38ec
       - PYTHONUNBUFFERED=1
       - WHISPER_CACHE_DIR=/app/whisper_cache
       - S3_SECRET_KEY=${S3_SECRET_KEY}
-      - LANG=C.UTF-8
-      - PYTHON_VERSION=3.9.22
       - RUNPOD_API_KEY=${RUNPOD_API_KEY}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
       - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
       - S3_REGION=${S3_REGION}
       - S3_ACCESS_KEY=${S3_ACCESS_KEY}
       - USE_RUNPOD=true
-      - NVARCH=x86_64
-      - NVIDIA_REQUIRE_CUDA=cuda>=12.8 brand=unknown,driver>=470,driver<471 brand=grid,driver>=470,driver<471 brand=tesla,driver>=470,driver<471 brand=nvidia,driver>=470,driver<471 brand=quadro,driver>=470,driver<471 brand=quadrortx,driver>=470,driver<471 brand=nvidiartx,driver>=470,driver<471 brand=vapps,driver>=470,driver<471 brand=vpc,driver>=470,driver<471 brand=vcs,driver>=470,driver<471 brand=vws,driver>=470,driver<471 brand=cloudgaming,driver>=470,driver<471 brand=unknown,driver>=535,driver<536 brand=grid,driver>=535,driver<536 brand=tesla,driver>=535,driver<536 brand=nvidia,driver>=535,driver<536 brand=quadro,driver>=535,driver<536 brand=quadrortx,driver>=535,driver<536 brand=nvidiartx,driver>=535,driver<536 brand=vapps,driver>=535,driver<536 brand=vpc,driver>=535,driver<536 brand=vcs,driver>=535,driver<536 brand=vws,driver>=535,driver<536 brand=cloudgaming,driver>=535,driver<536 brand=unknown,driver>=550,driver<551 brand=grid,driver>=550,driver<551 brand=tesla,driver>=550,driver<551 brand=nvidia,driver>=550,driver<551 brand=quadro,driver>=550,driver<551 brand=quadrortx,driver>=550,driver<551 brand=nvidiartx,driver>=550,driver<551 brand=vapps,driver>=550,driver<551 brand=vpc,driver>=550,driver<551 brand=vcs,driver>=550,driver<551 brand=vws,driver>=550,driver<551 brand=cloudgaming,driver>=550,driver<551 brand=unknown,driver>=560,driver<561 brand=grid,driver>=560,driver<561 brand=tesla,driver>=560,driver<561 brand=nvidia,driver>=560,driver<561 brand=quadro,driver>=560,driver<561 brand=quadrortx,driver>=560,driver<561 brand=nvidiartx,driver>=560,driver<561 brand=vapps,driver>=560,driver<561 brand=vpc,driver>=560,driver<561 brand=vcs,driver>=560,driver<561 brand=vws,driver>=560,driver<561 brand=cloudgaming,driver>=560,driver<561 brand=unknown,driver>=565,driver<566 brand=grid,driver>=565,driver<566 brand=tesla,driver>=565,driver<566 brand=nvidia,driver>=565,driver<566 brand=quadro,driver>=565,driver<566 brand=quadrortx,driver>=565,driver<566 brand=nvidiartx,driver>=565,driver<566 brand=vapps,driver>=565,driver<566 brand=vpc,driver>=565,driver<566 brand=vcs,driver>=565,driver<566 brand=vws,driver>=565,driver<566 brand=cloudgaming,driver>=565,driver<566
-      - NV_CUDA_CUDART_VERSION=12.8.57-1
-      - CUDA_VERSION=12.8.0
-      - LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      - NV_CUDA_LIB_VERSION=12.8.0-1
-      - NV_NVTX_VERSION=12.8.55-1
-      - NV_LIBNPP_VERSION=12.3.3.65-1
-      - NV_LIBNPP_PACKAGE=libnpp-12-8=12.3.3.65-1
-      - NV_LIBCUSPARSE_VERSION=12.5.7.53-1
-      - NV_LIBCUBLAS_PACKAGE_NAME=libcublas-12-8
-      - NV_LIBCUBLAS_VERSION=12.8.3.14-1
-      - NV_LIBCUBLAS_PACKAGE=libcublas-12-8=12.8.3.14-1
-      - NV_LIBNCCL_PACKAGE_NAME=libnccl2
-      - NV_LIBNCCL_PACKAGE_VERSION=2.25.1-1
-      - NCCL_VERSION=2.25.1-1
-      - NV_LIBNCCL_PACKAGE=libnccl2=2.25.1-1+cuda12.8
-      - NVIDIA_PRODUCT_NAME=CUDA
-      - NV_CUDA_CUDART_DEV_VERSION=12.8.57-1
-      - NV_NVML_DEV_VERSION=12.8.55-1
-      - NV_LIBCUSPARSE_DEV_VERSION=12.5.7.53-1
-      - NV_LIBNPP_DEV_VERSION=12.3.3.65-1
-      - NV_LIBNPP_DEV_PACKAGE=libnpp-dev-12-8=12.3.3.65-1
-      - NV_LIBCUBLAS_DEV_VERSION=12.8.3.14-1
-      - NV_LIBCUBLAS_DEV_PACKAGE_NAME=libcublas-dev-12-8
-      - NV_LIBCUBLAS_DEV_PACKAGE=libcublas-dev-12-8=12.8.3.14-1
-      - NV_CUDA_NSIGHT_COMPUTE_VERSION=12.8.0-1
-      - NV_CUDA_NSIGHT_COMPUTE_DEV_PACKAGE=cuda-nsight-compute-12-8=12.8.0-1
-      - NV_NVPROF_VERSION=12.8.57-1
-      - NV_NVPROF_DEV_PACKAGE=cuda-nvprof-12-8=12.8.57-1
-      - NV_LIBNCCL_DEV_PACKAGE_NAME=libnccl-dev
-      - NV_LIBNCCL_DEV_PACKAGE_VERSION=2.25.1-1
-      - NV_LIBNCCL_DEV_PACKAGE=libnccl-dev=2.25.1-1+cuda12.8
-      - LIBRARY_PATH=/usr/local/cuda/lib64/stubs
-      - NV_CUDNN_VERSION=9.7.0.66-1
-      - NV_CUDNN_PACKAGE_NAME=libcudnn9-cuda-12
-      - NV_CUDNN_PACKAGE=libcudnn9-cuda-12=9.7.0.66-1
-      - NV_CUDNN_PACKAGE_DEV=libcudnn9-dev-cuda-12=9.7.0.66-1
-      - WHISPER_MODEL=base
     working_dir: /app
     ports:
       - "8080:8080"
     restart: unless-stopped
-    labels:
-      - "com.nvidia.cudnn.version=9.7.0.66-1"
-      - "maintainer=NVIDIA CORPORATION <cudatools@nvidia.com>"
-      - "org.opencontainers.image.ref.name=ubuntu"
-      - "org.opencontainers.image.version=24.04"
-    runtime: nvidia
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]

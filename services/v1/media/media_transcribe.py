@@ -22,38 +22,81 @@ import srt
 from datetime import timedelta
 from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
+from services.runpod_whisper import transcribe_with_runpod
 import logging
-from config import LOCAL_STORAGE_PATH
+from config import LOCAL_STORAGE_PATH, USE_RUNPOD, RUNPOD_API_KEY
 
 # Set up logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line=None):
+def process_transcribe_media(media_url, task, include_text, include_srt, include_segments, word_timestamps, response_type, language, job_id, words_per_line=None, initial_prompt=None):
     """Transcribe or translate media and return the transcript/translation, SRT or VTT file path."""
     logger.info(f"Starting {task} for media URL: {media_url}")
-    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
-    logger.info(f"Downloaded media to local file: {input_filename}")
-
+    logger.info(f"Checking Runpod configuration: USE_RUNPOD={USE_RUNPOD}, RUNPOD_API_KEY={'✅ Set' if RUNPOD_API_KEY else '❌ Not set'}")
+    
     try:
-        # Load a larger model for better translation quality
-        #model_size = "large" if task == "translate" else "base"
-        model_size = "base"
-        model = whisper.load_model(model_size)
-        logger.info(f"Loaded Whisper {model_size} model")
+        # Choose transcription method based on configuration
+        if USE_RUNPOD and RUNPOD_API_KEY:
+            logger.info("Using Runpod API for transcription")
+            # For Runpod, we use the media URL directly
+            # Note: Runpod currently only supports transcription, not translation
+            if task == "translate":
+                logger.warning("Runpod doesn't support translation task. Falling back to local Whisper.")
+                # Fallback to local processing for translation
+                input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
+                logger.info(f"Downloaded media to local file: {input_filename}")
+                
+                model_size = "base"
+                model = whisper.load_model(model_size)
+                logger.info(f"Loaded Whisper {model_size} model for translation")
+                
+                options = {
+                    "task": task,
+                    "word_timestamps": word_timestamps,
+                    "verbose": False,
+                    "temperature": 0.0  # Default temperature for translation
+                }
+                if language:
+                    options["language"] = language
+                
+                result = model.transcribe(input_filename, **options)
+                
+                # Clean up local file
+                os.remove(input_filename)
+                logger.info(f"Removed local file: {input_filename}")
+            else:
+                # Use Runpod for transcription
+                result = transcribe_with_runpod(media_url, model="large-v3", language=language, initial_prompt=initial_prompt)
+                logger.info("Runpod transcription completed")
+        else:
+            logger.info("Using local Whisper model")
+            # Download file for local processing
+            input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_input"))
+            logger.info(f"Downloaded media to local file: {input_filename}")
 
-        # Configure transcription/translation options
-        options = {
-            "task": task,
-            "word_timestamps": word_timestamps,
-            "verbose": False
-        }
+            # Load a larger model for better translation quality
+            model_size = "base"
+            model = whisper.load_model(model_size)
+            logger.info(f"Loaded Whisper {model_size} model")
 
-        # Add language specification if provided
-        if language:
-            options["language"] = language
+            # Configure transcription/translation options
+            options = {
+                "task": task,
+                "word_timestamps": word_timestamps,
+                "verbose": False,
+                "temperature": 0.0  # Default temperature for transcription
+            }
 
-        result = model.transcribe(input_filename, **options)
+            # Add language specification if provided
+            if language:
+                options["language"] = language
+
+            result = model.transcribe(input_filename, **options)
+            
+            # Clean up local file
+            os.remove(input_filename)
+            logger.info(f"Removed local file: {input_filename}")
         
         # For translation task, the result['text'] will be in English
         text = None
@@ -61,6 +104,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
         segments_json = None
 
         logger.info(f"Generated {task} output")
+        logger.debug(f"Transcription result object: {result}")
 
         if include_text is True:
             text = result['text']
@@ -121,8 +165,6 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
         if include_segments is True:
             segments_json = result['segments']
 
-        os.remove(input_filename)
-        logger.info(f"Removed local file: {input_filename}")
         logger.info(f"{task.capitalize()} successful, output type: {response_type}")
 
         if response_type == "direct":

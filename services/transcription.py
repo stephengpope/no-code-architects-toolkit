@@ -22,6 +22,8 @@ import srt
 from datetime import timedelta
 from whisper.utils import WriteSRT, WriteVTT
 from services.file_management import download_file
+from services.runpod_whisper import transcribe_with_runpod
+from config import USE_RUNPOD, RUNPOD_API_KEY
 import logging
 import uuid
 
@@ -35,23 +37,44 @@ STORAGE_PATH = "/tmp/"
 def process_transcription(media_url, output_type, max_chars=56, language=None,):
     """Transcribe media and return the transcript, SRT or ASS file path."""
     logger.info(f"Starting transcription for media URL: {media_url} with output type: {output_type}")
-    input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
-    logger.info(f"Downloaded media to local file: {input_filename}")
-
+    logger.info(f"Checking Runpod configuration: USE_RUNPOD={USE_RUNPOD}, RUNPOD_API_KEY={'✅ Set' if RUNPOD_API_KEY else '❌ Not set'}")
     try:
-        model = whisper.load_model("base")
-        logger.info("Loaded Whisper model")
-
-        # result = model.transcribe(input_filename)
-        # logger.info("Transcription completed")
+        # Choose transcription method based on configuration
+        if USE_RUNPOD and RUNPOD_API_KEY:
+            logger.info("Using Runpod API for transcription")
+            # For Runpod, we use the media URL directly
+            result = transcribe_with_runpod(media_url, model="turbo", language=language)
+            logger.info("Runpod transcription completed")
+        else:
+            logger.info("Using local Whisper model for transcription")
+            # Download file for local processing
+            input_filename = download_file(media_url, os.path.join(STORAGE_PATH, 'input_media'))
+            logger.info(f"Downloaded media to local file: {input_filename}")
+            
+            model = whisper.load_model("base")
+            logger.info("Loaded Whisper model")
+            
+            if output_type == 'ass':
+                result = model.transcribe(
+                    input_filename,
+                    word_timestamps=True,
+                    task='transcribe',
+                    verbose=False,
+                    language=language
+                )
+            else:
+                result = model.transcribe(input_filename, language=language)
+            
+            logger.info("Local transcription completed")
+            
+            # Clean up local file
+            os.remove(input_filename)
+            logger.info(f"Removed local file: {input_filename}")
 
         if output_type == 'transcript':
-            result = model.transcribe(input_filename, language=language)
             output = result['text']
             logger.info("Generated transcript output")
         elif output_type in ['srt', 'vtt']:
-
-            result = model.transcribe(input_filename)
             srt_subtitles = []
             for i, segment in enumerate(result['segments'], start=1):
                 start = timedelta(seconds=segment['start'])
@@ -70,13 +93,6 @@ def process_transcription(media_url, output_type, max_chars=56, language=None,):
             logger.info(f"Generated {output_type.upper()} output: {output}")
 
         elif output_type == 'ass':
-            result = model.transcribe(
-                input_filename,
-                word_timestamps=True,
-                task='transcribe',
-                verbose=False
-            )
-            logger.info("Transcription completed with word-level timestamps")
             # Generate ASS subtitle content
             ass_content = generate_ass_subtitle(result, max_chars)
             logger.info("Generated ASS subtitle content")
@@ -92,8 +108,6 @@ def process_transcription(media_url, output_type, max_chars=56, language=None,):
         else:
             raise ValueError("Invalid output type. Must be 'transcript', 'srt', or 'vtt'.")
 
-        os.remove(input_filename)
-        logger.info(f"Removed local file: {input_filename}")
         logger.info(f"Transcription successful, output type: {output_type}")
         return output
     except Exception as e:

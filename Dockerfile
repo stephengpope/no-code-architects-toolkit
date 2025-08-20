@@ -31,7 +31,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libaom-dev \
     libdav1d-dev \
     librav1e-dev \
-    libsvtav1-dev \
     libzimg-dev \
     libwebp-dev \
     git \

@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  nca-toolkit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - API_KEY=${API_KEY}
+      - PYTHONUNBUFFERED=1
+      - WHISPER_CACHE_DIR=/app/whisper_cache
+      - S3_SECRET_KEY=${S3_SECRET_KEY}
+      - RUNPOD_API_KEY=${RUNPOD_API_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - S3_ENDPOINT_URL=${S3_ENDPOINT_URL}
+      - S3_REGION=${S3_REGION}
+      - S3_ACCESS_KEY=${S3_ACCESS_KEY}
+      - USE_RUNPOD=true
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    restart: unless-stopped

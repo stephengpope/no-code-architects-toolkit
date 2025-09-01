@@ -64,7 +64,7 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region)
 
 
 
-# START ---- Добавил я list_objects_v2 - для получения списка файлов из бакета
+# START ---- Добавил я list_objects_v2 - для получения списка файлов из бакета с указанием signature_version='s3v4'
 # ⚡️ Новый метод для листинга
 def list_files(s3_url, access_key, secret_key, bucket_name, region, prefix=""):
     """
@@ -78,7 +78,7 @@ def list_files(s3_url, access_key, secret_key, bucket_name, region, prefix=""):
     client = session.client(
         's3',
         endpoint_url=s3_url,
-        config=Config(signature_version='s3')
+        config=Config(signature_version='s3v4')   # ⚡️ ВАЖНО: для list_objects
     )
     try:
         response = client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
@@ -90,5 +90,6 @@ def list_files(s3_url, access_key, secret_key, bucket_name, region, prefix=""):
     except Exception as e:
         logger.error(f"Error listing files in S3: {e}")
         raise
+
 
 # END ---- Добавил я list_objects_v2 - для получения списка файлов из бакета

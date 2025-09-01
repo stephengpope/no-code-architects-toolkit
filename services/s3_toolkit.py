@@ -21,19 +21,33 @@ import boto3
 import logging
 from urllib.parse import urlparse, quote
 
+# START ---- Добавил я для определения signature_version
+from botocore.client import Config
+# END ---- Добавил я для определения signature_version
+
 logger = logging.getLogger(__name__)
 
 def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region):
     # Parse the S3 URL into bucket, region, and endpoint
     #bucket_name, region, endpoint_url = parse_s3_url(s3_url)
-    
+
     session = boto3.Session(
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         region_name=region
     )
     
-    client = session.client('s3', endpoint_url=s3_url)
+    # START ---- Добавил я для определения signature_version
+
+    client = session.client(
+        's3',
+        endpoint_url=s3_url,
+        config=Config(signature_version='s3v4')   # 🔑 фикс
+    )
+
+    # client = session.client('s3', endpoint_url=s3_url) # - я закоментил
+    
+    # END ---- Добавил я для определения signature_version
 
     try:
         # Upload the file to the specified S3 bucket

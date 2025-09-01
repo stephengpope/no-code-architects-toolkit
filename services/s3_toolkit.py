@@ -42,7 +42,7 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region)
     client = session.client(
         's3',
         endpoint_url=s3_url,
-        config=Config(signature_version='s3v4')   # 🔑 фикс
+        config=Config(signature_version='s3')   # 🔑 фикс
     )
 
     # client = session.client('s3', endpoint_url=s3_url) # - я закоментил

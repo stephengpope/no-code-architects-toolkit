@@ -61,3 +61,34 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region)
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
         raise
+
+
+
+# START ---- Добавил я list_objects_v2 - для получения списка файлов из бакета
+# ⚡️ Новый метод для листинга
+def list_files(s3_url, access_key, secret_key, bucket_name, region, prefix=""):
+    """
+    Возвращает список всех файлов в бакете (можно ограничить prefix).
+    """
+    session = boto3.Session(
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name=region
+    )
+    client = session.client(
+        's3',
+        endpoint_url=s3_url,
+        config=Config(signature_version='s3')
+    )
+    try:
+        response = client.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+        files = []
+        if "Contents" in response:
+            for obj in response["Contents"]:
+                files.append(obj["Key"])
+        return files
+    except Exception as e:
+        logger.error(f"Error listing files in S3: {e}")
+        raise
+
+# END ---- Добавил я list_objects_v2 - для получения списка файлов из бакета

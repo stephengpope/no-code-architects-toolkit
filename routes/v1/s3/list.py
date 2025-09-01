@@ -1,14 +1,14 @@
 from flask import Blueprint, jsonify, request
 from services.s3_toolkit import list_files
 import os
-from services.authentication import authenticate   # ⚡️ защита по API-ключу
+from services.authentication import authenticate
 
 s3_list_bp = Blueprint("s3_list", __name__)
 
 @s3_list_bp.route("/v1/s3/list", methods=["GET"])
 @authenticate
 def list_s3_files():
-    prefix = request.args.get("prefix", "")   # можно указать ?prefix=videos/
+    prefix = request.args.get("prefix", "")   # можно ?prefix=videos/
     files = list_files(
         os.getenv("S3_ENDPOINT_URL"),
         os.getenv("S3_ACCESS_KEY"),
@@ -18,3 +18,5 @@ def list_s3_files():
         prefix=prefix
     )
     return jsonify({"files": files})
+
+# добавляем list_objects_v2, чтобы получить списко всех файлов на бакете

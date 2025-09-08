@@ -27,16 +27,14 @@ from botocore.client import Config
 
 logger = logging.getLogger(__name__)
 
-def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region):
-    # Parse the S3 URL into bucket, region, and endpoint
-    #bucket_name, region, endpoint_url = parse_s3_url(s3_url)
-
+    # Change by BN001: support for output_dir parameter
+def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region, output_dir=None):
     session = boto3.Session(
         aws_access_key_id=access_key,
         aws_secret_access_key=secret_key,
         region_name=region
     )
-    
+
     # START ---- Добавил я для определения signature_version
 
     client = session.client(
@@ -44,24 +42,38 @@ def upload_to_s3(file_path, s3_url, access_key, secret_key, bucket_name, region)
         endpoint_url=s3_url,
         config=Config(signature_version='s3')   # 🔑 фикс
     )
-
+ 
     # client = session.client('s3', endpoint_url=s3_url) # - я закоментил
     
     # END ---- Добавил я для определения signature_version
 
     try:
-        # Upload the file to the specified S3 bucket
-        with open(file_path, 'rb') as data:
-            client.upload_fileobj(data, bucket_name, os.path.basename(file_path), ExtraArgs={'ACL': 'public-read'})
+        import os
+        basename = os.path.basename(file_path)
 
-        # URL encode the filename for the URL
-        encoded_filename = quote(os.path.basename(file_path))
-        file_url = f"{s3_url}/{bucket_name}/{encoded_filename}"
+        # формируем путь в бакете (output_s3_path)
+        if output_dir:
+            if not output_dir.endswith("/"):
+                output_dir += "/"
+            output_s3_path = output_dir + basename
+        else:
+            output_s3_path = basename
+
+        # загружаем
+        with open(file_path, 'rb') as data:
+            client.upload_fileobj(
+                data,
+                bucket_name,
+                output_s3_path,
+                ExtraArgs={'ACL': 'public-read'}
+            )
+
+        encoded_key = quote(output_s3_path)
+        file_url = f"{s3_url}/{bucket_name}/{encoded_key}"
         return file_url
     except Exception as e:
         logger.error(f"Error uploading file to S3: {e}")
         raise
-
 
 
 # START ---- Добавил я list_objects_v2 - для получения списка файлов из бакета с указанием signature_version='s3v4'

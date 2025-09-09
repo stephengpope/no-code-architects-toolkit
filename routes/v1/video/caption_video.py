@@ -99,7 +99,7 @@ logger = logging.getLogger(__name__)
         },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "language": {"type": "string"}
+        "language": {"type": "string"},
         "output_dir": {"type": "string"}
     },
     "required": ["video_url"],

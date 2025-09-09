@@ -114,7 +114,7 @@ def get_storage_provider() -> CloudStorageProvider:
     
     raise ValueError(f"No cloud storage settings provided.")
 
-    # Change by BN001: added output_dir support
+# Change by BN001: added output_dir support
 def upload_file(file_path: str, output_dir: str = None) -> str:
     provider = get_storage_provider()
     try:

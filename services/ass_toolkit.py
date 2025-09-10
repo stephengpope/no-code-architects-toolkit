@@ -169,6 +169,7 @@ def download_captions(captions_url):
         logger.info(f"Downloading captions from URL: {captions_url}")
         response = requests.get(captions_url)
         response.raise_for_status()
+        response.encoding = 'utf-8' 
         logger.info("Captions downloaded successfully.")
         return response.text
     except Exception as e:

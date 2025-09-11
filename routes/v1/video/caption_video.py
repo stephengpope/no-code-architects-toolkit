@@ -99,7 +99,8 @@ logger = logging.getLogger(__name__)
         },
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"},
-        "language": {"type": "string"}
+        "language": {"type": "string"},
+        "output_dir": {"type": "string"}
     },
     "required": ["video_url"],
     "additionalProperties": False
@@ -173,7 +174,10 @@ def caption_video_v1(job_id, data):
         os.remove(ass_path)
 
         # Upload the captioned video
-        cloud_url = upload_file(output_path)
+        # Change by BN001: support for output_dir
+        # Upload the captioned video (with optional output_dir)
+        output_dir = data.get("output_dir")   # <-- new
+        cloud_url = upload_file(output_path, output_dir=output_dir)  # <-- new
         logger.info(f"Job {job_id}: Captioned video uploaded to cloud storage: {cloud_url}")
 
         # Clean up the output file after upload

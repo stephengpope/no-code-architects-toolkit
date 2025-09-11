@@ -105,3 +105,23 @@ def list_files(s3_url, access_key, secret_key, bucket_name, region, prefix=""):
 
 
 # END ---- Добавил я list_objects_v2 - для получения списка файлов из бакета
+# START ---- Добавил я delete_from_s3 - для удаления файлов из бакета с указанием signature_version='s3v4'
+def delete_from_s3(s3_url, access_key, secret_key, bucket_name, region, file_key):
+    import boto3
+    from botocore.client import Config
+
+    session = boto3.Session(
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name=region
+    )
+
+    client = session.client(
+        's3',
+        endpoint_url=s3_url,
+        config=Config(signature_version="s3v4")
+    )
+
+    response = client.delete_object(Bucket=bucket_name, Key=file_key)
+    return response
+# END ---- Добавил я delete_from_s3 - для удаления файлов из бакета

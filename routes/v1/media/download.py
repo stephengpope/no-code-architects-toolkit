@@ -100,7 +100,7 @@ def download_media(job_id, data):
             # Configure yt-dlp options
             ydl_opts = {
                 'format': 'best',  # Download best quality
-                'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
+                'outtmpl': os.path.join(temp_dir, '%(title)s.50s.%(ext)s'),
                 'quiet': True,
                 'no_warnings': True,
                 'download': data.get('cloud_upload', True)

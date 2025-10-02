@@ -30,12 +30,12 @@ import time
 
 def cloud_run_job_task():
     """Execute a single job request and shut down."""
-    path = os.environ.get("GCP_RUN_JOB_PATH")
-    payload_str = os.environ.get("GCP_RUN_JOB_PAYLOAD")
+    path = os.environ.get("GCP_JOB_PATH")
+    payload_str = os.environ.get("GCP_JOB_PAYLOAD")
     api_key = os.environ.get("API_KEY")
 
     if not (path and payload_str and api_key):
-        print("⚠️ Missing required environment variables: GCP_RUN_JOB_PATH, GCP_RUN_JOB_PAYLOAD, or API_KEY")
+        print("⚠️ Missing required environment variables: GCP_JOB_PATH, GCP_JOB_PAYLOAD, or API_KEY")
         os._exit(1)
 
     try:

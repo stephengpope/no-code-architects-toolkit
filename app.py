@@ -107,7 +107,7 @@ def create_app():
                     log_job_status(job_id, {
                         "job_status": "running",
                         "job_id": job_id,
-                        "queue_id": "gcp_run_job",
+                        "queue_id": "gcp_job",
                         "process_id": pid,
                         "response": None
                     })
@@ -127,7 +127,7 @@ def create_app():
                         "queue_time": 0,
                         "total_time": round(run_time, 3),
                         "pid": pid,
-                        "queue_id": "gcp_run_job",
+                        "queue_id": "gcp_job",
                         "build_number": BUILD_NUMBER
                     }
 
@@ -135,7 +135,7 @@ def create_app():
                     log_job_status(job_id, {
                         "job_status": "done",
                         "job_id": job_id,
-                        "queue_id": "gcp_run_job",
+                        "queue_id": "gcp_job",
                         "process_id": pid,
                         "response": response_obj
                     })
@@ -146,7 +146,7 @@ def create_app():
 
                     return response_obj, response[2]
 
-                if os.environ.get("GCP_RUN_JOB_NAME") and data.get("webhook_url"):
+                if os.environ.get("GCP_JOB_NAME") and data.get("webhook_url"):
                     try:
                         overrides = {
                             'container_overrides': [
@@ -154,11 +154,11 @@ def create_app():
                                     'env': [
                                         # Environment variables to pass to the GCP Cloud Run Job
                                         {
-                                            'name': 'GCP_RUN_JOB_PATH',
+                                            'name': 'GCP_JOB_PATH',
                                             'value': request.path  # Endpoint to call
                                         },
                                         {
-                                            'name': 'GCP_RUN_JOB_PAYLOAD',
+                                            'name': 'GCP_JOB_PAYLOAD',
                                             'value': json.dumps(data)  # Payload as a string
                                         },
                                     ]
@@ -169,8 +169,8 @@ def create_app():
 
                         # Call trigger_cloud_run_job with the overrides dictionary
                         response = trigger_cloud_run_job(
-                            job_name=os.environ.get("GCP_RUN_JOB_NAME"),
-                            location=os.environ.get("GCP_RUN_JOB_LOCATION", "us-central1"),
+                            job_name=os.environ.get("GCP_JOB_NAME"),
+                            location=os.environ.get("GCP_JOB_LOCATION", "us-central1"),
                             overrides=overrides  # Pass overrides to the job
                         )
 
@@ -183,16 +183,16 @@ def create_app():
                             "id": data.get("id"),
                             "job_id": job_id,
                             "message": response,
-                            "job_name": os.environ.get("GCP_RUN_JOB_NAME"),
-                            "location": os.environ.get("GCP_RUN_JOB_LOCATION", "us-central1"),
+                            "job_name": os.environ.get("GCP_JOB_NAME"),
+                            "location": os.environ.get("GCP_JOB_LOCATION", "us-central1"),
                             "pid": pid,
-                            "queue_id": "gcp_run_job",
+                            "queue_id": "gcp_job",
                             "build_number": BUILD_NUMBER
                         }
                         log_job_status(job_id, {
                             "job_status": "submitted",
                             "job_id": job_id,
-                            "queue_id": "gcp_run_job",
+                            "queue_id": "gcp_job",
                             "process_id": pid,
                             "response": response_obj
                         })
@@ -204,16 +204,16 @@ def create_app():
                             "id": data.get("id"),
                             "job_id": job_id,
                             "message": f"GCP Cloud Run Job trigger failed: {str(e)}",
-                            "job_name": os.environ.get("GCP_RUN_JOB_NAME"),
-                            "location": os.environ.get("GCP_RUN_JOB_LOCATION", "us-central1"),
+                            "job_name": os.environ.get("GCP_JOB_NAME"),
+                            "location": os.environ.get("GCP_JOB_LOCATION", "us-central1"),
                             "pid": pid,
-                            "queue_id": "gcp_run_job",
+                            "queue_id": "gcp_job",
                             "build_number": BUILD_NUMBER
                         }
                         log_job_status(job_id, {
                             "job_status": "failed",
                             "job_id": job_id,
-                            "queue_id": "gcp_run_job",
+                            "queue_id": "gcp_job",
                             "process_id": pid,
                             "response": error_response
                         })

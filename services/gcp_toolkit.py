@@ -21,6 +21,8 @@ import json
 import logging
 from google.oauth2 import service_account
 from google.cloud import storage
+from google.cloud.run_v2 import JobsClient, RunJobRequest
+from google.api_core.exceptions import GoogleAPIError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -69,3 +71,41 @@ def upload_to_gcs(file_path, bucket_name=GCP_BUCKET_NAME):
     except Exception as e:
         logger.error(f"Error uploading file to GCS: {e}")
         raise
+
+
+def trigger_cloud_run_job(job_name, location="us-central1", overrides=None):
+    # Retrieve service account credentials
+    json_str = os.environ.get("GCP_SA_CREDENTIALS")
+    if not json_str:
+        raise ValueError("GCP_SA_CREDENTIALS environment variable not set.")
+    
+    credentials_info = json.loads(json_str)
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+
+    # Initialize the JobsClient with the provided credentials
+    client = JobsClient(credentials=credentials)
+
+    # Construct the job path using project ID and location
+    project_id = credentials_info.get("project_id")
+    job_path = f"projects/{project_id}/locations/{location}/jobs/{job_name}"
+
+    # Create the RunJobRequest with the specified overrides
+    request = RunJobRequest(
+        name=job_path,
+        overrides=overrides  # Passing the overrides dictionary directly
+    )
+
+    try:
+        # Trigger the job (non-blocking)
+        operation = client.run_job(request=request)
+
+        return {
+            "operation_name": operation.operation.name,  # Return operation name to track job status
+            "job_submitted": True
+        }
+    except GoogleAPIError as e:
+        # Handle any errors (e.g., authentication, bad request)
+        return {
+            "job_submitted": False,
+            "error": str(e)
+        }

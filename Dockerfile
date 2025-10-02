@@ -209,6 +209,7 @@ gunicorn --bind 0.0.0.0:8080 \
     --timeout ${GUNICORN_TIMEOUT:-300} \
     --worker-class sync \
     --keep-alive 80 \
+    --config gunicorn.conf.py \
     app:app' > /app/run_gunicorn.sh && \
     chmod +x /app/run_gunicorn.sh
 

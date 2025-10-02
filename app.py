@@ -140,6 +140,10 @@ def create_app():
                         "response": response_obj
                     })
 
+                    # Send webhook if webhook_url is provided
+                    if data.get("webhook_url") and data.get("webhook_url") != "":
+                        send_webhook(data.get("webhook_url"), response_obj)
+
                     return response_obj, response[2]
 
                 if os.environ.get("GCP_RUN_JOB_NAME") and data.get("webhook_url"):

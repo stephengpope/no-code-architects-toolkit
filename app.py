@@ -180,8 +180,9 @@ def create_app():
                         if not response.get("job_submitted"):
                             raise Exception(f"GCP job trigger failed: {response}")
 
-                        # Extract execution name for tracking
-                        execution_name = response.get("execution_name", "gcp_job")
+                        # Extract execution name and short ID for tracking
+                        execution_name = response.get("execution_name", "")
+                        queue_id = execution_name.split('/')[-1] if execution_name else "gcp_job"
 
                         # Prepare the response object
                         response_obj = {
@@ -192,13 +193,13 @@ def create_app():
                             "job_name": os.environ.get("GCP_JOB_NAME"),
                             "location": os.environ.get("GCP_JOB_LOCATION", "us-central1"),
                             "pid": pid,
-                            "queue_id": execution_name,
+                            "queue_id": queue_id,
                             "build_number": BUILD_NUMBER
                         }
                         log_job_status(job_id, {
                             "job_status": "submitted",
                             "job_id": job_id,
-                            "queue_id": execution_name,
+                            "queue_id": queue_id,
                             "process_id": pid,
                             "response": response_obj
                         })

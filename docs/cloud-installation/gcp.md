@@ -138,3 +138,134 @@ By following these steps, the NCA Toolkit will be successfully deployed and acce
 5. Use the **[NCA Toolkit API GPT](https://bit.ly/4feDDk4)** to learn more.
 
 By following these steps, your NCA Toolkit API should be successfully deployed on Google Cloud Platform.
+
+---
+
+## **Optional: Enable Cloud Run Jobs for Long-Running Tasks**
+
+For tasks that may exceed Cloud Run's request timeout or require dedicated resources, you can optionally configure Cloud Run Jobs to offload long-running operations.
+
+### **What are Cloud Run Jobs?**
+
+Cloud Run Jobs execute tasks that run to completion and then shut down, making them ideal for:
+- Video processing
+- Large file downloads
+- Batch operations
+- Any task that may take longer than the request timeout
+
+### **Benefits:**
+- **No timeout limits**: Jobs can run as long as needed (up to 24 hours)
+- **Cost-effective**: Only pay for the time the job is running
+- **Automatic scaling**: Each job gets dedicated resources
+- **Better reliability**: Jobs won't be interrupted by request timeouts
+
+---
+
+### **Setup Instructions**
+
+#### **1. Create a Cloud Run Job**
+
+1. Navigate to **Cloud Run** > **Jobs** in the GCP Console
+2. Click **Create Job**
+3. Configure the job:
+   - **Container image**: `stephengpope/no-code-architects-toolkit:latest`
+   - **Job name**: `nca-toolkit-job` (or your preferred name)
+   - **Region**: Same as your Cloud Run service (e.g., `us-central1`)
+   - **Memory**: `16 GB`
+   - **CPU**: `4 CPUs`
+   - **Task timeout**: `3600 seconds` (1 hour, adjust as needed)
+   - **Maximum retries**: `0` (jobs will handle their own error reporting)
+
+#### **2. Configure Environment Variables**
+
+Add the same environment variables as your Cloud Run service:
+- `API_KEY`: Your API key
+- `GCP_BUCKET_NAME`: Your Cloud Storage bucket name
+- `GCP_SA_CREDENTIALS`: Your service account JSON key (entire contents)
+
+#### **3. Add Job Configuration to Cloud Run Service**
+
+Update your Cloud Run **service** environment variables to enable job triggering:
+
+- `GCP_JOB_NAME`: The name of your Cloud Run Job (e.g., `nca-toolkit-job`)
+- `GCP_JOB_LOCATION`: The region where your job is deployed (e.g., `us-central1`)
+
+#### **4. Grant Permissions**
+
+Your service account needs permission to trigger jobs:
+
+1. Navigate to **IAM & Admin** > **IAM**
+2. Find your service account (e.g., `NCA Toolkit Service Account`)
+3. Click **Edit** and add the following role:
+   - **Cloud Run Invoker**
+4. Save changes
+
+---
+
+### **How It Works**
+
+When you make a request with a `webhook_url` parameter:
+
+1. **Cloud Run service** receives the request
+2. If `GCP_JOB_NAME` is configured, it triggers a **Cloud Run Job** instead of processing locally
+3. The job starts, processes the task, and sends results to your webhook
+4. The job automatically shuts down after completion
+
+**Example request:**
+```json
+{
+  "media_url": "https://example.com/large-video.mp4",
+  "webhook_url": "https://your-webhook.com/callback"
+}
+```
+
+The service will:
+- Return immediately with a job submission confirmation
+- Trigger the Cloud Run Job
+- Job processes the video and sends results to your webhook when complete
+
+---
+
+### **Monitoring Jobs**
+
+- View job executions in **Cloud Run** > **Jobs** > **[Your Job Name]** > **Executions**
+- Each execution shows:
+  - Execution ID (used for tracking in logs)
+  - Start time
+  - Duration
+  - Status (Running, Succeeded, Failed)
+  - Logs
+
+---
+
+### **Cost Considerations**
+
+Cloud Run Jobs pricing:
+- Billed per second of CPU and memory usage
+- Only charged while the job is actively running
+- No charges when idle
+
+**Example:** A 10-minute video processing job using 4 CPU / 16 GB would cost approximately $0.20-0.30 per execution.
+
+---
+
+### **Troubleshooting**
+
+**Jobs not triggering?**
+- Verify `GCP_JOB_NAME` and `GCP_JOB_LOCATION` are set correctly in your Cloud Run service
+- Check that your service account has **Cloud Run Invoker** role
+- Ensure the job exists in the specified region
+
+**Jobs failing?**
+- Check job execution logs in Cloud Run console
+- Verify all environment variables are properly set on the job
+- Ensure task timeout is sufficient for your workload
+
+**Not receiving webhooks?**
+- Verify your webhook URL is accessible from GCP
+- Check job execution logs for webhook delivery errors
+- Ensure your webhook endpoint can handle POST requests
+
+---
+
+**Note:** Cloud Run Jobs are completely optional. If not configured, all requests will be processed by the Cloud Run service normally.

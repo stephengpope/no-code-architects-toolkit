@@ -101,6 +101,7 @@ def trigger_cloud_run_job(job_name, location="us-central1", overrides=None):
 
         return {
             "operation_name": operation.operation.name,  # Return operation name to track job status
+            "execution_name": operation.metadata.name,  # Execution name for tracking
             "job_submitted": True
         }
     except GoogleAPIError as e:

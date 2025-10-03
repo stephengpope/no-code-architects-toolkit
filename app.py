@@ -103,11 +103,14 @@ def create_app():
 
                 # If running inside a GCP Cloud Run Job instance, execute synchronously
                 if os.environ.get("CLOUD_RUN_JOB"):
+                    # Get execution name from Google's env var
+                    execution_name = os.environ.get("CLOUD_RUN_EXECUTION", "gcp_job")
+
                     # Log job status as running
                     log_job_status(job_id, {
                         "job_status": "running",
                         "job_id": job_id,
-                        "queue_id": "gcp_job",
+                        "queue_id": execution_name,
                         "process_id": pid,
                         "response": None
                     })
@@ -127,7 +130,7 @@ def create_app():
                         "queue_time": 0,
                         "total_time": round(run_time, 3),
                         "pid": pid,
-                        "queue_id": "gcp_job",
+                        "queue_id": execution_name,
                         "build_number": BUILD_NUMBER
                     }
 
@@ -135,7 +138,7 @@ def create_app():
                     log_job_status(job_id, {
                         "job_status": "done",
                         "job_id": job_id,
-                        "queue_id": "gcp_job",
+                        "queue_id": execution_name,
                         "process_id": pid,
                         "response": response_obj
                     })
@@ -177,6 +180,9 @@ def create_app():
                         if not response.get("job_submitted"):
                             raise Exception(f"GCP job trigger failed: {response}")
 
+                        # Extract execution name for tracking
+                        execution_name = response.get("execution_name", "gcp_job")
+
                         # Prepare the response object
                         response_obj = {
                             "code": 200,
@@ -186,13 +192,13 @@ def create_app():
                             "job_name": os.environ.get("GCP_JOB_NAME"),
                             "location": os.environ.get("GCP_JOB_LOCATION", "us-central1"),
                             "pid": pid,
-                            "queue_id": "gcp_job",
+                            "queue_id": execution_name,
                             "build_number": BUILD_NUMBER
                         }
                         log_job_status(job_id, {
                             "job_status": "submitted",
                             "job_id": job_id,
-                            "queue_id": "gcp_job",
+                            "queue_id": execution_name,
                             "process_id": pid,
                             "response": response_obj
                         })

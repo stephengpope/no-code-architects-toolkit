@@ -178,8 +178,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install openai-whisper && \
     pip install playwright && \
-    pip install jsonschema 
-
+    pip install jsonschema  && \
+    pip dotenv
 # Create the appuser 
 RUN useradd -m appuser 
 

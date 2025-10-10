@@ -1,0 +1,118 @@
+[tool.poetry]
+name = "media-toolkit-api"
+version = "0.1.0"
+description = "Media processing toolkit API with audio/video processing, transcription, and cloud integration"
+authors = ["Media Toolkit Team"]
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+Flask = "*"
+Werkzeug = "*"
+requests = "*"
+ffmpeg-python = "*"
+openai-whisper = "*"
+gunicorn = "*"
+APScheduler = "*"
+srt = "*"
+numpy = "*"
+torch = "*"
+google-auth = "*"
+google-auth-oauthlib = "*"
+google-auth-httplib2 = "*"
+google-api-python-client = "*"
+google-cloud-storage = "*"
+psutil = "*"
+boto3 = "*"
+Pillow = "*"
+matplotlib = "*"
+yt-dlp = "*"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.4.0"
+pytest-cov = "^4.1.0"
+pytest-mock = "^3.11.0"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--tb=short",
+    "--cov=.",
+    "--cov-branch",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml:coverage.xml",
+    "--cov-fail-under=80",
+]
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests", 
+    "slow: Tests that take a long time to run",
+]
+filterwarnings = [
+    "error",
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    "*/.venv/*",
+    "*/site-packages/*",
+    "setup.py",
+    "*/migrations/*",
+    "*/config.py",
+    "*/settings.py",
+    "*/manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/docs/*",
+    "*/static/*",
+    "*/media/*",
+    "*/htmlcov/*",
+    "*/.pytest_cache/*",
+    "*/node_modules/*",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

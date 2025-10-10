@@ -25,6 +25,7 @@ import subprocess
 import tempfile
 import json
 import textwrap
+import requests
 
 v1_code_execute_bp = Blueprint('v1_code_execute', __name__)
 logger = logging.getLogger(__name__)
@@ -35,11 +36,27 @@ logger = logging.getLogger(__name__)
     "type": "object",
     "properties": {
         "code": {"type": "string"},
+        "code_url": {"type": "string", "format": "uri"},
+        "env": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "value": {"type": "string"}
+                },
+                "required": ["name", "value"]
+            }
+        },
         "timeout": {"type": "integer", "minimum": 1, "maximum": 300},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
-    "required": ["code"],
+    "oneOf": [
+        {"required": ["code"]},
+        {"required": ["code_url"]}
+    ],
+    "not": {"required": ["code", "code_url"]},
     "additionalProperties": False
 })
 @queue_task_wrapper(bypass_queue=False)
@@ -47,9 +64,32 @@ def execute_python(job_id, data):
     logger.info(f"Job {job_id}: Received Python code execution request")
     
     try:
-        code = data['code']
+        if 'code' in data and 'code_url' in data:
+            return {"error": "Provide either 'code' or 'code_url', not both."}, '/v1/code/execute/python', 400
+        if 'code_url' in data:
+            MAX_CODE_SIZE = 1024**2  # 1MB
+            try:
+                resp = requests.get(data['code_url'], stream=True, timeout=10)
+                resp.raise_for_status()
+                content_length = resp.headers.get('Content-Length')
+                if content_length and int(content_length) > MAX_CODE_SIZE:
+                    return {"error": f"Code file too large (>{MAX_CODE_SIZE} bytes)"}, '/v1/code/execute/python', 400
+                code_chunks = []
+                total = 0
+                for chunk in resp.iter_content(4096):
+                    total += len(chunk)
+                    if total > MAX_CODE_SIZE:
+                        return {"error": f"Code file too large (>{MAX_CODE_SIZE} bytes) while downloading"}, '/v1/code/execute/python', 400
+                    code_chunks.append(chunk)
+                code = b''.join(code_chunks).decode('utf-8', errors='replace')
+            except Exception as e:
+                return {"error": f"Failed to fetch code from code_url: {str(e)}"}, '/v1/code/execute/python', 400
+        else:
+            code = data['code']
         timeout = data.get('timeout', 30)
-        
+        # Convert env array to dictionary
+        custom_env = {item['name']: str(item['value']) for item in data.get('env', [])}
+        env = None if not custom_env else {**os.environ, **custom_env}
         # Indent user code
         indented_code = textwrap.indent(code, '    ')
         
@@ -99,6 +139,7 @@ print(json.dumps(result))
                     ['python3', temp_file.name],
                     capture_output=True,
                     text=True,
+                    env=env,
                     timeout=timeout
                 )
                 

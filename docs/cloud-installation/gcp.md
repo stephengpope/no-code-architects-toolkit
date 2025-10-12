@@ -197,7 +197,8 @@ Your service account needs permission to trigger jobs:
 1. Navigate to **IAM & Admin** > **IAM**
 2. Find your service account (e.g., `NCA Toolkit Service Account`)
 3. Click **Edit** and add the following role:
-   - **Cloud Run Invoker**
+   - **Cloud Run Jobs Executor**
+   - **Cloud Run Jobs Executor With Overrides**
 4. Save changes
 
 ---
@@ -223,6 +224,7 @@ The service will:
 - Return immediately with a job submission confirmation
 - Trigger the Cloud Run Job
 - Job processes the video and sends results to your webhook when complete
+- Use **[https://webhook.site/](https://webhook.site/)** for testing webhooks
 
 ---
 
@@ -244,8 +246,6 @@ Cloud Run Jobs pricing:
 - Billed per second of CPU and memory usage
 - Only charged while the job is actively running
 - No charges when idle
-
-**Example:** A 10-minute video processing job using 4 CPU / 16 GB would cost approximately $0.20-0.30 per execution.
 
 ---
 

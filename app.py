@@ -121,6 +121,7 @@ def create_app():
 
                     # Build response object
                     response_obj = {
+                        "endpoint": response[1],
                         "code": response[2],
                         "id": data.get("id"),
                         "job_id": job_id,
@@ -131,6 +132,7 @@ def create_app():
                         "total_time": round(run_time, 3),
                         "pid": pid,
                         "queue_id": execution_name,
+                        "queue_length": 0,
                         "build_number": BUILD_NUMBER
                     }
 
@@ -239,8 +241,9 @@ def create_app():
                     
                     response = f(job_id=job_id, data=data, *args, **kwargs)
                     run_time = time.time() - start_time
-                    
+
                     response_obj = {
+                        "endpoint": response[1],
                         "code": response[2],
                         "id": data.get("id"),
                         "job_id": job_id,

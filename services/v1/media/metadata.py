@@ -20,7 +20,7 @@ import os
 import subprocess
 import json
 import logging
-from services.file_management import download_file
+import requests
 from config import LOCAL_STORAGE_PATH
 
 # Set up logging
@@ -30,45 +30,49 @@ logging.basicConfig(level=logging.INFO)
 def get_media_metadata(media_url, job_id=None):
     """
     Extract metadata from a media file including video/audio properties.
-    
+    Uses ffprobe direct streaming to avoid downloading the entire file.
+
     Args:
         media_url (str): URL of the media file to analyze
         job_id (str, optional): Unique job identifier
-        
+
     Returns:
         dict: Dictionary containing all available metadata for the media file
     """
     logger.info(f"Starting metadata extraction for {media_url}")
-    
-    # Download the file
-    input_filename = download_file(media_url, os.path.join(LOCAL_STORAGE_PATH, f"{job_id}_metadata_input"))
-    logger.info(f"Downloaded media to local file: {input_filename}")
-    
+
     try:
         # Initialize metadata dictionary
         metadata = {}
-        
-        # Get file size
-        metadata['filesize'] = os.path.getsize(input_filename)
-        metadata['filesize_mb'] = round(metadata['filesize'] / (1024 * 1024), 2)  # Convert to MB
-        
-        # Run ffprobe to get detailed metadata
+
+        # Get file size from HTTP HEAD request (without downloading)
+        try:
+            head_response = requests.head(media_url, allow_redirects=True, timeout=10)
+            if 'content-length' in head_response.headers:
+                metadata['filesize'] = int(head_response.headers['content-length'])
+                metadata['filesize_mb'] = round(metadata['filesize'] / (1024 * 1024), 2)  # Convert to MB
+        except Exception as e:
+            logger.warning(f"Could not retrieve file size from HEAD request: {str(e)}")
+
+        # Run ffprobe directly on the URL with reduced probing
         ffprobe_command = [
             'ffprobe',
             '-v', 'quiet',
             '-print_format', 'json',
             '-show_format',
             '-show_streams',
-            input_filename
+            '-analyzeduration', '100K',
+            '-probesize', '100K',
+            media_url
         ]
-        
-        logger.info(f"Running ffprobe command: {' '.join(ffprobe_command)}")
+
+        logger.info(f"Running ffprobe command on URL")
         result = subprocess.run(ffprobe_command, capture_output=True, text=True)
-        
+
         if result.returncode != 0:
             logger.error(f"Error during ffprobe: {result.stderr}")
             raise Exception(f"ffprobe error: {result.stderr}")
-            
+
         probe_data = json.loads(result.stdout)
         
         # Get format information
@@ -155,19 +159,9 @@ def get_media_metadata(media_url, job_id=None):
             # Add flags indicating presence of streams
             metadata['has_video'] = has_video
             metadata['has_audio'] = has_audio
-        
-        # Clean up the downloaded file
-        if os.path.exists(input_filename):
-            os.remove(input_filename)
-            logger.info(f"Removed temporary file: {input_filename}")
-        
+
         return metadata
-        
+
     except Exception as e:
         logger.error(f"Metadata extraction failed: {str(e)}")
-        
-        # Clean up temporary file if it exists
-        if 'input_filename' in locals() and os.path.exists(input_filename):
-            os.remove(input_filename)
-            
         raise

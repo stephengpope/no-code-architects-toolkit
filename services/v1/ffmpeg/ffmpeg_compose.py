@@ -108,13 +108,19 @@ def process_ffmpeg_compose(data, job_id):
     
     # Add inputs
     input_paths = []
+    download_cache = {}  # cache of url -> local_path
     for input_data in data["inputs"]:
         if "options" in input_data:
             for option in input_data["options"]:
                 command.append(option["option"])
                 if "argument" in option and option["argument"] is not None:
                     command.append(str(option["argument"]))
-        input_path = download_file(input_data["file_url"], LOCAL_STORAGE_PATH)
+        file_url = input_data["file_url"]
+        if file_url in download_cache:
+            input_path = download_cache[file_url]
+        else:
+            input_path = download_file(file_url, LOCAL_STORAGE_PATH)
+            download_cache[file_url] = input_path
         input_paths.append(input_path)
         command.extend(["-i", input_path])
     

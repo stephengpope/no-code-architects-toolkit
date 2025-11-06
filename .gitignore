@@ -2,3 +2,14 @@
 .DS_Store
 .env_shell.json
 .env
+dev/
+*.bat
+*.ps1
+test_*.py
+*_request.json
+*_POST*.md
+*_COMMANDS.md
+*_SUMMARY.md
+*_CAMBIOS*.md
+PULL_REQUEST.md
+QUICK_START*.md

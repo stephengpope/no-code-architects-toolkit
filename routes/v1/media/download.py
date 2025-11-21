@@ -105,6 +105,8 @@ def download_media(job_id, data):
                 'no_warnings': True,
                 'download': data.get('cloud_upload', True)
             }
+            
+            ydl_opts['proxy'] = os.environ.get('MEDIA_DOWNLOAD_PROXY')
 
             # Add cookies if provided
             if cookie:

@@ -59,12 +59,22 @@ You'll need to create a Space (Digital Ocean's object storage) for the toolkit t
 
 Add the following environment variables exactly as shown (be careful with underscores vs. dashes and avoid any leading/trailing spaces):
 
+### Required Variables
+
 1. `API_KEY`: Your API key (e.g., `test123` for testing - change for production)
 2. `S3_ENDPOINT_URL`: The URL of your Space (copied from Step 3)
 3. `S3_ACCESS_KEY`: The access key from Step 3
 4. `S3_SECRET_KEY`: The secret key from Step 3
 5. `S3_BUCKET_NAME`: The name of your Space bucket (e.g., `nca-toolkit-bucket`)
 6. `S3_REGION`: The region code of your Space (e.g., `NYC3` for New York)
+
+### Optional Variables
+
+7. `S3_PUBLIC_URL`: Custom domain for file URLs (e.g., `cdn.yourdomain.com`)
+   - Use this if you have a CDN or custom domain in front of your Space
+   - When set, returned file URLs will use this domain instead of the Digital Ocean Spaces URL
+   - The bucket name will be excluded from the URL path
+   - Example: If set to `files.example.com`, URLs will be `https://files.example.com/file.mp3` instead of `https://nyc3.digitaloceanspaces.com/bucket-name/file.mp3`
 
 ## Step 7: Finalize and Deploy
 

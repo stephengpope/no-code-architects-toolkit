@@ -162,6 +162,16 @@ Each endpoint is supported by robust payload validation and detailed API documen
 - **Purpose**: The region for the S3-compatible storage service.
 - **Requirement**: Mandatory if using S3-compatible storage, "None" is acceptible for some s3 providers.
 
+#### `S3_PUBLIC_URL`
+- **Purpose**: Custom domain to use as the base URL for all returned file URLs (e.g., CDN domain).
+- **Requirement**: Optional. When set, file URLs will use this domain instead of `S3_ENDPOINT_URL`, and the bucket name will be excluded from the URL path.
+- **Example**: Set to `subdomain.domain.com` to return URLs like `https://subdomain.domain.com/file.mp3` instead of `https://nyc3.digitaloceanspaces.com/bucket-name/file.mp3`
+- **Note**: The value can include or exclude the `https://` protocol prefix. If omitted, `https://` will be automatically prepended.
+- **Common Use Cases**:
+  1. **Cloudflare R2 Public Access**: Cloudflare R2 requires custom domains (without bucket names in the URL path) to serve files publicly without authentication. Set `S3_PUBLIC_URL` to your R2 custom domain to enable public file access.
+  2. **CDN Integration**: Use CloudFlare, AWS CloudFront, Fastly, or other CDNs in front of your S3 storage for improved performance, caching, and reduced bandwidth costs. Set `S3_PUBLIC_URL` to your CDN domain.
+  3. **Custom Domain Branding**: Use your own branded domain (e.g., `files.yourcompany.com`) instead of exposing the underlying cloud provider's domain in file URLs, providing a more professional appearance and easier domain migration.
+
 ---
 
 ### Google Cloud Storage (GCP) Environment Variables

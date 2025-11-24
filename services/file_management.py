@@ -79,3 +79,16 @@ def download_file(url, storage_path="/tmp/"):
             os.remove(local_filename)
         raise e
 
+def get_content_type(file_path):
+    """Determine the MIME type of a file based on its extension.
+
+    Args:
+        file_path (str): Path to the file
+
+    Returns:
+        str: MIME type (e.g., 'video/mp4', 'image/png', 'application/json')
+             Returns 'application/octet-stream' if type cannot be determined
+    """
+    content_type, _ = mimetypes.guess_type(file_path)
+    return content_type if content_type else 'application/octet-stream'
+

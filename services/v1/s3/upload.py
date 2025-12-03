@@ -23,6 +23,7 @@ import requests
 from urllib.parse import urlparse, unquote, quote
 import uuid
 import re
+from services.file_management import get_content_type
 
 logger = logging.getLogger(__name__)
 
@@ -82,11 +83,15 @@ def stream_upload_to_s3(file_url, custom_filename=None, make_public=False, downl
         # Start a multipart upload
         logger.info(f"Starting multipart upload for {filename} to bucket {bucket_name}")
         acl = 'public-read' if make_public else 'private'
-        
+
+        # Detect content type from filename
+        content_type = get_content_type(filename)
+
         multipart_upload = s3_client.create_multipart_upload(
             Bucket=bucket_name,
             Key=filename,
-            ACL=acl
+            ACL=acl,
+            ContentType=content_type
         )
         
         upload_id = multipart_upload['UploadId']

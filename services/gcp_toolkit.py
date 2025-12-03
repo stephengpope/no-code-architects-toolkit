@@ -23,6 +23,7 @@ from google.oauth2 import service_account
 from google.cloud import storage
 from google.cloud.run_v2 import JobsClient, RunJobRequest
 from google.api_core.exceptions import GoogleAPIError
+from services.file_management import get_content_type
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -65,6 +66,10 @@ def upload_to_gcs(file_path, bucket_name=GCP_BUCKET_NAME):
         logger.info(f"Uploading file to Google Cloud Storage: {file_path}")
         bucket = gcs_client.bucket(bucket_name)
         blob = bucket.blob(os.path.basename(file_path))
+
+        # Set content type before uploading
+        blob.content_type = get_content_type(file_path)
+
         blob.upload_from_filename(file_path)
         logger.info(f"File uploaded successfully to GCS: {blob.public_url}")
         return blob.public_url

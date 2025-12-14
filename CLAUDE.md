@@ -26,21 +26,16 @@ No-Code Architects Toolkit API is a Flask-based media processing API that handle
   - Validates required environment variables per storage provider
   - Configures API_KEY, storage paths, and cloud credentials
 
-- **[gunicorn.conf.py](gunicorn.conf.py)** - Gunicorn server configuration
-  - Defines `when_ready` hook that auto-executes jobs in Cloud Run Job context
-  - Reads GCP_JOB_PATH and GCP_JOB_PAYLOAD env vars to make internal request
-  - Sends error webhooks if job fails, then shuts down container
-
 ### Request Flow
 
-1. Request hits route in `routes/v1/{category}/{action}.py` or `routes/v1/{category}/{subcategory}/{action}.py`
+1. Request hits route in `routes/v1/{category}/{action}.py`
 2. `@authenticate` decorator validates X-API-Key header
-3. `@validate_payload()` validates JSON against schema (strips internal `_cloud_job_id` and `disable_cloud_job` before validation)
+3. `@validate_payload()` validates JSON against schema
 4. `@queue_task_wrapper()` determines processing path:
    - **No webhook_url**: Execute synchronously, return immediately
    - **With webhook_url**: Queue task, return 202, send webhook when done
-   - **GCP_JOB_NAME set + webhook_url + not disabled**: Trigger Cloud Run Job, return 202
-   - **CLOUD_RUN_JOB env set**: Execute synchronously in job context (auto-triggered by gunicorn `when_ready` hook)
+   - **GCP_JOB_NAME set + webhook_url**: Trigger Cloud Run Job, return 202
+   - **CLOUD_RUN_JOB env set**: Execute synchronously in job context
 
 5. Route calls service function in `services/v1/{category}/{action}.py`
 6. Service processes media, uploads to cloud storage, returns result
@@ -56,9 +51,7 @@ No-Code Architects Toolkit API is a Flask-based media processing API that handle
 **GCP Cloud Run Jobs** (Optional)
 - Set GCP_JOB_NAME and GCP_JOB_LOCATION to enable
 - Requires webhook_url in request payload
-- Can be disabled via DISABLE_CLOUD_JOB env var or `disable_cloud_job: true` in payload
-- Triggers Cloud Run Job with endpoint and payload as env vars (including `_cloud_job_id` to preserve job tracking)
-- Job auto-executes via gunicorn `when_ready` hook, then shuts down
+- Triggers Cloud Run Job with endpoint and payload as env vars
 - Job executes task independently and sends webhook
 
 **Synchronous** (No Queue)
@@ -68,13 +61,6 @@ No-Code Architects Toolkit API is a Flask-based media processing API that handle
 ### Dynamic Route Registration
 
 Routes are auto-discovered from `routes/` directory. No manual registration needed in [app.py](app.py).
-
-**File Structure:**
-- Simple routes: `routes/v1/{category}/{action}.py`
-- Nested routes: `routes/v1/{category}/{subcategory}/{action}.py`
-- Examples:
-  - `routes/v1/media/convert/media_convert.py` → `/v1/media/convert`
-  - `routes/v1/video/caption_video.py` → `/v1/video/caption`
 
 **Blueprint Convention:**
 ```python
@@ -92,7 +78,7 @@ def action_handler(job_id, data):
     """
     Args:
         job_id (str): Unique job identifier
-        data (dict): Request JSON payload (internal fields _cloud_job_id and disable_cloud_job already stripped)
+        data (dict): Request JSON payload
 
     Returns:
         Tuple[dict, str, int]: (response_data, endpoint_path, status_code)
@@ -183,13 +169,7 @@ S3-Compatible:
 - `GUNICORN_TIMEOUT` - Worker timeout seconds (default: 30)
 - `GCP_JOB_NAME` - Cloud Run Job name for offloading
 - `GCP_JOB_LOCATION` - Cloud Run Job region (default: us-central1)
-- `DISABLE_CLOUD_JOB` - Set to "true" or "1" to disable Cloud Run Job triggering globally
 - `S3_PUBLIC_URL` - Custom domain for S3 file URLs (e.g., "subdomain.domain.com"). When set, URLs exclude bucket name and use this domain instead of S3_ENDPOINT_URL
-
-**Payload-Level Parameters:**
-- `webhook_url` - URL to POST results when job completes (enables async processing)
-- `disable_cloud_job` - Set to `true` to disable Cloud Run Job for this request (overrides env var if set to `false`)
-- `_cloud_job_id` - Internal parameter used to preserve job IDs across Cloud Run Job invocations (do not use manually)
 
 ## Key Patterns
 
@@ -257,10 +237,7 @@ See [docs/adding_routes.md](docs/adding_routes.md) for full guide.
 ## Contributing
 
 - Submit PRs to `build` branch (not main)
-- Use auto-versioning: builds auto-increment via GitHub Actions on push to `build`
-  - Workflow updates `version.py` and `build_number.txt`
-  - Automatically pushes to `testing` branch
-  - Use `[skip ci]` in commit messages to prevent build number increment
+- Use auto-versioning: builds auto-increment via GitHub Actions
 - Update README.md when adding new endpoints
 - Follow GPL-2.0 license (see [LICENSE](LICENSE))
 

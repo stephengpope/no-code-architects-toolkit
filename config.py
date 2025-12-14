@@ -31,6 +31,9 @@ LOCAL_STORAGE_PATH = os.environ.get('LOCAL_STORAGE_PATH', '/tmp')
 GCP_SA_CREDENTIALS = os.environ.get('GCP_SA_CREDENTIALS', '')
 GCP_BUCKET_NAME = os.environ.get('GCP_BUCKET_NAME', '')
 
+# S3 public URL override (optional) - when set, uses this as base URL instead of S3_ENDPOINT_URL
+S3_PUBLIC_URL = os.environ.get('S3_PUBLIC_URL', '')
+
 def validate_env_vars(provider):
 
     """ Validate the necessary environment variables for the selected storage provider """

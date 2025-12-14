@@ -140,6 +140,11 @@ API_KEY=your_api_key_here
 #S3_REGION=your-region
 #S3_BUCKET_NAME=your-bucket-name
 
+# optional
+# Purpose: S3_PUBLIC_URL custom domain for returned file URLs (e.g., CDN or Cloudflare R2 custom domain)
+# When set, file URLs will use this domain without the bucket name in the path
+#S3_PUBLIC_URL=https://subdomain.domain.com
+
 
 # Google Cloud Storage Env Variables
 #

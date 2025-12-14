@@ -169,6 +169,7 @@ S3-Compatible:
 - `GUNICORN_TIMEOUT` - Worker timeout seconds (default: 30)
 - `GCP_JOB_NAME` - Cloud Run Job name for offloading
 - `GCP_JOB_LOCATION` - Cloud Run Job region (default: us-central1)
+- `S3_PUBLIC_URL` - Custom domain for S3 file URLs (e.g., "subdomain.domain.com"). When set, URLs exclude bucket name and use this domain instead of S3_ENDPOINT_URL
 
 ## Key Patterns
 

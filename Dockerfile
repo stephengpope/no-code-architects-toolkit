@@ -1,5 +1,5 @@
 # Base image
-FROM python:3.9-slim
+FROM python:3.11-slim
 
 # Install system dependencies, build tools, and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \

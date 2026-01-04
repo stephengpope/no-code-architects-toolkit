@@ -25,6 +25,8 @@ The request body must be in JSON format and should include the following paramet
 | `length`    | number | No       | The desired length of the video in seconds (default: 5).    |
 | `frame_rate`| integer| No       | The frame rate of the output video (default: 30).           |
 | `zoom_speed`| number | No       | The speed of the zoom effect (0-100, default: 3).           |
+| `zoom_effect`| string | No       | The type of zoom effect: "linear" (default), "ping-pong".   |
+| `zoom_loop_duration`| number | No | Duration in seconds for a full zoom loop (for ping-pong).   |
 | `webhook_url`| string| No       | The URL to receive a webhook notification upon completion.  |
 | `id`        | string | No       | An optional identifier for the request.                      |
 
@@ -38,6 +40,8 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
         "length": {"type": "number", "minimum": 1, "maximum": 60},
         "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
         "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
+        "zoom_effect": {"type": "string", "enum": ["linear", "ping-pong", "loop"]},
+        "zoom_loop_duration": {"type": "number", "minimum": 5, "maximum": 400},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -54,6 +58,8 @@ The `validate_payload` decorator in the `routes.v1.image.convert.image_to_video`
     "length": 10,
     "frame_rate": 24,
     "zoom_speed": 5,
+    "zoom_effect": "ping-pong",
+    "zoom_loop_duration": 5,
     "webhook_url": "https://example.com/webhook",
     "id": "request-123"
 }

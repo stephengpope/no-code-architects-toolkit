@@ -36,6 +36,8 @@ logger = logging.getLogger(__name__)
         "length": {"type": "number", "minimum": 0.1, "maximum": 400},
         "frame_rate": {"type": "integer", "minimum": 15, "maximum": 60},
         "zoom_speed": {"type": "number", "minimum": 0, "maximum": 100},
+        "zoom_effect": {"type": "string", "enum": ["linear", "ping-pong", "loop"]},
+        "zoom_loop_duration": {"type": "number", "minimum": 5, "maximum": 400},
         "webhook_url": {"type": "string", "format": "uri"},
         "id": {"type": "string"}
     },
@@ -48,6 +50,8 @@ def image_to_video(job_id, data):
     length = data.get('length', 5)
     frame_rate = data.get('frame_rate', 30)
     zoom_speed = data.get('zoom_speed', 3) / 100
+    zoom_effect = data.get('zoom_effect', 'linear')
+    zoom_loop_duration = data.get('zoom_loop_duration')
     webhook_url = data.get('webhook_url')
     id = data.get('id')
 
@@ -56,7 +60,7 @@ def image_to_video(job_id, data):
     try:
         # Process image to video conversion
         output_filename = process_image_to_video(
-            image_url, length, frame_rate, zoom_speed, job_id, webhook_url
+            image_url, length, frame_rate, zoom_speed, job_id, webhook_url, zoom_effect, zoom_loop_duration
         )
 
         # Upload the resulting file using the unified upload_file() method

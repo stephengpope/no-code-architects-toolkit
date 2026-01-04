@@ -24,7 +24,7 @@ from PIL import Image
 from config import LOCAL_STORAGE_PATH
 logger = logging.getLogger(__name__)
 
-def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, webhook_url=None):
+def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, webhook_url=None, zoom_effect="linear", zoom_loop_duration=None):
     try:
         # Download the image file
         image_path = download_file(image_url, LOCAL_STORAGE_PATH)
@@ -52,12 +52,25 @@ def process_image_to_video(image_url, length, frame_rate, zoom_speed, job_id, we
 
         logger.info(f"Using scale dimensions: {scale_dims}, output dimensions: {output_dims}")
         logger.info(f"Video length: {length}s, Frame rate: {frame_rate}fps, Total frames: {total_frames}")
-        logger.info(f"Zoom speed: {zoom_speed}/s, Final zoom factor: {zoom_factor}")
+        logger.info(f"Zoom speed: {zoom_speed}/s, Final zoom factor: {zoom_factor}, Effect: {zoom_effect}, Loop Duration: {zoom_loop_duration}")
 
         # Prepare FFmpeg command with fps filter to ensure correct frame rate
+        if zoom_effect == "ping-pong":
+            # Using triangle wave for Ping-Pong Zoom (In -> Out) with optional loop frequency
+            loop_period = zoom_loop_duration if zoom_loop_duration else length
+            loop_frames = int(loop_period * frame_rate)
+            if loop_frames < 1: loop_frames = total_frames
+
+            # Formula: 1 + MaxCorrection * (1 - abs(2 * mod(on, loop_frames)/loop_frames - 1))
+            # mod(on, loop_frames) cycles 0 -> loop_frames-1
+            expression = f"1+({zoom_speed}*{length})*(1-abs(2*mod(on,{loop_frames})/{loop_frames}-1))"
+        else: # linear default
+            # Standard linear zoom in
+            expression = f"min(1+({zoom_speed}*{length})*on/{total_frames}, {zoom_factor})"
+
         cmd = [
             'ffmpeg', '-framerate', str(frame_rate), '-loop', '1', '-i', image_path,
-            '-vf', f"scale={scale_dims},zoompan=z='min(1+({zoom_speed}*{length})*on/{total_frames}, {zoom_factor})':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={output_dims},fps={frame_rate}",
+            '-vf', f"scale={scale_dims},zoompan=z='{expression}':d={total_frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={output_dims},fps={frame_rate}",
             '-c:v', 'libx264', '-r', str(frame_rate), '-t', str(length), '-pix_fmt', 'yuv420p', output_path
         ]
 

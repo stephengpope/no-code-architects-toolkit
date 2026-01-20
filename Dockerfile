@@ -1,5 +1,5 @@
-# Base image
-FROM python:3.10-slim
+# Use NVIDIA's base image with CUDA support (select CUDA version based on your GPU compatibility)
+FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 
 # Install system dependencies, build tools, and libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -54,6 +54,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libpangoft2-1.0-0 \
     libgtk-3-0 \
     && rm -rf /var/lib/apt/lists/*
+
+# Install PyTorch with CUDA support for GPU usage
+RUN pip3 install torch==1.10.0+cu112 torchvision==0.11.1+cu112 torchaudio==0.10.0 -f https://download.pytorch.org/whl/torch_stable.html
 
 # Install SRT from source (latest version using cmake)
 RUN git clone https://github.com/Haivision/srt.git && \
@@ -168,7 +171,7 @@ WORKDIR /app
 ENV WHISPER_CACHE_DIR="/app/whisper_cache"
 
 # Create cache directory (no need for chown here yet)
-RUN mkdir -p ${WHISPER_CACHE_DIR} 
+RUN mkdir -p ${WHISPER_CACHE_DIR}
 
 # Copy the requirements file first to optimize caching
 COPY requirements.txt .
@@ -178,13 +181,13 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install openai-whisper && \
     pip install playwright && \
-    pip install jsonschema 
+    pip install jsonschema
 
-# Create the appuser 
-RUN useradd -m appuser 
+# Create the appuser
+RUN useradd -m appuser
 
 # Give appuser ownership of the /app directory (including whisper_cache)
-RUN chown appuser:appuser /app 
+RUN chown appuser:appuser /app
 
 # Important: Switch to the appuser before downloading the model
 USER appuser

@@ -2,3 +2,6 @@
 .DS_Store
 .env_shell.json
 .env
+venv/
+__pycache__/
+*.pyc

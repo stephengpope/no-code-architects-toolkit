@@ -124,6 +124,42 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ---
 
+## Quick Local Installation
+
+Want to run the API on your own machine without Docker? These steps walk through a minimal Python-based installation:
+
+1. Create a virtual environment and install the dependencies:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # or `venv\Scripts\activate` on Windows
+   pip install -r requirements.txt
+   ```
+2. Set the required environment variables before starting the API. At minimum you need an API key:
+   ```bash
+   export API_KEY=your-secret-key  # or `set API_KEY=your-secret-key` on PowerShell/CMD
+   ```
+3. Start the Flask server:
+   ```bash
+   python app.py
+   ```
+   It listens on `http://localhost:8080` by default.
+
+## Entry & Health Routes
+
+Two lightweight GET endpoints are live as soon as the server starts:
+
+- `GET /welcome` – Friendly entry point that returns a greeting plus the current build number.
+- `GET /health` – Simple uptime check returning `{"status": "healthy", "build_number": ...}` so you can wire load balancer probes or monitoring alerts.
+
+Both endpoints are public, so you can verify them without an API key:
+
+```bash
+curl http://localhost:8080/welcome
+curl http://localhost:8080/health
+```
+
+Use these routes to confirm the service is running before calling the authenticated job endpoints listed above.
+
 ## Docker Build and Run
 
 ### Build the Docker Image

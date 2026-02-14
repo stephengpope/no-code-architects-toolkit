@@ -215,3 +215,7 @@ gunicorn --bind 0.0.0.0:8080 \
 
 # Run the shell script
 CMD ["/app/run_gunicorn.sh"]
+
+USER root
+RUN apt-get update && apt-get install -y ffmpeg
+USER node

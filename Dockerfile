@@ -184,10 +184,9 @@ RUN pip install --no-cache-dir --upgrade pip && \
 RUN useradd -m appuser
 
 # Give appuser ownership of the /app directory (including whisper_cache)
-RUN chown appuser:appuser /app
-
-# Create local file I/O directories for volume mounts
-RUN mkdir -p /data/input /data/output && chown appuser:appuser /data/input /data/output
+# Also create local file I/O directories for volume mounts (make up-local)
+RUN chown appuser:appuser /app && \
+    mkdir -p /data/input /data/output && chown appuser:appuser /data/input /data/output
 
 # Important: Switch to the appuser before downloading the model
 USER appuser

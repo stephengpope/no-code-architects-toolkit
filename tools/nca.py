@@ -164,21 +164,16 @@ def cmd_setup(args):
     print("  " + "─" * 40)
     print("")
 
-    # Get URL
+    # Get URL — default to localhost for local development
     default_url = os.environ.get("NCA_API_URL", "")
     if not default_url:
         file_config, _ = read_config_file()
         default_url = file_config.get("api_url", "")
+    if not default_url:
+        default_url = "http://localhost:8080"
 
-    prompt = "  API URL"
-    if default_url:
-        prompt += f" [{default_url}]"
-    prompt += ": "
+    prompt = f"  API URL [{default_url}]: "
     api_url = input(prompt).strip() or default_url
-
-    if not api_url:
-        print("  Error: API URL is required.", file=sys.stderr)
-        sys.exit(1)
 
     api_url = api_url.rstrip("/")
 

@@ -9,9 +9,11 @@ purpose: Add auto-generated captions to videos using the NCA Toolkit API
 
 ## Steps
 
-### Step 1: Identify the video URL
+### Step 1: Identify the video source
 
-Extract the video URL from the user's request. Must be publicly accessible.
+The user provides either:
+- A **URL** to a publicly accessible video file
+- A **local file path** (e.g., `./local/input/video.mp4`)
 
 ### Step 2: Determine caption style and options
 
@@ -30,8 +32,9 @@ Extract the video URL from the user's request. Must be publicly accessible.
 
 ### Step 3: Run the command
 
+**From URL:**
 ```bash
-python tools/nca.py caption \
+python3 tools/nca.py caption \
   --video-url <URL> \
   [--style karaoke] \
   [--position bottom_center] \
@@ -45,18 +48,41 @@ python tools/nca.py caption \
   [--language auto]
 ```
 
+**From local file:**
+```bash
+python3 tools/nca.py caption \
+  --file <path> \
+  [--style karaoke] \
+  [--position bottom_center] \
+  [--font-size 24] \
+  [--font-family "Arial"] \
+  [--word-color "#FFD700"] \
+  [--line-color "#FFFFFF"] \
+  [--outline-color "#000000"] \
+  [--all-caps] \
+  [--max-words-per-line 5] \
+  [--language auto]
+```
+
+`--video-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
+
 ### Step 4: Return the result
 
 The API returns a cloud URL to the captioned video. Present this to the user.
 
 ## Examples
 
-**Karaoke-style captions:**
+**Karaoke-style captions (URL):**
 ```bash
-python tools/nca.py caption --video-url https://example.com/video.mp4 --style karaoke --position bottom_center
+python3 tools/nca.py caption --video-url https://example.com/video.mp4 --style karaoke --position bottom_center
+```
+
+**Caption a local file:**
+```bash
+python3 tools/nca.py caption --file ./local/input/video.mp4 --style karaoke --position bottom_center
 ```
 
 **Bold all-caps captions at the top:**
 ```bash
-python tools/nca.py caption --video-url https://example.com/video.mp4 --style classic --position top_center --all-caps --font-size 32
+python3 tools/nca.py caption --video-url https://example.com/video.mp4 --style classic --position top_center --all-caps --font-size 32
 ```

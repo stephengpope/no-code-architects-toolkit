@@ -9,9 +9,11 @@ purpose: Transcribe or translate audio/video content using the NCA Toolkit API
 
 ## Steps
 
-### Step 1: Identify the media URL
+### Step 1: Identify the media source
 
-Extract the media URL from the user's request. The URL must be publicly accessible.
+The user provides either:
+- A **URL** to a publicly accessible media file
+- A **local file path** (e.g., `./local/input/audio.mp3`)
 
 ### Step 2: Determine options
 
@@ -26,8 +28,9 @@ Extract the media URL from the user's request. The URL must be publicly accessib
 
 ### Step 3: Run the command
 
+**From URL:**
 ```bash
-python tools/nca.py transcribe \
+python3 tools/nca.py transcribe \
   --media-url <URL> \
   [--task transcribe|translate] \
   [--language <code>] \
@@ -36,6 +39,20 @@ python tools/nca.py transcribe \
   [--word-timestamps] \
   [--words-per-line <N>]
 ```
+
+**From local file:**
+```bash
+python3 tools/nca.py transcribe \
+  --file <path> \
+  [--task transcribe|translate] \
+  [--language <code>] \
+  [--srt] \
+  [--segments] \
+  [--word-timestamps] \
+  [--words-per-line <N>]
+```
+
+`--media-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
 
 ### Step 4: Present results
 
@@ -48,17 +65,22 @@ Present the transcription text to the user. If SRT was requested, show or save t
 
 ## Examples
 
-**Basic transcription:**
+**Basic transcription (URL):**
 ```bash
-python tools/nca.py transcribe --media-url https://example.com/podcast.mp3
+python3 tools/nca.py transcribe --media-url https://example.com/podcast.mp3
+```
+
+**Basic transcription (local file):**
+```bash
+python3 tools/nca.py transcribe --file ./local/input/podcast.mp3
 ```
 
 **Translate to English with SRT:**
 ```bash
-python tools/nca.py transcribe --media-url https://example.com/spanish-video.mp4 --task translate --srt
+python3 tools/nca.py transcribe --file ./local/input/spanish-video.mp4 --task translate --srt
 ```
 
 **Transcribe with word-level timestamps:**
 ```bash
-python tools/nca.py transcribe --media-url https://example.com/interview.wav --word-timestamps --segments
+python3 tools/nca.py transcribe --media-url https://example.com/interview.wav --word-timestamps --segments
 ```

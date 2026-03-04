@@ -9,12 +9,23 @@ purpose: Get media file metadata using the NCA Toolkit API
 
 ## Steps
 
-### Step 1: Get the media URL
+### Step 1: Get the media source
+
+The user provides either a URL or a local file path.
+
 ### Step 2: Run the command
 
+**From URL:**
 ```bash
-python tools/nca.py metadata --media-url <URL>
+python3 tools/nca.py metadata --media-url <URL>
 ```
+
+**From local file:**
+```bash
+python3 tools/nca.py metadata --file ./local/input/video.mp4
+```
+
+`--media-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
 
 ### Step 3: Present results
 

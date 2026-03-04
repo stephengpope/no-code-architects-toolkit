@@ -22,7 +22,7 @@ If config exists and user wants to keep it, skip to testing.
 Ask the user for their API URL and API key, then run:
 
 ```bash
-python3 tools/nca.py setup
+python3 tools/nca.py connect
 ```
 
 This will:
@@ -71,6 +71,6 @@ Environment variables take priority over the config file.
 ## Multiple Profiles
 
 ```bash
-python3 tools/nca.py setup --profile staging
-python3 tools/nca.py setup --profile production
+python3 tools/nca.py connect --profile staging
+python3 tools/nca.py connect --profile production
 ```

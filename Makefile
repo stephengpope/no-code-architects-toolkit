@@ -1,10 +1,11 @@
 # No-Code Architects Toolkit - Docker Build & GCP Deploy
 #
 # Usage:
-#   make setup                  - Configure API credentials (~/.nca-toolkit/config)
+#   make setup                  - Generate .env file with API key for running the server
 #   make build                  - Build Docker image locally
-#   make up                     - Start container locally
-#   make down                   - Stop and remove local container
+#   make up                     - Build and start container
+#   make down                   - Stop and remove container
+#   make connect                - Connect CLI tools to a running API instance
 #   make push                   - Tag and push to Google Artifact Registry
 #   make deploy                 - Build, push, and deploy to Cloud Run
 #   make logs                   - Tail Cloud Run logs
@@ -33,11 +34,44 @@ LOCAL_TAG        = $(IMAGE_NAME):latest
 
 # ─── Local Development ────────────────────────────────────────────────────────
 
-.PHONY: setup build up down clean
+.PHONY: setup build up down connect clean
 
-## Interactive setup — configure API credentials
+## Generate .env file with API key — prepares the server to run
 setup:
-	@python3 tools/nca.py setup
+	@if [ -f .env ]; then \
+		printf "\033[1;33m  .env already exists.\033[0m\n"; \
+		printf "  Overwrite? [y/N]: "; \
+		read ans; \
+		case "$$ans" in [yY]*) ;; *) echo "  Keeping existing .env"; exit 0 ;; esac; \
+	fi
+	@printf "\n"
+	@printf "\033[1;36m  NCA Toolkit — Server Setup\033[0m\n"
+	@printf "\033[0;90m  ──────────────────────────────────────────────────\033[0m\n"
+	@printf "\n"
+	@printf "  This creates a .env file to configure the API server.\n"
+	@printf "  An API key will be auto-generated for you.\n"
+	@printf "\n"
+	@API_KEY=$$(python3 -c "import secrets; print(secrets.token_urlsafe(32))"); \
+	cp .env.example .env; \
+	if [ "$$(uname)" = "Darwin" ]; then \
+		sed -i '' "s|API_KEY=your_api_key_here|API_KEY=$$API_KEY|" .env; \
+	else \
+		sed -i "s|API_KEY=your_api_key_here|API_KEY=$$API_KEY|" .env; \
+	fi; \
+	printf "  \033[1;32m.env created with generated API key:\033[0m\n"; \
+	printf "  \033[0;36m$$API_KEY\033[0m\n"; \
+	printf "\n"; \
+	printf "  \033[0;90mSave this key — you'll need it to connect clients.\033[0m\n"; \
+	printf "\n"; \
+	printf "  \033[1;33mNext steps:\033[0m\n"; \
+	printf "    1. Edit .env to configure your storage provider (S3 or GCP)\n"; \
+	printf "    2. \033[1;32mmake up\033[0m        Start the server\n"; \
+	printf "    3. \033[1;32mmake connect\033[0m   Connect the CLI to the running server\n"; \
+	printf "\n"
+
+## Connect CLI tools to a running API instance
+connect:
+	@python3 tools/nca.py connect
 
 ## Build the Docker image locally
 build:
@@ -134,14 +168,15 @@ help:
 	@printf "\033[1;36m  ║\033[0m  \033[1;37mNo-Code Architects Toolkit\033[0m · \033[0;90mBuild & Deploy\033[0m   \033[1;36m║\033[0m\n"
 	@printf "\033[1;36m  ╚══════════════════════════════════════════════════╝\033[0m\n"
 	@printf "\n"
-	@printf "  \033[1;33m SETUP\033[0m\n"
+	@printf "  \033[1;33m SETUP & CONNECT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
-	@printf "  \033[1;32mmake setup\033[0m          Configure API credentials (~/.nca-toolkit/config)\n"
+	@printf "  \033[1;32mmake setup\033[0m          Generate .env with API key (server config)\n"
+	@printf "  \033[1;32mmake connect\033[0m        Connect CLI to a running API instance\n"
 	@printf "\n"
 	@printf "  \033[1;33m LOCAL DEVELOPMENT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
 	@printf "  \033[1;32mmake build\033[0m          Build Docker image\n"
-	@printf "  \033[1;32mmake up\033[0m             Build and start container (needs .env)\n"
+	@printf "  \033[1;32mmake up\033[0m             Build and start container\n"
 	@printf "  \033[1;32mmake down\033[0m           Stop and remove container\n"
 	@printf "  \033[1;32mmake clean\033[0m          Stop container and remove image\n"
 	@printf "  \033[1;32mmake test\033[0m           Test the running API\n"

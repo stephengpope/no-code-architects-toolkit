@@ -9,7 +9,7 @@ Configuration (checked in this order):
 Usage:
   python nca.py <command> [options]
 
-  python nca.py setup              Interactive setup — prompts for URL & key, validates, saves config
+  python nca.py connect              Interactive setup — prompts for URL & key, validates, saves config
   python nca.py test               Test API connectivity
   python nca.py transcribe ...     Transcribe or translate media
   python nca.py config             Show current configuration (redacted key)
@@ -105,12 +105,12 @@ def get_config(profile="default"):
 
     if not url:
         print("Error: API URL not configured.", file=sys.stderr)
-        print("  Run: python nca.py setup", file=sys.stderr)
+        print("  Run: python nca.py connect", file=sys.stderr)
         print("  Or:  export NCA_API_URL=https://your-nca-instance.run.app", file=sys.stderr)
         sys.exit(1)
     if not key:
         print("Error: API key not configured.", file=sys.stderr)
-        print("  Run: python nca.py setup", file=sys.stderr)
+        print("  Run: python nca.py connect", file=sys.stderr)
         print("  Or:  export NCA_API_KEY=your_api_key", file=sys.stderr)
         sys.exit(1)
 
@@ -155,8 +155,8 @@ def print_result(result):
 # ─── Command Handlers ─────────────────────────────────────────────────────────
 
 
-def cmd_setup(args):
-    """Interactive setup — validate credentials and save to ~/.nca-toolkit/config."""
+def cmd_connect(args):
+    """Connect to a running NCA Toolkit API — validate and save to ~/.nca-toolkit/config."""
     profile = getattr(args, "profile", "default")
 
     print("")
@@ -289,7 +289,7 @@ def cmd_config(args):
             pkey = cfg.get("api_key", "")
             print(f"    api_key = {pkey[:8] + '...' if pkey else '(not set)'}")
     else:
-        print("  (not found — run: python nca.py setup)")
+        print("  (not found — run: python nca.py connect)")
 
     # Show effective config
     print("")
@@ -300,7 +300,7 @@ def cmd_config(args):
         print(f"    api_url = {eff_url}")
         print(f"    api_key = {eff_key[:8]}...")
     else:
-        print("    (not configured — run: python nca.py setup)")
+        print("    (not configured — run: python nca.py connect)")
 
     print("")
 
@@ -583,9 +583,9 @@ Configuration (checked in order):
   2. Config file: ~/.nca-toolkit/config
 
 Getting started:
-  python nca.py setup              Set up credentials interactively
-  python nca.py config             Show current configuration
-  python nca.py test               Test API connectivity
+  python nca.py connect             Connect CLI to a running API
+  python nca.py config              Show current configuration
+  python nca.py test                Test API connectivity
 
 Examples:
   python nca.py transcribe --media-url https://example.com/audio.mp3
@@ -597,7 +597,7 @@ Examples:
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
     # setup
-    p = sub.add_parser("setup", help="Interactive setup — validate and save credentials")
+    p = sub.add_parser("connect", help="Connect CLI to a running API instance")
     p.add_argument("--profile", default="default", help="Config profile name (default: default)")
 
     # config
@@ -733,7 +733,7 @@ Examples:
 
 
 COMMANDS = {
-    "setup": cmd_setup,
+    "connect": cmd_connect,
     "config": cmd_config,
     "test": cmd_test,
     "status": cmd_status,

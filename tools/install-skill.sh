@@ -58,12 +58,12 @@ if [ -f "$HOME/.nca-toolkit/config" ]; then
     echo ""
     read -rp "  Re-run setup? [y/N]: " RERUN
     if [[ "$RERUN" =~ ^[Yy] ]]; then
-        python3 "$NCA_CLI" setup
+        python3 "$NCA_CLI" connect
     else
         echo "  Keeping existing config."
     fi
 else
-    python3 "$NCA_CLI" setup
+    python3 "$NCA_CLI" connect
 fi
 
 echo ""

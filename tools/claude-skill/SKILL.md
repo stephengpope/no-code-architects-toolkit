@@ -11,7 +11,7 @@ Client for the No-Code Architects Toolkit API. Provides media processing capabil
 
 Run setup to authenticate and save credentials:
 ```bash
-python3 tools/nca.py setup
+python3 tools/nca.py connect
 ```
 
 This saves credentials to `~/.nca-toolkit/config` (600 permissions, INI format).
@@ -42,7 +42,7 @@ curl -s -X POST http://localhost:8888/notify \
 | silence, detect silence | `Workflows/Silence.md` |
 | ffmpeg, compose, custom ffmpeg | `Workflows/FFmpeg.md` |
 | upload, s3, gcp storage | `Workflows/Upload.md` |
-| setup, configure, authenticate, connect | `Workflows/Setup.md` |
+| connect, configure, authenticate, setup | `Workflows/Setup.md` |
 | test, status, check connection | `Workflows/TestConnect.md` |
 
 ## Quick Reference
@@ -65,7 +65,7 @@ curl -s -X POST http://localhost:8888/notify \
 | `ffmpeg` | Run arbitrary FFmpeg pipelines |
 | `upload-s3` | Upload file to S3-compatible storage |
 | `upload-gcp` | Upload file to Google Cloud Storage |
-| `setup` | Authenticate and save credentials to ~/.nca-toolkit/config |
+| `connect` | Connect CLI to a running API and save to ~/.nca-toolkit/config |
 | `config` | Show current configuration (redacted keys) |
 | `test` | Verify API connectivity |
 | `status` | Check async job status |

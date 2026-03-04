@@ -157,9 +157,8 @@ describe:
 ## Test the running API (local or remote)
 test:
 	@echo "🧪 Testing API..."
-	@curl -sf -X POST http://localhost:8080/v1/toolkit/test \
-		-H "X-API-Key: $${API_KEY:-test}" \
-		-H "Content-Type: application/json" && echo " ✅ API is healthy" || echo " ❌ API not responding"
+	@curl -sf -X GET http://localhost:8080/v1/toolkit/test \
+		-H "X-API-Key: $${API_KEY:-test}" && echo " ✅ API is healthy" || echo " ❌ API not responding"
 
 ## Show available make targets
 help:

@@ -124,10 +124,13 @@ def api_request(endpoint, payload=None, method="POST"):
 
     headers = {
         "X-API-Key": key,
-        "Content-Type": "application/json",
     }
 
-    data = json.dumps(payload).encode() if payload else None
+    data = None
+    if payload is not None:
+        headers["Content-Type"] = "application/json"
+        data = json.dumps(payload).encode()
+
     req = urllib.request.Request(full_url, data=data, headers=headers, method=method)
 
     try:
@@ -217,7 +220,6 @@ def cmd_connect(args):
 
     headers = {
         "X-API-Key": api_key,
-        "Content-Type": "application/json",
     }
     req = urllib.request.Request(
         f"{api_url}/v1/toolkit/test", headers=headers, method="GET"
@@ -249,7 +251,7 @@ def cmd_connect(args):
     print(f"  Profile: [{profile}]")
     print(f"  Permissions: 600 (owner read/write only)")
     print("")
-    print("  You're all set! Try: python nca.py test")
+    print("  You're all set! Try: python3 tools/nca.py test")
     print("")
 
 

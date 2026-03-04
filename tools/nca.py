@@ -213,6 +213,18 @@ def resolve_files(local_paths):
     return [resolve_file(p) for p in local_paths]
 
 
+# Dummy webhook URL that triggers async mode without needing a real webhook server.
+# The API will try to POST to this and fail silently — that's fine, we poll instead.
+NOOP_WEBHOOK = "http://localhost:1/noop"
+
+
+def apply_background(payload, args):
+    """If --bg is set, inject a dummy webhook_url to trigger async processing."""
+    if getattr(args, "background", False):
+        payload["webhook_url"] = NOOP_WEBHOOK
+    return payload
+
+
 # ─── Output Handling ─────────────────────────────────────────────────────────
 
 # Commands that return text/data (not file URLs)
@@ -293,7 +305,7 @@ def extract_urls(obj):
     return results
 
 
-def handle_output(result, command, output_dir=".", json_mode=False):
+def handle_output(result, command, output_dir=".", json_mode=False, background=False):
     """Process API result: download files, print text or file paths.
 
     Args:
@@ -301,6 +313,7 @@ def handle_output(result, command, output_dir=".", json_mode=False):
         command: The CLI command name (e.g., "transcribe", "convert")
         output_dir: Directory to save downloaded files
         json_mode: If True, print full JSON and skip downloads
+        background: If True, just print job_id for async tracking
     """
     if json_mode:
         print(json.dumps(result, indent=2))
@@ -309,11 +322,17 @@ def handle_output(result, command, output_dir=".", json_mode=False):
     response = result.get("response")
     code = result.get("code", 200)
 
-    # 202 accepted (webhook/async mode) — print job info and exit
+    # 202 accepted (webhook/async mode) — print job_id to stdout for capture
     if code == 202:
         job_id = result.get("job_id", "unknown")
-        print(f"Job submitted: {job_id}", file=sys.stderr)
-        print(f"Status: processing", file=sys.stderr)
+        if background:
+            # Print just the job_id to stdout so it can be captured
+            print(job_id)
+            print(f"  Job submitted. Check status: python3 tools/nca.py status {job_id}", file=sys.stderr)
+            print(f"  Wait for result:  python3 tools/nca.py wait {job_id}", file=sys.stderr)
+        else:
+            print(f"Job submitted: {job_id}", file=sys.stderr)
+            print(f"Status: processing", file=sys.stderr)
         return
 
     # Error responses
@@ -370,19 +389,35 @@ def handle_output(result, command, output_dir=".", json_mode=False):
 
 
 def poll_job(job_id, interval=5, timeout=600):
-    """Poll job status until complete. Returns the final result."""
+    """Poll job status until complete. Returns the final result dict.
+
+    The job status file contains:
+      {"job_status": "queued|running|done|failed", "response": {...}}
+    The /v1/toolkit/job/status endpoint wraps that in the standard envelope:
+      {"code": 200, "response": {"job_status": "...", "response": {...}}}
+    """
     elapsed = 0
     while elapsed < timeout:
         result = api_request("/v1/toolkit/job/status", {"job_id": job_id})
-        status = result.get("response", {}).get("status", "unknown") if isinstance(result.get("response"), dict) else "unknown"
+        # The actual job data is inside result["response"]
+        job_data = result.get("response", {})
+        if isinstance(job_data, dict):
+            job_status = job_data.get("job_status", "unknown")
+        else:
+            job_status = "unknown"
 
-        if status in ("done", "failed"):
-            return result
-        if status == "unknown":
-            # Response might be the final result directly
+        if job_status == "done":
+            # The completed response is nested inside job_data["response"]
+            completed_response = job_data.get("response")
+            if completed_response and isinstance(completed_response, dict):
+                return completed_response
             return result
 
-        print(f"  Status: {status} ({elapsed}s elapsed)", file=sys.stderr)
+        if job_status == "failed":
+            print(f"Error: Job {job_id} failed", file=sys.stderr)
+            sys.exit(1)
+
+        print(f"  Status: {job_status} ({elapsed}s elapsed)", file=sys.stderr)
         time.sleep(interval)
         elapsed += interval
 
@@ -551,7 +586,41 @@ def cmd_test(args):
 def cmd_status(args):
     """Check job status."""
     result = api_request("/v1/toolkit/job/status", {"job_id": args.job_id})
-    handle_output(result, "status", getattr(args, "output_dir", "."), getattr(args, "json_output", False))
+    if args.json_output:
+        print(json.dumps(result, indent=2))
+        return
+    # Show a clean status summary
+    job_data = result.get("response", {})
+    if isinstance(job_data, dict):
+        status = job_data.get("job_status", "unknown")
+        print(status)
+    else:
+        print(json.dumps(result, indent=2))
+
+
+def cmd_wait(args):
+    """Wait for a background job to complete, then show/download results."""
+    # Determine the command type from the job response to handle output correctly
+    command = getattr(args, "command_type", None) or "unknown"
+    interval = getattr(args, "interval", 5)
+
+    print(f"  Waiting for job {args.job_id}...", file=sys.stderr)
+    result = poll_job(args.job_id, interval=interval)
+
+    # Try to detect the command type from the endpoint in the response
+    endpoint = result.get("endpoint", "")
+    if "transcribe" in endpoint:
+        command = "transcribe"
+    elif "metadata" in endpoint:
+        command = "metadata"
+    elif "silence" in endpoint:
+        command = "silence"
+    elif any(x in endpoint for x in ["convert", "caption", "trim", "cut", "split",
+                                       "concatenate", "thumbnail", "screenshot",
+                                       "ffmpeg", "download"]):
+        command = endpoint.split("/")[-1]  # Use last path segment
+
+    handle_output(result, command, args.output_dir, args.json_output)
 
 
 def cmd_transcribe(args):
@@ -572,9 +641,10 @@ def cmd_transcribe(args):
         payload["words_per_line"] = args.words_per_line
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
+    apply_background(payload, args)
 
     result = api_request("/v1/media/transcribe", payload)
-    handle_output(result, "transcribe", args.output_dir, args.json_output)
+    handle_output(result, "transcribe", args.output_dir, args.json_output, args.background)
 
 
 def cmd_convert(args):
@@ -592,9 +662,10 @@ def cmd_convert(args):
         payload["video_crf"] = args.video_crf
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
+    apply_background(payload, args)
 
     result = api_request("/v1/media/convert", payload)
-    handle_output(result, "convert", args.output_dir, args.json_output)
+    handle_output(result, "convert", args.output_dir, args.json_output, args.background)
 
 
 def cmd_convert_mp3(args):
@@ -608,8 +679,10 @@ def cmd_convert_mp3(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/media/convert/mp3", payload)
-    handle_output(result, "convert-mp3", args.output_dir, args.json_output)
+    handle_output(result, "convert-mp3", args.output_dir, args.json_output, args.background)
 
 
 def cmd_caption(args):
@@ -644,8 +717,10 @@ def cmd_caption(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/caption", payload)
-    handle_output(result, "caption", args.output_dir, args.json_output)
+    handle_output(result, "caption", args.output_dir, args.json_output, args.background)
 
 
 def cmd_video_trim(args):
@@ -659,8 +734,10 @@ def cmd_video_trim(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/trim", payload)
-    handle_output(result, "video-trim", args.output_dir, args.json_output)
+    handle_output(result, "video-trim", args.output_dir, args.json_output, args.background)
 
 
 def cmd_video_cut(args):
@@ -675,8 +752,10 @@ def cmd_video_cut(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/cut", payload)
-    handle_output(result, "video-cut", args.output_dir, args.json_output)
+    handle_output(result, "video-cut", args.output_dir, args.json_output, args.background)
 
 
 def cmd_video_split(args):
@@ -691,8 +770,10 @@ def cmd_video_split(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/split", payload)
-    handle_output(result, "video-split", args.output_dir, args.json_output)
+    handle_output(result, "video-split", args.output_dir, args.json_output, args.background)
 
 
 def cmd_video_concat(args):
@@ -705,8 +786,10 @@ def cmd_video_concat(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/concatenate", payload)
-    handle_output(result, "video-concat", args.output_dir, args.json_output)
+    handle_output(result, "video-concat", args.output_dir, args.json_output, args.background)
 
 
 def cmd_thumbnail(args):
@@ -718,8 +801,10 @@ def cmd_thumbnail(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/video/thumbnail", payload)
-    handle_output(result, "thumbnail", args.output_dir, args.json_output)
+    handle_output(result, "thumbnail", args.output_dir, args.json_output, args.background)
 
 
 def cmd_screenshot(args):
@@ -742,16 +827,19 @@ def cmd_screenshot(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
+
     result = api_request("/v1/image/screenshot/webpage", payload)
-    handle_output(result, "screenshot", args.output_dir, args.json_output)
+    handle_output(result, "screenshot", args.output_dir, args.json_output, args.background)
 
 
 def cmd_metadata(args):
     """Get media file metadata."""
     media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {"media_url": media_url}
+    apply_background(payload, args)
     result = api_request("/v1/media/metadata", payload)
-    handle_output(result, "metadata", args.output_dir, args.json_output)
+    handle_output(result, "metadata", args.output_dir, args.json_output, args.background)
 
 
 def cmd_download(args):
@@ -760,8 +848,9 @@ def cmd_download(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
     result = api_request("/v1/BETA/media/download", payload)
-    handle_output(result, "download", args.output_dir, args.json_output)
+    handle_output(result, "download", args.output_dir, args.json_output, args.background)
 
 
 def cmd_silence(args):
@@ -780,15 +869,17 @@ def cmd_silence(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
     result = api_request("/v1/media/silence", payload)
-    handle_output(result, "silence", args.output_dir, args.json_output)
+    handle_output(result, "silence", args.output_dir, args.json_output, args.background)
 
 
 def cmd_ffmpeg(args):
     """Run custom FFmpeg commands."""
     payload = json.loads(args.payload)
+    apply_background(payload, args)
     result = api_request("/v1/ffmpeg/compose", payload)
-    handle_output(result, "ffmpeg", args.output_dir, args.json_output)
+    handle_output(result, "ffmpeg", args.output_dir, args.json_output, args.background)
 
 
 def cmd_upload_s3(args):
@@ -801,8 +892,9 @@ def cmd_upload_s3(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
     result = api_request("/v1/s3/upload", payload)
-    handle_output(result, "upload-s3", args.output_dir, args.json_output)
+    handle_output(result, "upload-s3", args.output_dir, args.json_output, args.background)
 
 
 def cmd_upload_gcp(args):
@@ -815,8 +907,9 @@ def cmd_upload_gcp(args):
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
+    apply_background(payload, args)
     result = api_request("/v1/gcp/upload", payload)
-    handle_output(result, "upload-gcp", args.output_dir, args.json_output)
+    handle_output(result, "upload-gcp", args.output_dir, args.json_output, args.background)
 
 
 # ─── Argument Parser ──────────────────────────────────────────────────────────
@@ -849,6 +942,12 @@ Local files:
   Use --file with any path. Files are uploaded to the API automatically.
   Output files are downloaded to the current directory (use -o to change).
   Use --json for full JSON response instead of human-readable output.
+
+Background mode:
+  Use --bg to run long tasks without blocking. Returns a job ID immediately.
+  python nca.py transcribe --file ~/audio.mp3 --bg     # Returns job ID
+  python nca.py status <job_id>                          # Check if done
+  python nca.py wait <job_id>                            # Block until done, show result
 """,
     )
 
@@ -857,6 +956,8 @@ Local files:
                         help="Output full JSON response instead of human-readable text")
     parser.add_argument("--output-dir", "-o", default=".",
                         help="Directory for downloaded output files (default: current directory)")
+    parser.add_argument("--bg", "--background", dest="background", action="store_true",
+                        help="Run in background: submit job and return immediately with job ID")
 
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
@@ -873,6 +974,11 @@ Local files:
     # status
     p = sub.add_parser("status", help="Check job status")
     p.add_argument("job_id", help="Job ID to check")
+
+    # wait
+    p = sub.add_parser("wait", help="Wait for a background job to complete")
+    p.add_argument("job_id", help="Job ID to wait for")
+    p.add_argument("--interval", type=int, default=5, help="Poll interval in seconds (default: 5)")
 
     # transcribe
     p = sub.add_parser("transcribe", help="Transcribe or translate media")
@@ -1023,6 +1129,7 @@ COMMANDS = {
     "config": cmd_config,
     "test": cmd_test,
     "status": cmd_status,
+    "wait": cmd_wait,
     "transcribe": cmd_transcribe,
     "convert": cmd_convert,
     "convert-mp3": cmd_convert_mp3,

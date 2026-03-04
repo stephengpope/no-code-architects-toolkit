@@ -1,9 +1,10 @@
 # No-Code Architects Toolkit - Docker Build & GCP Deploy
 #
 # Usage:
+#   make setup                  - Configure API credentials (~/.nca-toolkit/config)
 #   make build                  - Build Docker image locally
-#   make run                    - Run container locally
-#   make stop                   - Stop local container
+#   make up                     - Start container locally
+#   make down                   - Stop and remove local container
 #   make push                   - Tag and push to Google Artifact Registry
 #   make deploy                 - Build, push, and deploy to Cloud Run
 #   make logs                   - Tail Cloud Run logs
@@ -32,15 +33,19 @@ LOCAL_TAG        = $(IMAGE_NAME):latest
 
 # ─── Local Development ────────────────────────────────────────────────────────
 
-.PHONY: build run stop clean
+.PHONY: setup build up down clean
+
+## Interactive setup — configure API credentials
+setup:
+	@python3 tools/nca.py setup
 
 ## Build the Docker image locally
 build:
 	@echo "🔨 Building Docker image: $(LOCAL_TAG)"
 	docker build -t $(LOCAL_TAG) .
 
-## Run the container locally (requires .env file)
-run:
+## Start the container locally (requires .env file)
+up: build
 	@echo "🚀 Starting container on port 8080"
 	docker run -d --name $(IMAGE_NAME) \
 		-p 8080:8080 \
@@ -49,13 +54,13 @@ run:
 	@echo "✅ Running at http://localhost:8080"
 
 ## Stop and remove the local container
-stop:
+down:
 	@echo "🛑 Stopping container"
 	-docker stop $(IMAGE_NAME)
 	-docker rm $(IMAGE_NAME)
 
 ## Remove local Docker image
-clean: stop
+clean: down
 	@echo "🧹 Removing image $(LOCAL_TAG)"
 	-docker rmi $(LOCAL_TAG)
 
@@ -129,11 +134,15 @@ help:
 	@printf "\033[1;36m  ║\033[0m  \033[1;37mNo-Code Architects Toolkit\033[0m · \033[0;90mBuild & Deploy\033[0m   \033[1;36m║\033[0m\n"
 	@printf "\033[1;36m  ╚══════════════════════════════════════════════════╝\033[0m\n"
 	@printf "\n"
+	@printf "  \033[1;33m SETUP\033[0m\n"
+	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
+	@printf "  \033[1;32mmake setup\033[0m          Configure API credentials (~/.nca-toolkit/config)\n"
+	@printf "\n"
 	@printf "  \033[1;33m LOCAL DEVELOPMENT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
 	@printf "  \033[1;32mmake build\033[0m          Build Docker image\n"
-	@printf "  \033[1;32mmake run\033[0m            Run container locally (needs .env)\n"
-	@printf "  \033[1;32mmake stop\033[0m           Stop local container\n"
+	@printf "  \033[1;32mmake up\033[0m             Build and start container (needs .env)\n"
+	@printf "  \033[1;32mmake down\033[0m           Stop and remove container\n"
 	@printf "  \033[1;32mmake clean\033[0m          Stop container and remove image\n"
 	@printf "  \033[1;32mmake test\033[0m           Test the running API\n"
 	@printf "\n"

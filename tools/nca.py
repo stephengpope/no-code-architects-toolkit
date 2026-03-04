@@ -23,8 +23,9 @@ import shutil
 import stat
 import sys
 import time
-import urllib.request
 import urllib.error
+import urllib.parse
+import urllib.request
 
 # ─── Config File System ───────────────────────────────────────────────────────
 
@@ -254,7 +255,7 @@ def download_output(url, output_dir="."):
     dest_path = os.path.join(output_dir, filename)
 
     if parsed.scheme == "file":
-        # file:// URI from local Docker API — translate to host path
+        # file:// URI from local Docker API — try volume mount first, then HTTP
         container_path = parsed.path  # e.g., /data/output/foo.mp4
         if container_path.startswith("/data/output/"):
             local_path = os.path.join(".", "local", "output", container_path[len("/data/output/"):])
@@ -262,11 +263,26 @@ def download_output(url, output_dir="."):
             local_path = container_path
 
         if os.path.isfile(local_path):
+            # Volume mount is active — copy directly
             os.makedirs(output_dir, exist_ok=True)
             shutil.copy2(local_path, dest_path)
         else:
-            print(f"Warning: Local file not found: {local_path}", file=sys.stderr)
-            return None
+            # No volume mount — download via API's /v1/files/content endpoint
+            api_url, api_key = get_config()
+            download_url = f"{api_url}/v1/files/content?path={urllib.parse.quote(container_path)}"
+            req = urllib.request.Request(download_url, headers={"X-API-Key": api_key})
+            os.makedirs(output_dir, exist_ok=True)
+            try:
+                with urllib.request.urlopen(req, timeout=600) as resp:
+                    with open(dest_path, "wb") as f:
+                        while True:
+                            chunk = resp.read(8192)
+                            if not chunk:
+                                break
+                            f.write(chunk)
+            except (urllib.error.HTTPError, urllib.error.URLError) as e:
+                print(f"Warning: Failed to download {container_path} from API: {e}", file=sys.stderr)
+                return None
     else:
         # HTTP/HTTPS download
         os.makedirs(output_dir, exist_ok=True)

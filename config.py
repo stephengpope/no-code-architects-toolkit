@@ -27,6 +27,9 @@ if not API_KEY:
 # Storage path setting
 LOCAL_STORAGE_PATH = os.environ.get('LOCAL_STORAGE_PATH', '/tmp')
 
+# Local file output path (used when no cloud storage is configured)
+LOCAL_OUTPUT_PATH = os.environ.get('LOCAL_OUTPUT_PATH', '/data/output')
+
 # GCP environment variables
 GCP_SA_CREDENTIALS = os.environ.get('GCP_SA_CREDENTIALS', '')
 GCP_BUCKET_NAME = os.environ.get('GCP_BUCKET_NAME', '')

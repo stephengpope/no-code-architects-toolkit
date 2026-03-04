@@ -34,7 +34,7 @@ LOCAL_TAG        = $(IMAGE_NAME):latest
 
 # ─── Local Development ────────────────────────────────────────────────────────
 
-.PHONY: setup build up down connect clean
+.PHONY: setup build up up-local down connect clean
 
 ## Generate .env file with API key — prepares the server to run
 setup:
@@ -86,6 +86,26 @@ up: build
 		--env-file .env \
 		$(LOCAL_TAG)
 	@echo "✅ Running at http://localhost:8080"
+
+## Start container with local file I/O (no cloud storage needed)
+up-local: build
+	@mkdir -p local/input local/output
+	@echo "🚀 Starting container with local file mounts"
+	docker run -d --name $(IMAGE_NAME) \
+		-p 8080:8080 \
+		--env-file .env \
+		-v $(CURDIR)/local/input:/data/input:ro \
+		-v $(CURDIR)/local/output:/data/output \
+		$(LOCAL_TAG)
+	@echo "✅ Running at http://localhost:8080"
+	@echo ""
+	@echo "  📂 Input files:  ./local/input/  → /data/input  (read-only)"
+	@echo "  📂 Output files: ./local/output/ → /data/output (writable)"
+	@echo ""
+	@echo "  Usage: place files in ./local/input/ then reference as:"
+	@echo "    file:///data/input/yourfile.mp4"
+	@echo ""
+	@echo "  Or use the CLI:  python3 tools/nca.py transcribe --file ./local/input/video.mp4"
 
 ## Stop and remove the local container
 down:
@@ -175,7 +195,8 @@ help:
 	@printf "  \033[1;33m LOCAL DEVELOPMENT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
 	@printf "  \033[1;32mmake build\033[0m          Build Docker image\n"
-	@printf "  \033[1;32mmake up\033[0m             Build and start container\n"
+	@printf "  \033[1;32mmake up\033[0m             Build and start container (cloud storage)\n"
+	@printf "  \033[1;32mmake up-local\033[0m       Build and start with local file I/O\n"
 	@printf "  \033[1;32mmake down\033[0m           Stop and remove container\n"
 	@printf "  \033[1;32mmake clean\033[0m          Stop container and remove image\n"
 	@printf "  \033[1;32mmake test\033[0m           Test the running API\n"

@@ -150,8 +150,26 @@ def api_request(endpoint, payload=None, method="POST"):
         sys.exit(1)
 
 
+def file_to_uri(local_path):
+    """Convert a local file path to a file:// URI for the container's /data/input mount."""
+    basename = os.path.basename(local_path)
+    return f"file:///data/input/{basename}"
+
+
+def translate_output_paths(obj):
+    """Translate file:///data/output/... paths to ./local/output/... for display."""
+    if isinstance(obj, str) and obj.startswith("file:///data/output/"):
+        return "./local/output/" + obj[len("file:///data/output/"):]
+    if isinstance(obj, dict):
+        return {k: translate_output_paths(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [translate_output_paths(v) for v in obj]
+    return obj
+
+
 def print_result(result):
-    """Print API result as formatted JSON."""
+    """Print API result as formatted JSON, translating file:// paths for readability."""
+    result = translate_output_paths(result)
     print(json.dumps(result, indent=2))
 
 
@@ -321,7 +339,8 @@ def cmd_status(args):
 
 def cmd_transcribe(args):
     """Transcribe or translate media."""
-    payload = {"media_url": args.media_url}
+    media_url = file_to_uri(args.file) if args.file else args.media_url
+    payload = {"media_url": media_url}
     if args.task:
         payload["task"] = args.task
     if args.language:
@@ -343,8 +362,9 @@ def cmd_transcribe(args):
 
 def cmd_convert(args):
     """Convert media between formats."""
+    media_url = file_to_uri(args.file) if args.file else args.media_url
     payload = {
-        "media_url": args.media_url,
+        "media_url": media_url,
         "format": args.format,
     }
     if args.video_codec:
@@ -362,7 +382,8 @@ def cmd_convert(args):
 
 def cmd_convert_mp3(args):
     """Convert media to MP3."""
-    payload = {"media_url": args.media_url}
+    media_url = file_to_uri(args.file) if args.file else args.media_url
+    payload = {"media_url": media_url}
     if args.bitrate:
         payload["bitrate"] = args.bitrate
     if args.sample_rate:
@@ -376,7 +397,8 @@ def cmd_convert_mp3(args):
 
 def cmd_caption(args):
     """Add captions to a video."""
-    payload = {"video_url": args.video_url}
+    video_url = file_to_uri(args.file) if args.file else args.video_url
+    payload = {"video_url": video_url}
     if args.language:
         payload["language"] = args.language
 
@@ -411,7 +433,8 @@ def cmd_caption(args):
 
 def cmd_video_trim(args):
     """Trim a video."""
-    payload = {"video_url": args.video_url}
+    video_url = file_to_uri(args.file) if args.file else args.video_url
+    payload = {"video_url": video_url}
     if args.start:
         payload["start"] = args.start
     if args.end:
@@ -425,12 +448,13 @@ def cmd_video_trim(args):
 
 def cmd_video_cut(args):
     """Cut segments from a video."""
+    video_url = file_to_uri(args.file) if args.file else args.video_url
     cuts = []
     for cut_str in args.cuts:
         start, end = cut_str.split("-", 1)
         cuts.append({"start": start.strip(), "end": end.strip()})
 
-    payload = {"video_url": args.video_url, "cuts": cuts}
+    payload = {"video_url": video_url, "cuts": cuts}
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
@@ -440,12 +464,13 @@ def cmd_video_cut(args):
 
 def cmd_video_split(args):
     """Split a video into segments."""
+    video_url = file_to_uri(args.file) if args.file else args.video_url
     splits = []
     for split_str in args.splits:
         start, end = split_str.split("-", 1)
         splits.append({"start": start.strip(), "end": end.strip()})
 
-    payload = {"video_url": args.video_url, "splits": splits}
+    payload = {"video_url": video_url, "splits": splits}
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
 
@@ -455,7 +480,10 @@ def cmd_video_split(args):
 
 def cmd_video_concat(args):
     """Concatenate multiple videos."""
-    video_urls = [{"video_url": url} for url in args.video_urls]
+    if args.files:
+        video_urls = [{"video_url": file_to_uri(f)} for f in args.files]
+    else:
+        video_urls = [{"video_url": url} for url in args.video_urls]
     payload = {"video_urls": video_urls}
     if args.webhook_url:
         payload["webhook_url"] = args.webhook_url
@@ -466,7 +494,8 @@ def cmd_video_concat(args):
 
 def cmd_thumbnail(args):
     """Extract a thumbnail from a video."""
-    payload = {"video_url": args.video_url}
+    video_url = file_to_uri(args.file) if args.file else args.video_url
+    payload = {"video_url": video_url}
     if args.second is not None:
         payload["second"] = args.second
     if args.webhook_url:
@@ -502,7 +531,8 @@ def cmd_screenshot(args):
 
 def cmd_metadata(args):
     """Get media file metadata."""
-    payload = {"media_url": args.media_url}
+    media_url = file_to_uri(args.file) if args.file else args.media_url
+    payload = {"media_url": media_url}
     result = api_request("/v1/media/metadata", payload)
     print_result(result)
 
@@ -519,8 +549,9 @@ def cmd_download(args):
 
 def cmd_silence(args):
     """Detect silence in media."""
+    media_url = file_to_uri(args.file) if args.file else args.media_url
     payload = {
-        "media_url": args.media_url,
+        "media_url": media_url,
         "duration": args.duration,
     }
     if args.noise:
@@ -591,9 +622,16 @@ Getting started:
 
 Examples:
   python nca.py transcribe --media-url https://example.com/audio.mp3
+  python nca.py transcribe --file ./local/input/audio.mp3
   python nca.py convert --media-url https://example.com/video.mp4 --format webm
+  python nca.py convert --file ./local/input/video.mp4 --format webm
   python nca.py caption --video-url https://example.com/video.mp4 --style karaoke
   python nca.py screenshot --url https://example.com --full-page
+
+Local file I/O (use with 'make up-local'):
+  1. Place files in ./local/input/
+  2. Use --file instead of --media-url or --video-url
+  3. Output files appear in ./local/output/
 """,
     )
     sub = parser.add_subparsers(dest="command", help="Available commands")
@@ -614,7 +652,9 @@ Examples:
 
     # transcribe
     p = sub.add_parser("transcribe", help="Transcribe or translate media")
-    p.add_argument("--media-url", required=True, help="URL of media to transcribe")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--media-url", help="URL of media to transcribe")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--task", choices=["transcribe", "translate"], help="Task type")
     p.add_argument("--language", help="Source language code")
     p.add_argument("--srt", action="store_true", help="Include SRT output")
@@ -625,7 +665,9 @@ Examples:
 
     # convert
     p = sub.add_parser("convert", help="Convert media between formats")
-    p.add_argument("--media-url", required=True, help="URL of media to convert")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--media-url", help="URL of media to convert")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--format", required=True, help="Target format (e.g., mp4, webm, avi)")
     p.add_argument("--video-codec", help="Video codec (default: libx264)")
     p.add_argument("--audio-codec", help="Audio codec (default: aac)")
@@ -634,14 +676,18 @@ Examples:
 
     # convert-mp3
     p = sub.add_parser("convert-mp3", help="Convert media to MP3")
-    p.add_argument("--media-url", required=True, help="URL of media to convert")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--media-url", help="URL of media to convert")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--bitrate", help="Audio bitrate (e.g., 128k, 320k)")
     p.add_argument("--sample-rate", type=float, help="Sample rate")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # caption
     p = sub.add_parser("caption", help="Add captions to a video")
-    p.add_argument("--video-url", required=True, help="URL of video to caption")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-url", help="URL of video to caption")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--language", help="Language code (default: auto)")
     p.add_argument("--style", choices=["classic", "karaoke", "highlight", "underline", "word_by_word"], help="Caption style")
     p.add_argument("--position", choices=["bottom_left", "bottom_center", "bottom_right", "middle_left", "middle_center", "middle_right", "top_left", "top_center", "top_right"], help="Caption position")
@@ -656,31 +702,41 @@ Examples:
 
     # video-trim
     p = sub.add_parser("video-trim", help="Trim a video")
-    p.add_argument("--video-url", required=True, help="URL of video to trim")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-url", help="URL of video to trim")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--start", help="Start time (e.g., 00:00:10)")
     p.add_argument("--end", help="End time (e.g., 00:01:30)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-cut
     p = sub.add_parser("video-cut", help="Cut segments from a video")
-    p.add_argument("--video-url", required=True, help="URL of video")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-url", help="URL of video")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--cuts", nargs="+", required=True, help="Cut ranges (e.g., 00:00:10-00:00:20)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-split
     p = sub.add_parser("video-split", help="Split a video into segments")
-    p.add_argument("--video-url", required=True, help="URL of video")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-url", help="URL of video")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--splits", nargs="+", required=True, help="Split ranges (e.g., 00:00:00-00:01:00)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-concat
     p = sub.add_parser("video-concat", help="Concatenate multiple videos")
-    p.add_argument("--video-urls", nargs="+", required=True, help="URLs of videos to concatenate")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-urls", nargs="+", help="URLs of videos to concatenate")
+    g.add_argument("--files", nargs="+", help="Local file paths (must be in ./local/input/)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # thumbnail
     p = sub.add_parser("thumbnail", help="Extract a thumbnail from a video")
-    p.add_argument("--video-url", required=True, help="URL of video")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--video-url", help="URL of video")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--second", type=float, help="Timestamp in seconds (default: 0)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
@@ -697,7 +753,9 @@ Examples:
 
     # metadata
     p = sub.add_parser("metadata", help="Get media file metadata")
-    p.add_argument("--media-url", required=True, help="URL of media file")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--media-url", help="URL of media file")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
 
     # download
     p = sub.add_parser("download", help="Download media from a URL")
@@ -706,7 +764,9 @@ Examples:
 
     # silence
     p = sub.add_parser("silence", help="Detect silence in media")
-    p.add_argument("--media-url", required=True, help="URL of media file")
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument("--media-url", help="URL of media file")
+    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
     p.add_argument("--duration", type=float, required=True, help="Min silence duration (seconds)")
     p.add_argument("--noise", help="Noise threshold (default: -30dB)")
     p.add_argument("--start", help="Start time")

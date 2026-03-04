@@ -2,3 +2,9 @@
 .DS_Store
 .env_shell.json
 .env
+local/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo

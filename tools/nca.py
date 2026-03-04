@@ -19,8 +19,10 @@ import argparse
 import configparser
 import json
 import os
+import shutil
 import stat
 import sys
+import time
 import urllib.request
 import urllib.error
 
@@ -151,7 +153,7 @@ def api_request(endpoint, payload=None, method="POST"):
 
 
 def is_local_api():
-    """Check if the configured API is running locally (volume mount mode)."""
+    """Check if the configured API is running locally."""
     url, _ = get_config()
     from urllib.parse import urlparse as _urlparse
     host = _urlparse(url).hostname or ""
@@ -202,16 +204,8 @@ def upload_file_to_api(local_path):
 
 
 def resolve_file(local_path):
-    """Resolve a --file argument to a URL the API can consume.
-
-    Local API:  returns file:///data/input/<basename> (volume mount)
-    Remote API: uploads via /v1/files/upload, returns cloud storage URL
-    """
-    if is_local_api():
-        basename = os.path.basename(local_path)
-        return f"file:///data/input/{basename}"
-    else:
-        return upload_file_to_api(local_path)
+    """Upload local file to API, return the storage URL."""
+    return upload_file_to_api(local_path)
 
 
 def resolve_files(local_paths):
@@ -219,21 +213,181 @@ def resolve_files(local_paths):
     return [resolve_file(p) for p in local_paths]
 
 
-def translate_output_paths(obj):
-    """Translate file:///data/output/... paths to ./local/output/... for display."""
-    if isinstance(obj, str) and obj.startswith("file:///data/output/"):
-        return "./local/output/" + obj[len("file:///data/output/"):]
-    if isinstance(obj, dict):
-        return {k: translate_output_paths(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [translate_output_paths(v) for v in obj]
-    return obj
+# ─── Output Handling ─────────────────────────────────────────────────────────
+
+# Commands that return text/data (not file URLs)
+TEXT_COMMANDS = {"transcribe", "metadata", "silence", "status", "test", "config"}
+
+# Commands that return file URLs to download
+FILE_COMMANDS = {
+    "convert", "convert-mp3", "caption", "video-trim", "video-cut",
+    "video-split", "video-concat", "thumbnail", "screenshot",
+    "download", "ffmpeg", "upload-s3", "upload-gcp",
+}
 
 
-def print_result(result):
-    """Print API result as formatted JSON, translating file:// paths for readability."""
-    result = translate_output_paths(result)
-    print(json.dumps(result, indent=2))
+def download_output(url, output_dir="."):
+    """Download an output file from the API to local disk.
+
+    Handles HTTP/HTTPS URLs (download) and file:// URLs (copy from ./local/output/).
+    Returns the local file path, or None on failure.
+    """
+    from urllib.parse import urlparse
+    parsed = urlparse(url)
+
+    filename = os.path.basename(parsed.path)
+    if not filename:
+        filename = "output"
+
+    dest_path = os.path.join(output_dir, filename)
+
+    if parsed.scheme == "file":
+        # file:// URI from local Docker API — translate to host path
+        container_path = parsed.path  # e.g., /data/output/foo.mp4
+        if container_path.startswith("/data/output/"):
+            local_path = os.path.join(".", "local", "output", container_path[len("/data/output/"):])
+        else:
+            local_path = container_path
+
+        if os.path.isfile(local_path):
+            os.makedirs(output_dir, exist_ok=True)
+            shutil.copy2(local_path, dest_path)
+        else:
+            print(f"Warning: Local file not found: {local_path}", file=sys.stderr)
+            return None
+    else:
+        # HTTP/HTTPS download
+        os.makedirs(output_dir, exist_ok=True)
+        req = urllib.request.Request(url)
+        try:
+            with urllib.request.urlopen(req, timeout=600) as resp:
+                with open(dest_path, "wb") as f:
+                    while True:
+                        chunk = resp.read(8192)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+        except (urllib.error.HTTPError, urllib.error.URLError) as e:
+            print(f"Warning: Failed to download {url}: {e}", file=sys.stderr)
+            return None
+
+    return dest_path
+
+
+def extract_urls(obj):
+    """Extract all URLs (http://, https://, file://) from a response object."""
+    results = []
+
+    def _walk(item, path=""):
+        if isinstance(item, str):
+            if item.startswith(("http://", "https://", "file://")):
+                results.append((path, item))
+        elif isinstance(item, dict):
+            for k, v in item.items():
+                _walk(v, f"{path}.{k}" if path else k)
+        elif isinstance(item, list):
+            for i, v in enumerate(item):
+                _walk(v, f"{path}[{i}]")
+
+    _walk(obj)
+    return results
+
+
+def handle_output(result, command, output_dir=".", json_mode=False):
+    """Process API result: download files, print text or file paths.
+
+    Args:
+        result: Full API response dict (with "response" key)
+        command: The CLI command name (e.g., "transcribe", "convert")
+        output_dir: Directory to save downloaded files
+        json_mode: If True, print full JSON and skip downloads
+    """
+    if json_mode:
+        print(json.dumps(result, indent=2))
+        return
+
+    response = result.get("response")
+    code = result.get("code", 200)
+
+    # 202 accepted (webhook/async mode) — print job info and exit
+    if code == 202:
+        job_id = result.get("job_id", "unknown")
+        print(f"Job submitted: {job_id}", file=sys.stderr)
+        print(f"Status: processing", file=sys.stderr)
+        return
+
+    # Error responses
+    if code != 200 or response is None:
+        message = result.get("message", "Unknown error")
+        print(f"Error: {message}", file=sys.stderr)
+        sys.exit(1)
+
+    # Text commands: print content directly
+    if command in TEXT_COMMANDS:
+        if command == "transcribe":
+            if isinstance(response, dict):
+                text = response.get("text")
+                if text:
+                    print(text)
+                srt = response.get("srt")
+                if srt:
+                    print("\n--- SRT ---\n")
+                    print(srt)
+                segments = response.get("segments")
+                if segments:
+                    print("\n--- Segments ---\n")
+                    print(json.dumps(segments, indent=2))
+            else:
+                print(response)
+        else:
+            # metadata, silence, status, test: print as formatted JSON
+            print(json.dumps(response, indent=2))
+        return
+
+    # File commands: find URLs, download them, print local paths
+    if isinstance(response, str) and response.startswith(("http://", "https://", "file://")):
+        # Single URL response (convert, caption, trim, etc.)
+        local_path = download_output(response, output_dir)
+        if local_path:
+            print(local_path)
+        else:
+            print(response)  # Fallback: print the URL
+        return
+
+    # Complex response with embedded URLs (split, download, ffmpeg, etc.)
+    urls = extract_urls(response)
+    if urls:
+        for _key_path, url in urls:
+            local_path = download_output(url, output_dir)
+            if local_path:
+                print(local_path)
+            else:
+                print(url)
+        return
+
+    # No URLs found: just print the response as JSON
+    print(json.dumps(response, indent=2))
+
+
+def poll_job(job_id, interval=5, timeout=600):
+    """Poll job status until complete. Returns the final result."""
+    elapsed = 0
+    while elapsed < timeout:
+        result = api_request("/v1/toolkit/job/status", {"job_id": job_id})
+        status = result.get("response", {}).get("status", "unknown") if isinstance(result.get("response"), dict) else "unknown"
+
+        if status in ("done", "failed"):
+            return result
+        if status == "unknown":
+            # Response might be the final result directly
+            return result
+
+        print(f"  Status: {status} ({elapsed}s elapsed)", file=sys.stderr)
+        time.sleep(interval)
+        elapsed += interval
+
+    print(f"Error: Job timed out after {timeout}s", file=sys.stderr)
+    sys.exit(1)
 
 
 # ─── Command Handlers ─────────────────────────────────────────────────────────
@@ -391,13 +545,13 @@ def cmd_config(args):
 def cmd_test(args):
     """Test API connectivity."""
     result = api_request("/v1/toolkit/test", method="GET")
-    print_result(result)
+    handle_output(result, "test", getattr(args, "output_dir", "."), getattr(args, "json_output", False))
 
 
 def cmd_status(args):
     """Check job status."""
     result = api_request("/v1/toolkit/job/status", {"job_id": args.job_id})
-    print_result(result)
+    handle_output(result, "status", getattr(args, "output_dir", "."), getattr(args, "json_output", False))
 
 
 def cmd_transcribe(args):
@@ -420,7 +574,7 @@ def cmd_transcribe(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/media/transcribe", payload)
-    print_result(result)
+    handle_output(result, "transcribe", args.output_dir, args.json_output)
 
 
 def cmd_convert(args):
@@ -440,7 +594,7 @@ def cmd_convert(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/media/convert", payload)
-    print_result(result)
+    handle_output(result, "convert", args.output_dir, args.json_output)
 
 
 def cmd_convert_mp3(args):
@@ -455,7 +609,7 @@ def cmd_convert_mp3(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/media/convert/mp3", payload)
-    print_result(result)
+    handle_output(result, "convert-mp3", args.output_dir, args.json_output)
 
 
 def cmd_caption(args):
@@ -491,7 +645,7 @@ def cmd_caption(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/caption", payload)
-    print_result(result)
+    handle_output(result, "caption", args.output_dir, args.json_output)
 
 
 def cmd_video_trim(args):
@@ -506,7 +660,7 @@ def cmd_video_trim(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/trim", payload)
-    print_result(result)
+    handle_output(result, "video-trim", args.output_dir, args.json_output)
 
 
 def cmd_video_cut(args):
@@ -522,7 +676,7 @@ def cmd_video_cut(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/cut", payload)
-    print_result(result)
+    handle_output(result, "video-cut", args.output_dir, args.json_output)
 
 
 def cmd_video_split(args):
@@ -538,7 +692,7 @@ def cmd_video_split(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/split", payload)
-    print_result(result)
+    handle_output(result, "video-split", args.output_dir, args.json_output)
 
 
 def cmd_video_concat(args):
@@ -552,7 +706,7 @@ def cmd_video_concat(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/concatenate", payload)
-    print_result(result)
+    handle_output(result, "video-concat", args.output_dir, args.json_output)
 
 
 def cmd_thumbnail(args):
@@ -565,7 +719,7 @@ def cmd_thumbnail(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/video/thumbnail", payload)
-    print_result(result)
+    handle_output(result, "thumbnail", args.output_dir, args.json_output)
 
 
 def cmd_screenshot(args):
@@ -589,7 +743,7 @@ def cmd_screenshot(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/image/screenshot/webpage", payload)
-    print_result(result)
+    handle_output(result, "screenshot", args.output_dir, args.json_output)
 
 
 def cmd_metadata(args):
@@ -597,7 +751,7 @@ def cmd_metadata(args):
     media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {"media_url": media_url}
     result = api_request("/v1/media/metadata", payload)
-    print_result(result)
+    handle_output(result, "metadata", args.output_dir, args.json_output)
 
 
 def cmd_download(args):
@@ -607,7 +761,7 @@ def cmd_download(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/BETA/media/download", payload)
-    print_result(result)
+    handle_output(result, "download", args.output_dir, args.json_output)
 
 
 def cmd_silence(args):
@@ -627,14 +781,14 @@ def cmd_silence(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/media/silence", payload)
-    print_result(result)
+    handle_output(result, "silence", args.output_dir, args.json_output)
 
 
 def cmd_ffmpeg(args):
     """Run custom FFmpeg commands."""
     payload = json.loads(args.payload)
     result = api_request("/v1/ffmpeg/compose", payload)
-    print_result(result)
+    handle_output(result, "ffmpeg", args.output_dir, args.json_output)
 
 
 def cmd_upload_s3(args):
@@ -648,7 +802,7 @@ def cmd_upload_s3(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/s3/upload", payload)
-    print_result(result)
+    handle_output(result, "upload-s3", args.output_dir, args.json_output)
 
 
 def cmd_upload_gcp(args):
@@ -662,7 +816,7 @@ def cmd_upload_gcp(args):
         payload["webhook_url"] = args.webhook_url
 
     result = api_request("/v1/gcp/upload", payload)
-    print_result(result)
+    handle_output(result, "upload-gcp", args.output_dir, args.json_output)
 
 
 # ─── Argument Parser ──────────────────────────────────────────────────────────
@@ -685,18 +839,25 @@ Getting started:
 
 Examples:
   python nca.py transcribe --media-url https://example.com/audio.mp3
-  python nca.py transcribe --file ./local/input/audio.mp3
-  python nca.py convert --media-url https://example.com/video.mp4 --format webm
-  python nca.py convert --file ./local/input/video.mp4 --format webm
+  python nca.py transcribe --file ~/recordings/meeting.mp3
+  python nca.py convert --file ~/videos/clip.mp4 --format webm
+  python nca.py convert --file ~/videos/clip.mp4 --format webm -o ~/Downloads
   python nca.py caption --video-url https://example.com/video.mp4 --style karaoke
   python nca.py screenshot --url https://example.com --full-page
 
-Local file I/O (use with 'make up-local'):
-  1. Place files in ./local/input/
-  2. Use --file instead of --media-url or --video-url
-  3. Output files appear in ./local/output/
+Local files:
+  Use --file with any path. Files are uploaded to the API automatically.
+  Output files are downloaded to the current directory (use -o to change).
+  Use --json for full JSON response instead of human-readable output.
 """,
     )
+
+    # Global flags
+    parser.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output full JSON response instead of human-readable text")
+    parser.add_argument("--output-dir", "-o", default=".",
+                        help="Directory for downloaded output files (default: current directory)")
+
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
     # setup
@@ -717,7 +878,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("transcribe", help="Transcribe or translate media")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to transcribe")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--task", choices=["transcribe", "translate"], help="Task type")
     p.add_argument("--language", help="Source language code")
     p.add_argument("--srt", action="store_true", help="Include SRT output")
@@ -730,7 +891,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("convert", help="Convert media between formats")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to convert")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--format", required=True, help="Target format (e.g., mp4, webm, avi)")
     p.add_argument("--video-codec", help="Video codec (default: libx264)")
     p.add_argument("--audio-codec", help="Audio codec (default: aac)")
@@ -741,7 +902,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("convert-mp3", help="Convert media to MP3")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to convert")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--bitrate", help="Audio bitrate (e.g., 128k, 320k)")
     p.add_argument("--sample-rate", type=float, help="Sample rate")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
@@ -750,7 +911,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("caption", help="Add captions to a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video to caption")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--language", help="Language code (default: auto)")
     p.add_argument("--style", choices=["classic", "karaoke", "highlight", "underline", "word_by_word"], help="Caption style")
     p.add_argument("--position", choices=["bottom_left", "bottom_center", "bottom_right", "middle_left", "middle_center", "middle_right", "top_left", "top_center", "top_right"], help="Caption position")
@@ -767,7 +928,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("video-trim", help="Trim a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video to trim")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--start", help="Start time (e.g., 00:00:10)")
     p.add_argument("--end", help="End time (e.g., 00:01:30)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
@@ -776,7 +937,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("video-cut", help="Cut segments from a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--cuts", nargs="+", required=True, help="Cut ranges (e.g., 00:00:10-00:00:20)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
@@ -784,7 +945,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("video-split", help="Split a video into segments")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--splits", nargs="+", required=True, help="Split ranges (e.g., 00:00:00-00:01:00)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
@@ -792,14 +953,14 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("video-concat", help="Concatenate multiple videos")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-urls", nargs="+", help="URLs of videos to concatenate")
-    g.add_argument("--files", nargs="+", help="Local file paths (must be in ./local/input/)")
+    g.add_argument("--files", nargs="+", help="Local file paths (uploaded automatically)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # thumbnail
     p = sub.add_parser("thumbnail", help="Extract a thumbnail from a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--second", type=float, help="Timestamp in seconds (default: 0)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
@@ -818,7 +979,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("metadata", help="Get media file metadata")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media file")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
 
     # download
     p = sub.add_parser("download", help="Download media from a URL")
@@ -829,7 +990,7 @@ Local file I/O (use with 'make up-local'):
     p = sub.add_parser("silence", help="Detect silence in media")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media file")
-    g.add_argument("--file", "-f", help="Local file path (must be in ./local/input/)")
+    g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
     p.add_argument("--duration", type=float, required=True, help="Min silence duration (seconds)")
     p.add_argument("--noise", help="Noise threshold (default: -30dB)")
     p.add_argument("--start", help="Start time")

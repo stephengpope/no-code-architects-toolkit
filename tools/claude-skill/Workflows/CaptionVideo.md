@@ -13,7 +13,7 @@ purpose: Add auto-generated captions to videos using the NCA Toolkit API
 
 The user provides either:
 - A **URL** to a publicly accessible video file
-- A **local file path** (e.g., `./local/input/video.mp4`)
+- A **local file path** (e.g., `~/videos/video.mp4`)
 
 ### Step 2: Determine caption style and options
 
@@ -32,23 +32,6 @@ The user provides either:
 
 ### Step 3: Run the command
 
-**From URL:**
-```bash
-python3 tools/nca.py caption \
-  --video-url <URL> \
-  [--style karaoke] \
-  [--position bottom_center] \
-  [--font-size 24] \
-  [--font-family "Arial"] \
-  [--word-color "#FFD700"] \
-  [--line-color "#FFFFFF"] \
-  [--outline-color "#000000"] \
-  [--all-caps] \
-  [--max-words-per-line 5] \
-  [--language auto]
-```
-
-**From local file:**
 ```bash
 python3 tools/nca.py caption \
   --file <path> \
@@ -64,25 +47,25 @@ python3 tools/nca.py caption \
   [--language auto]
 ```
 
-`--video-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
+`--file` accepts any path — the CLI uploads it automatically. Use `--video-url` instead for URLs.
 
 ### Step 4: Return the result
 
-The API returns a cloud URL to the captioned video. Present this to the user.
+The captioned video is downloaded to the current directory (or `--output-dir` / `-o` path). The local file path is printed to stdout.
 
 ## Examples
 
-**Karaoke-style captions (URL):**
+**Caption a local file with karaoke style:**
 ```bash
-python3 tools/nca.py caption --video-url https://example.com/video.mp4 --style karaoke --position bottom_center
+python3 tools/nca.py caption --file ~/videos/video.mp4 --style karaoke --position bottom_center
 ```
 
-**Caption a local file:**
-```bash
-python3 tools/nca.py caption --file ./local/input/video.mp4 --style karaoke --position bottom_center
-```
-
-**Bold all-caps captions at the top:**
+**Caption from URL, bold all-caps at the top:**
 ```bash
 python3 tools/nca.py caption --video-url https://example.com/video.mp4 --style classic --position top_center --all-caps --font-size 32
+```
+
+**Caption and save to specific directory:**
+```bash
+python3 tools/nca.py caption --file ~/videos/video.mp4 --style karaoke -o ~/Downloads
 ```

@@ -13,7 +13,7 @@ purpose: Transcribe or translate audio/video content using the NCA Toolkit API
 
 The user provides either:
 - A **URL** to a publicly accessible media file
-- A **local file path** (e.g., `./local/input/audio.mp3`)
+- A **local file path** (e.g., `~/recordings/meeting.mp3`)
 
 ### Step 2: Determine options
 
@@ -28,19 +28,6 @@ The user provides either:
 
 ### Step 3: Run the command
 
-**From URL:**
-```bash
-python3 tools/nca.py transcribe \
-  --media-url <URL> \
-  [--task transcribe|translate] \
-  [--language <code>] \
-  [--srt] \
-  [--segments] \
-  [--word-timestamps] \
-  [--words-per-line <N>]
-```
-
-**From local file:**
 ```bash
 python3 tools/nca.py transcribe \
   --file <path> \
@@ -52,35 +39,42 @@ python3 tools/nca.py transcribe \
   [--words-per-line <N>]
 ```
 
-`--media-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
+Or with a URL:
+```bash
+python3 tools/nca.py transcribe \
+  --media-url <URL> \
+  [--task transcribe|translate] \
+  [--language <code>] \
+  [--srt] \
+  [--segments] \
+  [--word-timestamps] \
+  [--words-per-line <N>]
+```
+
+`--media-url` and `--file` are mutually exclusive. `--file` accepts any path — the CLI uploads it automatically.
 
 ### Step 4: Present results
 
-The API returns JSON with:
-- `response.text` - Full transcription text
-- `response.srt` - SRT subtitle content (if requested)
-- `response.segments` - Timestamped segments (if requested)
-
-Present the transcription text to the user. If SRT was requested, show or save the SRT content.
+The transcription text is printed directly to stdout. If `--srt` was requested, SRT content is also printed. Use `--json` for the full API response.
 
 ## Examples
 
-**Basic transcription (URL):**
+**Transcribe a local file:**
+```bash
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3
+```
+
+**Transcribe from URL:**
 ```bash
 python3 tools/nca.py transcribe --media-url https://example.com/podcast.mp3
 ```
 
-**Basic transcription (local file):**
-```bash
-python3 tools/nca.py transcribe --file ./local/input/podcast.mp3
-```
-
 **Translate to English with SRT:**
 ```bash
-python3 tools/nca.py transcribe --file ./local/input/spanish-video.mp4 --task translate --srt
+python3 tools/nca.py transcribe --file ~/videos/spanish-video.mp4 --task translate --srt
 ```
 
-**Transcribe with word-level timestamps:**
+**Transcribe with word-level timestamps (JSON output):**
 ```bash
-python3 tools/nca.py transcribe --media-url https://example.com/interview.wav --word-timestamps --segments
+python3 tools/nca.py transcribe --file ~/recordings/interview.wav --word-timestamps --segments --json
 ```

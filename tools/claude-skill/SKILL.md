@@ -5,7 +5,7 @@ description: NCA Toolkit API client. USE WHEN nca, toolkit, transcribe video, tr
 
 # NCA Toolkit Skill
 
-Client for the No-Code Architects Toolkit API. Provides media processing capabilities including transcription, conversion, captioning, video editing, screenshots, and more. Supports both URL inputs and local file inputs.
+Client for the No-Code Architects Toolkit API. Provides media processing capabilities including transcription, conversion, captioning, video editing, screenshots, and more. Supports both URL inputs and local file inputs from any path.
 
 ## Prerequisites
 
@@ -21,18 +21,34 @@ The CLI tool is located at the project root: `tools/nca.py` (zero dependencies b
 
 ## Local File Support
 
-The CLI supports local files via `--file` (or `-f`) in addition to `--media-url`/`--video-url`:
-
-- **Local API** (`make up-local`): Files in `./local/input/` are volume-mounted into the container. The CLI translates `--file` to a `file://` URI.
-- **Remote API** (Cloud Run): The CLI automatically uploads the file via `/v1/files/upload`, then passes the cloud URL to the processing endpoint.
-- **Output**: Local API saves to `./local/output/`. Remote API returns a cloud storage URL.
+Use `--file` (or `-f`) with **any file path** on disk. The CLI automatically uploads the file to the API:
 
 ```bash
-# Local file (auto-detects local vs remote API)
-python3 tools/nca.py transcribe --file ./local/input/video.mp4
+# Any local file — uploaded to API automatically
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3
 
-# URL (works with any API)
-python3 tools/nca.py transcribe --media-url https://example.com/video.mp4
+# URL — works with any API
+python3 tools/nca.py transcribe --media-url https://example.com/audio.mp3
+```
+
+**Output handling:**
+- Text commands (transcribe, metadata, silence) print results directly to stdout
+- File commands (convert, caption, trim, etc.) download the output file to the current directory
+- Use `--output-dir` / `-o` to specify a different output directory
+- Use `--json` for full JSON response instead of human-readable output
+
+```bash
+# Transcribe — prints text to stdout
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3
+
+# Convert — downloads result to current directory
+python3 tools/nca.py convert --file ~/videos/clip.mp4 --format webm
+
+# Convert — downloads result to specific directory
+python3 tools/nca.py convert --file ~/videos/clip.mp4 --format webm -o ~/Downloads
+
+# Full JSON response
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3 --json
 ```
 
 ## Voice Notification
@@ -93,9 +109,16 @@ All media commands accept either a URL or a local file:
 | Flag | Description |
 |------|-------------|
 | `--media-url <URL>` / `--video-url <URL>` | Process media from a URL |
-| `--file <path>` / `-f <path>` | Process a local file (auto-uploads if API is remote) |
+| `--file <path>` / `-f <path>` | Process a local file (uploaded automatically) |
 
 These are mutually exclusive — use one or the other.
+
+## Global Flags
+
+| Flag | Description |
+|------|-------------|
+| `--json` | Output full JSON response instead of human-readable text |
+| `--output-dir <path>` / `-o <path>` | Directory for downloaded output files (default: current directory) |
 
 ## Examples
 
@@ -107,8 +130,8 @@ User: "Transcribe this video: https://example.com/talk.mp4"
 
 **Transcribe a local file:**
 ```
-User: "Transcribe this file: ./local/input/meeting.mp4"
--> python3 tools/nca.py transcribe --file ./local/input/meeting.mp4
+User: "Transcribe this file: ~/recordings/meeting.mp4"
+-> python3 tools/nca.py transcribe --file ~/recordings/meeting.mp4
 ```
 
 **Caption a video with karaoke style:**
@@ -120,7 +143,13 @@ User: "Add captions to this video with karaoke highlighting"
 **Convert a local file to WebM:**
 ```
 User: "Convert this video to WebM"
--> python3 tools/nca.py convert --file ./local/input/video.mp4 --format webm
+-> python3 tools/nca.py convert --file ~/videos/video.mp4 --format webm
+```
+
+**Convert and save to specific directory:**
+```
+User: "Convert this video to MP3 and save it to my Downloads folder"
+-> python3 tools/nca.py convert-mp3 --file ~/videos/video.mp4 -o ~/Downloads
 ```
 
 **Screenshot a webpage:**

@@ -15,18 +15,17 @@ The user provides either a URL or a local file path.
 
 ### Step 2: Run the command
 
-**From URL:**
+```bash
+python3 tools/nca.py metadata --file ~/videos/video.mp4
+```
+
+Or from URL:
 ```bash
 python3 tools/nca.py metadata --media-url <URL>
 ```
 
-**From local file:**
-```bash
-python3 tools/nca.py metadata --file ./local/input/video.mp4
-```
-
-`--media-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
+`--file` accepts any path — the CLI uploads it automatically.
 
 ### Step 3: Present results
 
-Returns file size, duration, codec info, resolution, bitrate, and other technical details. Format the results clearly for the user.
+Returns file size, duration, codec info, resolution, bitrate, and other technical details printed as formatted JSON to stdout.

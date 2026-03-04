@@ -27,7 +27,7 @@ import mimetypes
 logger = logging.getLogger(__name__)
 
 # Directories allowed for file:// URI access
-ALLOWED_LOCAL_DIRS = ['/data/input', os.environ.get('LOCAL_STORAGE_PATH', '/tmp')]
+ALLOWED_LOCAL_DIRS = ['/data/input', '/data/output', os.environ.get('LOCAL_STORAGE_PATH', '/tmp')]
 
 def get_extension_from_url(url):
     """Extract file extension from URL, local path, or content type.

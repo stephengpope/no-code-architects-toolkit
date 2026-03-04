@@ -15,7 +15,16 @@ The user provides either a URL or a local file path.
 
 ### Step 2: Run the command
 
-**From URL:**
+```bash
+python3 tools/nca.py silence \
+  --file ~/recordings/audio.mp3 \
+  --duration <seconds> \
+  [--noise "-30dB"] \
+  [--start <time>] \
+  [--end <time>]
+```
+
+Or from URL:
 ```bash
 python3 tools/nca.py silence \
   --media-url <URL> \
@@ -25,18 +34,8 @@ python3 tools/nca.py silence \
   [--end <time>]
 ```
 
-**From local file:**
-```bash
-python3 tools/nca.py silence \
-  --file ./local/input/audio.mp3 \
-  --duration <seconds> \
-  [--noise "-30dB"] \
-  [--start <time>] \
-  [--end <time>]
-```
-
-`--media-url` and `--file` are mutually exclusive. When using `--file` with a remote API, the CLI automatically uploads the file first.
+`--file` accepts any path — the CLI uploads it automatically.
 
 ### Step 3: Present results
 
-Returns an array of silence intervals with start/end times. Useful for finding natural cut points or detecting dead air.
+Returns an array of silence intervals with start/end times printed as JSON to stdout. Useful for finding natural cut points or detecting dead air.

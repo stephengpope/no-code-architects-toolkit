@@ -4,8 +4,7 @@
 #
 # This script:
 #   1. Symlinks the skill into ~/.claude/skills/NCAToolkit/
-#   2. Prompts for NCA_API_URL and NCA_API_KEY if not already set
-#   3. Adds env vars to your shell profile
+#   2. Runs interactive setup to validate credentials and save to ~/.nca-toolkit/config
 #
 # Usage:
 #   ./tools/install-skill.sh
@@ -17,6 +16,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILL_SOURCE="$SCRIPT_DIR/claude-skill"
 SKILL_TARGET="$HOME/.claude/skills/NCAToolkit"
+NCA_CLI="$PROJECT_DIR/tools/nca.py"
 
 # Colors
 GREEN='\033[1;32m'
@@ -48,49 +48,22 @@ ln -s "$SKILL_SOURCE" "$SKILL_TARGET"
 echo -e "  ${GREEN}Skill symlinked successfully${RESET}"
 echo ""
 
-# ─── Step 2: Configure environment variables ─────────────────────────────────
+# ─── Step 2: Run setup (authenticate + save config) ──────────────────────────
 
-echo -e "${YELLOW}Step 2:${RESET} Configuring environment variables"
+echo -e "${YELLOW}Step 2:${RESET} Configuring API credentials"
 echo ""
 
-# Detect shell profile
-if [ -n "${ZSH_VERSION:-}" ] || [ "$SHELL" = */zsh ]; then
-    PROFILE="$HOME/.zshrc"
-else
-    PROFILE="$HOME/.bashrc"
-fi
-
-NEEDS_VARS=false
-
-if [ -z "${NCA_API_URL:-}" ]; then
-    echo -e "  ${CYAN}NCA_API_URL${RESET} is not set."
-    read -rp "  Enter your NCA Toolkit API URL: " NCA_API_URL
-    if [ -n "$NCA_API_URL" ]; then
-        echo "" >> "$PROFILE"
-        echo "# NCA Toolkit API" >> "$PROFILE"
-        echo "export NCA_API_URL=\"$NCA_API_URL\"" >> "$PROFILE"
-        NEEDS_VARS=true
-        echo -e "  ${GREEN}Added to $PROFILE${RESET}"
+if [ -f "$HOME/.nca-toolkit/config" ]; then
+    echo -e "  ${GREEN}Existing config found at ~/.nca-toolkit/config${RESET}"
+    echo ""
+    read -rp "  Re-run setup? [y/N]: " RERUN
+    if [[ "$RERUN" =~ ^[Yy] ]]; then
+        python3 "$NCA_CLI" setup
+    else
+        echo "  Keeping existing config."
     fi
 else
-    echo -e "  ${GREEN}NCA_API_URL${RESET} = ${CYAN}${NCA_API_URL}${RESET}"
-fi
-
-if [ -z "${NCA_API_KEY:-}" ]; then
-    echo -e "  ${CYAN}NCA_API_KEY${RESET} is not set."
-    read -rp "  Enter your NCA Toolkit API key: " NCA_API_KEY
-    if [ -n "$NCA_API_KEY" ]; then
-        # Only add header comment if we didn't just add it
-        if [ "$NEEDS_VARS" = false ]; then
-            echo "" >> "$PROFILE"
-            echo "# NCA Toolkit API" >> "$PROFILE"
-        fi
-        echo "export NCA_API_KEY=\"$NCA_API_KEY\"" >> "$PROFILE"
-        NEEDS_VARS=true
-        echo -e "  ${GREEN}Added to $PROFILE${RESET}"
-    fi
-else
-    echo -e "  ${GREEN}NCA_API_KEY${RESET} = ${CYAN}(set)${RESET}"
+    python3 "$NCA_CLI" setup
 fi
 
 echo ""
@@ -105,24 +78,27 @@ else
     echo -e "  ${YELLOW}Warning: Skill symlink may not be working correctly${RESET}"
 fi
 
-if [ -f "$PROJECT_DIR/tools/nca.py" ]; then
-    echo -e "  ${GREEN}CLI tool found at $PROJECT_DIR/tools/nca.py${RESET}"
+if [ -f "$NCA_CLI" ]; then
+    echo -e "  ${GREEN}CLI tool found at $NCA_CLI${RESET}"
 else
     echo -e "  ${YELLOW}Warning: CLI tool not found${RESET}"
+fi
+
+if [ -f "$HOME/.nca-toolkit/config" ]; then
+    PERMS=$(stat -f "%Lp" "$HOME/.nca-toolkit/config" 2>/dev/null || stat -c "%a" "$HOME/.nca-toolkit/config" 2>/dev/null)
+    echo -e "  ${GREEN}Config file at ~/.nca-toolkit/config (perms: $PERMS)${RESET}"
+else
+    echo -e "  ${YELLOW}Warning: Config file not found${RESET}"
 fi
 
 echo ""
 echo -e "${GREEN}Installation complete!${RESET}"
 echo ""
-
-if [ "$NEEDS_VARS" = true ]; then
-    echo -e "  ${YELLOW}Run this to load the new env vars:${RESET}"
-    echo -e "  ${CYAN}source $PROFILE${RESET}"
-    echo ""
-fi
-
 echo -e "  ${BLUE}Test it:${RESET}"
-echo -e "  ${CYAN}python $PROJECT_DIR/tools/nca.py test${RESET}"
+echo -e "  ${CYAN}python3 $NCA_CLI test${RESET}"
+echo ""
+echo -e "  ${BLUE}Show config:${RESET}"
+echo -e "  ${CYAN}python3 $NCA_CLI config${RESET}"
 echo ""
 echo -e "  ${BLUE}Use in Claude:${RESET}"
 echo -e "  ${CYAN}\"Transcribe this video: https://example.com/video.mp4\"${RESET}"

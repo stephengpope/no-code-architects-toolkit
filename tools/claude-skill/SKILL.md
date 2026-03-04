@@ -9,11 +9,13 @@ Client for the No-Code Architects Toolkit API. Provides media processing capabil
 
 ## Prerequisites
 
-Set these environment variables before using:
+Run setup to authenticate and save credentials:
 ```bash
-export NCA_API_URL=https://your-nca-instance.run.app
-export NCA_API_KEY=your_api_key
+python3 tools/nca.py setup
 ```
+
+This saves credentials to `~/.nca-toolkit/config` (600 permissions, INI format).
+Environment variables `NCA_API_URL` and `NCA_API_KEY` override the config file if set.
 
 The CLI tool is located at the project root: `tools/nca.py` (zero dependencies beyond Python 3).
 
@@ -40,7 +42,8 @@ curl -s -X POST http://localhost:8888/notify \
 | silence, detect silence | `Workflows/Silence.md` |
 | ffmpeg, compose, custom ffmpeg | `Workflows/FFmpeg.md` |
 | upload, s3, gcp storage | `Workflows/Upload.md` |
-| test, connect, authenticate, status | `Workflows/TestConnect.md` |
+| setup, configure, authenticate, connect | `Workflows/Setup.md` |
+| test, status, check connection | `Workflows/TestConnect.md` |
 
 ## Quick Reference
 
@@ -62,6 +65,8 @@ curl -s -X POST http://localhost:8888/notify \
 | `ffmpeg` | Run arbitrary FFmpeg pipelines |
 | `upload-s3` | Upload file to S3-compatible storage |
 | `upload-gcp` | Upload file to Google Cloud Storage |
+| `setup` | Authenticate and save credentials to ~/.nca-toolkit/config |
+| `config` | Show current configuration (redacted keys) |
 | `test` | Verify API connectivity |
 | `status` | Check async job status |
 

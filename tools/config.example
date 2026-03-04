@@ -1,0 +1,18 @@
+# NCA Toolkit Configuration
+# Copy this to ~/.nca-toolkit/config or run: python3 tools/nca.py setup
+#
+# File permissions should be 600 (owner read/write only)
+# Directory permissions should be 700 (owner only)
+
+[default]
+api_url = "https://your-nca-instance.run.app"
+api_key = "your_api_key_here"
+
+# You can add additional profiles:
+# [staging]
+# api_url = "https://staging-nca.run.app"
+# api_key = "staging_key"
+#
+# [production]
+# api_url = "https://prod-nca.run.app"
+# api_key = "prod_key"

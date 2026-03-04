@@ -2,55 +2,116 @@
 """
 NCA Toolkit CLI - Command-line client for the No-Code Architects Toolkit API.
 
-Configuration:
-  Set these environment variables:
-    NCA_API_URL   - Base URL of your NCA Toolkit instance (e.g., https://nca.example.com)
-    NCA_API_KEY   - Your API key for authentication
+Configuration (checked in this order):
+  1. Environment variables: NCA_API_URL, NCA_API_KEY
+  2. Config file: ~/.nca-toolkit/config
 
 Usage:
   python nca.py <command> [options]
 
-Commands:
-  transcribe     Transcribe or translate audio/video
-  convert        Convert media between formats
-  convert-mp3    Convert media to MP3
-  caption        Add captions to a video
-  video-trim     Trim a video to start/end times
-  video-cut      Cut segments from a video
-  video-split    Split a video into segments
-  video-concat   Concatenate multiple videos
-  thumbnail      Extract a thumbnail from a video
-  screenshot     Take a screenshot of a webpage
-  metadata       Get media file metadata
-  download       Download media from a URL
-  silence        Detect silence in media
-  ffmpeg         Run custom FFmpeg commands
-  upload-s3      Upload a file to S3
-  upload-gcp     Upload a file to GCP Storage
-  status         Check job status
-  test           Test API connectivity
+  python nca.py setup              Interactive setup — prompts for URL & key, validates, saves config
+  python nca.py test               Test API connectivity
+  python nca.py transcribe ...     Transcribe or translate media
+  python nca.py config             Show current configuration (redacted key)
 """
 
 import argparse
+import configparser
 import json
 import os
+import stat
 import sys
 import urllib.request
 import urllib.error
 
+# ─── Config File System ───────────────────────────────────────────────────────
 
-def get_config():
-    """Load API configuration from environment variables."""
+CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".nca-toolkit")
+CONFIG_FILE = os.path.join(CONFIG_DIR, "config")
+
+
+def read_config_file():
+    """Read config from ~/.nca-toolkit/config (INI format)."""
+    if not os.path.isfile(CONFIG_FILE):
+        return {}, {}
+
+    config = configparser.ConfigParser()
+    config.read(CONFIG_FILE)
+
+    result = {}
+    profiles = {}
+
+    # Read [default] section
+    if config.has_section("default"):
+        for key in config["default"]:
+            result[key] = config["default"][key].strip('"').strip("'")
+
+    # Read any additional profile sections
+    for section in config.sections():
+        if section != "default":
+            profiles[section] = {}
+            for key in config[section]:
+                profiles[section][key] = config[section][key].strip('"').strip("'")
+
+    return result, profiles
+
+
+def write_config_file(api_url, api_key, profile="default"):
+    """Write config to ~/.nca-toolkit/config with secure permissions."""
+    os.makedirs(CONFIG_DIR, mode=0o700, exist_ok=True)
+
+    config = configparser.ConfigParser()
+
+    # Preserve existing config
+    if os.path.isfile(CONFIG_FILE):
+        config.read(CONFIG_FILE)
+
+    if not config.has_section(profile):
+        config.add_section(profile)
+
+    config.set(profile, "api_url", f'"{api_url}"')
+    config.set(profile, "api_key", f'"{api_key}"')
+
+    with open(CONFIG_FILE, "w") as f:
+        f.write("# NCA Toolkit Configuration\n")
+        f.write(f"# Last updated: {__import__('datetime').datetime.now().isoformat()}\n")
+        f.write("# Docs: https://github.com/stephengpope/no-code-architects-toolkit\n\n")
+        config.write(f)
+
+    # Secure permissions: owner read/write only
+    os.chmod(CONFIG_FILE, stat.S_IRUSR | stat.S_IWUSR)
+    os.chmod(CONFIG_DIR, stat.S_IRWXU)
+
+
+def get_config(profile="default"):
+    """Load API config. Priority: env vars > config file."""
     url = os.environ.get("NCA_API_URL", "").rstrip("/")
     key = os.environ.get("NCA_API_KEY", "")
 
+    # Fall back to config file
+    if not url or not key:
+        file_config, profiles = read_config_file()
+
+        # Check requested profile, fall back to default
+        if profile != "default" and profile in profiles:
+            source = profiles[profile]
+        else:
+            source = file_config
+
+        if not url:
+            url = source.get("api_url", "").rstrip("/")
+        if not key:
+            key = source.get("api_key", "")
+
     if not url:
-        print("Error: NCA_API_URL environment variable is not set.", file=sys.stderr)
-        print("  export NCA_API_URL=https://your-nca-instance.run.app", file=sys.stderr)
+        print("Error: API URL not configured.", file=sys.stderr)
+        print("  Run: python nca.py setup", file=sys.stderr)
+        print("  Or:  export NCA_API_URL=https://your-nca-instance.run.app", file=sys.stderr)
         sys.exit(1)
     if not key:
-        print("Error: NCA_API_KEY environment variable is not set.", file=sys.stderr)
-        print("  export NCA_API_KEY=your_api_key", file=sys.stderr)
+        print("Error: API key not configured.", file=sys.stderr)
+        print("  Run: python nca.py setup", file=sys.stderr)
+        print("  Or:  export NCA_API_KEY=your_api_key", file=sys.stderr)
         sys.exit(1)
 
     return url, key
@@ -92,6 +153,143 @@ def print_result(result):
 
 
 # ─── Command Handlers ─────────────────────────────────────────────────────────
+
+
+def cmd_setup(args):
+    """Interactive setup — validate credentials and save to ~/.nca-toolkit/config."""
+    profile = getattr(args, "profile", "default")
+
+    print("")
+    print("  NCA Toolkit — Setup")
+    print("  " + "─" * 40)
+    print("")
+
+    # Get URL
+    default_url = os.environ.get("NCA_API_URL", "")
+    if not default_url:
+        file_config, _ = read_config_file()
+        default_url = file_config.get("api_url", "")
+
+    prompt = "  API URL"
+    if default_url:
+        prompt += f" [{default_url}]"
+    prompt += ": "
+    api_url = input(prompt).strip() or default_url
+
+    if not api_url:
+        print("  Error: API URL is required.", file=sys.stderr)
+        sys.exit(1)
+
+    api_url = api_url.rstrip("/")
+
+    # Get API key
+    default_key = os.environ.get("NCA_API_KEY", "")
+    if not default_key:
+        file_config, _ = read_config_file()
+        default_key = file_config.get("api_key", "")
+
+    prompt = "  API Key"
+    if default_key:
+        prompt += f" [{default_key[:8]}...]"
+    prompt += ": "
+    api_key = input(prompt).strip() or default_key
+
+    if not api_key:
+        print("  Error: API key is required.", file=sys.stderr)
+        sys.exit(1)
+
+    # Validate by calling the test endpoint
+    print("")
+    print("  Validating credentials...")
+
+    headers = {
+        "X-API-Key": api_key,
+        "Content-Type": "application/json",
+    }
+    req = urllib.request.Request(
+        f"{api_url}/v1/toolkit/test", headers=headers, method="GET"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            resp.read()
+            print("  Authentication successful!")
+    except urllib.error.HTTPError as e:
+        if e.code == 401:
+            print("  Error: Authentication failed — invalid API key.", file=sys.stderr)
+            sys.exit(1)
+        elif e.code == 403:
+            print("  Error: Access forbidden — check your API key.", file=sys.stderr)
+            sys.exit(1)
+        else:
+            # Non-auth error means the server is reachable, key may be fine
+            print(f"  Warning: Server returned HTTP {e.code}, but connection works.")
+    except urllib.error.URLError as e:
+        print(f"  Error: Cannot reach {api_url} — {e.reason}", file=sys.stderr)
+        sys.exit(1)
+
+    # Save to config file
+    write_config_file(api_url, api_key, profile=profile)
+
+    print("")
+    print(f"  Config saved to {CONFIG_FILE}")
+    print(f"  Profile: [{profile}]")
+    print(f"  Permissions: 600 (owner read/write only)")
+    print("")
+    print("  You're all set! Try: python nca.py test")
+    print("")
+
+
+def cmd_config(args):
+    """Show current configuration."""
+    file_config, profiles = read_config_file()
+
+    print("")
+    print("  NCA Toolkit — Configuration")
+    print("  " + "─" * 40)
+
+    # Show env var status
+    env_url = os.environ.get("NCA_API_URL", "")
+    env_key = os.environ.get("NCA_API_KEY", "")
+    print("")
+    print("  Environment variables:")
+    print(f"    NCA_API_URL = {env_url or '(not set)'}")
+    print(f"    NCA_API_KEY = {env_key[:8] + '...' if env_key else '(not set)'}")
+
+    # Show config file
+    print("")
+    print(f"  Config file: {CONFIG_FILE}")
+    if os.path.isfile(CONFIG_FILE):
+        file_stat = os.stat(CONFIG_FILE)
+        perms = oct(file_stat.st_mode)[-3:]
+        print(f"  Permissions: {perms}")
+        print("")
+        print("  [default]")
+        print(f"    api_url = {file_config.get('api_url', '(not set)')}")
+        key = file_config.get("api_key", "")
+        print(f"    api_key = {key[:8] + '...' if key else '(not set)'}")
+
+        for name, cfg in profiles.items():
+            print(f"")
+            print(f"  [{name}]")
+            print(f"    api_url = {cfg.get('api_url', '(not set)')}")
+            pkey = cfg.get("api_key", "")
+            print(f"    api_key = {pkey[:8] + '...' if pkey else '(not set)'}")
+    else:
+        print("  (not found — run: python nca.py setup)")
+
+    # Show effective config
+    print("")
+    print("  Effective config (what commands will use):")
+    eff_url = env_url or file_config.get("api_url", "")
+    eff_key = env_key or file_config.get("api_key", "")
+    if eff_url and eff_key:
+        print(f"    api_url = {eff_url}")
+        print(f"    api_key = {eff_key[:8]}...")
+    else:
+        print("    (not configured — run: python nca.py setup)")
+
+    print("")
 
 
 def cmd_test(args):
@@ -367,12 +565,16 @@ def build_parser():
         description="NCA Toolkit CLI - interact with your NCA Toolkit API",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Environment variables:
-  NCA_API_URL   Base URL of your NCA Toolkit (e.g., https://nca.example.com)
-  NCA_API_KEY   Your API authentication key
+Configuration (checked in order):
+  1. Environment variables: NCA_API_URL, NCA_API_KEY
+  2. Config file: ~/.nca-toolkit/config
+
+Getting started:
+  python nca.py setup              Set up credentials interactively
+  python nca.py config             Show current configuration
+  python nca.py test               Test API connectivity
 
 Examples:
-  python nca.py test
   python nca.py transcribe --media-url https://example.com/audio.mp3
   python nca.py convert --media-url https://example.com/video.mp4 --format webm
   python nca.py caption --video-url https://example.com/video.mp4 --style karaoke
@@ -380,6 +582,13 @@ Examples:
 """,
     )
     sub = parser.add_subparsers(dest="command", help="Available commands")
+
+    # setup
+    p = sub.add_parser("setup", help="Interactive setup — validate and save credentials")
+    p.add_argument("--profile", default="default", help="Config profile name (default: default)")
+
+    # config
+    sub.add_parser("config", help="Show current configuration")
 
     # test
     sub.add_parser("test", help="Test API connectivity")
@@ -511,6 +720,8 @@ Examples:
 
 
 COMMANDS = {
+    "setup": cmd_setup,
+    "config": cmd_config,
     "test": cmd_test,
     "status": cmd_status,
     "transcribe": cmd_transcribe,

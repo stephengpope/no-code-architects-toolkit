@@ -644,6 +644,23 @@ def cmd_transcribe(args):
     apply_background(payload, args)
 
     result = api_request("/v1/media/transcribe", payload)
+
+    # Write transcription to file if --output-file was given
+    output_file = getattr(args, "output_file", None)
+    if output_file and not args.json_output:
+        response = result.get("response", {})
+        text = response.get("text", "") if isinstance(response, dict) else str(response)
+        path = os.path.expanduser(output_file)
+        with open(path, "w") as f:
+            f.write(text)
+            # Also write SRT if requested
+            srt = response.get("srt") if isinstance(response, dict) else None
+            if srt:
+                f.write("\n\n--- SRT ---\n\n")
+                f.write(srt)
+        print(path)
+        return
+
     handle_output(result, "transcribe", args.output_dir, args.json_output, args.background)
 
 
@@ -951,37 +968,38 @@ Background mode:
 """,
     )
 
-    # Global flags
-    parser.add_argument("--json", dest="json_output", action="store_true",
-                        help="Output full JSON response instead of human-readable text")
-    parser.add_argument("--output-dir", "-o", default=".",
-                        help="Directory for downloaded output files (default: current directory)")
-    parser.add_argument("--bg", "--background", dest="background", action="store_true",
-                        help="Run in background: submit job and return immediately with job ID")
-
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
+    # Shared flags available on every subcommand (--json, -o, --bg)
+    shared = argparse.ArgumentParser(add_help=False)
+    shared.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output full JSON response instead of human-readable text")
+    shared.add_argument("--output-dir", "-o", default=".",
+                        help="Directory for downloaded output files (default: current directory)")
+    shared.add_argument("--bg", "--background", dest="background", action="store_true",
+                        help="Run in background: submit job and return immediately with job ID")
+
     # setup
-    p = sub.add_parser("connect", help="Connect CLI to a running API instance")
+    p = sub.add_parser("connect", parents=[shared], help="Connect CLI to a running API instance")
     p.add_argument("--profile", default="default", help="Config profile name (default: default)")
 
     # config
-    sub.add_parser("config", help="Show current configuration")
+    sub.add_parser("config", parents=[shared], help="Show current configuration")
 
     # test
-    sub.add_parser("test", help="Test API connectivity")
+    sub.add_parser("test", parents=[shared], help="Test API connectivity")
 
     # status
-    p = sub.add_parser("status", help="Check job status")
+    p = sub.add_parser("status", parents=[shared], help="Check job status")
     p.add_argument("job_id", help="Job ID to check")
 
     # wait
-    p = sub.add_parser("wait", help="Wait for a background job to complete")
+    p = sub.add_parser("wait", parents=[shared], help="Wait for a background job to complete")
     p.add_argument("job_id", help="Job ID to wait for")
     p.add_argument("--interval", type=int, default=5, help="Poll interval in seconds (default: 5)")
 
     # transcribe
-    p = sub.add_parser("transcribe", help="Transcribe or translate media")
+    p = sub.add_parser("transcribe", parents=[shared], help="Transcribe or translate media")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to transcribe")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -991,10 +1009,11 @@ Background mode:
     p.add_argument("--segments", action="store_true", help="Include segments")
     p.add_argument("--word-timestamps", action="store_true", help="Include word timestamps")
     p.add_argument("--words-per-line", type=int, help="Words per line in SRT")
+    p.add_argument("--output-file", help="Write transcription text to this file")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # convert
-    p = sub.add_parser("convert", help="Convert media between formats")
+    p = sub.add_parser("convert", parents=[shared], help="Convert media between formats")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to convert")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1005,7 +1024,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # convert-mp3
-    p = sub.add_parser("convert-mp3", help="Convert media to MP3")
+    p = sub.add_parser("convert-mp3", parents=[shared], help="Convert media to MP3")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media to convert")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1014,7 +1033,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # caption
-    p = sub.add_parser("caption", help="Add captions to a video")
+    p = sub.add_parser("caption", parents=[shared], help="Add captions to a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video to caption")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1031,7 +1050,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-trim
-    p = sub.add_parser("video-trim", help="Trim a video")
+    p = sub.add_parser("video-trim", parents=[shared], help="Trim a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video to trim")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1040,7 +1059,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-cut
-    p = sub.add_parser("video-cut", help="Cut segments from a video")
+    p = sub.add_parser("video-cut", parents=[shared], help="Cut segments from a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1048,7 +1067,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-split
-    p = sub.add_parser("video-split", help="Split a video into segments")
+    p = sub.add_parser("video-split", parents=[shared], help="Split a video into segments")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1056,14 +1075,14 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # video-concat
-    p = sub.add_parser("video-concat", help="Concatenate multiple videos")
+    p = sub.add_parser("video-concat", parents=[shared], help="Concatenate multiple videos")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-urls", nargs="+", help="URLs of videos to concatenate")
     g.add_argument("--files", nargs="+", help="Local file paths (uploaded automatically)")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # thumbnail
-    p = sub.add_parser("thumbnail", help="Extract a thumbnail from a video")
+    p = sub.add_parser("thumbnail", parents=[shared], help="Extract a thumbnail from a video")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--video-url", help="URL of video")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1071,7 +1090,7 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # screenshot
-    p = sub.add_parser("screenshot", help="Take a screenshot of a webpage")
+    p = sub.add_parser("screenshot", parents=[shared], help="Take a screenshot of a webpage")
     p.add_argument("--url", help="URL to screenshot")
     p.add_argument("--html", help="HTML content to render")
     p.add_argument("--viewport-width", type=int, help="Viewport width")
@@ -1082,18 +1101,18 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # metadata
-    p = sub.add_parser("metadata", help="Get media file metadata")
+    p = sub.add_parser("metadata", parents=[shared], help="Get media file metadata")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media file")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
 
     # download
-    p = sub.add_parser("download", help="Download media from a URL")
+    p = sub.add_parser("download", parents=[shared], help="Download media from a URL")
     p.add_argument("--media-url", required=True, help="URL to download from")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # silence
-    p = sub.add_parser("silence", help="Detect silence in media")
+    p = sub.add_parser("silence", parents=[shared], help="Detect silence in media")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--media-url", help="URL of media file")
     g.add_argument("--file", "-f", help="Local file path (uploaded automatically)")
@@ -1104,18 +1123,18 @@ Background mode:
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # ffmpeg
-    p = sub.add_parser("ffmpeg", help="Run custom FFmpeg compose commands")
+    p = sub.add_parser("ffmpeg", parents=[shared], help="Run custom FFmpeg compose commands")
     p.add_argument("--payload", required=True, help="JSON payload for FFmpeg compose")
 
     # upload-s3
-    p = sub.add_parser("upload-s3", help="Upload a file to S3")
+    p = sub.add_parser("upload-s3", parents=[shared], help="Upload a file to S3")
     p.add_argument("--file-url", required=True, help="URL of file to upload")
     p.add_argument("--filename", help="Target filename")
     p.add_argument("--public", action="store_true", help="Make file public")
     p.add_argument("--webhook-url", help="Webhook URL for async processing")
 
     # upload-gcp
-    p = sub.add_parser("upload-gcp", help="Upload a file to GCP Storage")
+    p = sub.add_parser("upload-gcp", parents=[shared], help="Upload a file to GCP Storage")
     p.add_argument("--file-url", required=True, help="URL of file to upload")
     p.add_argument("--filename", help="Target filename")
     p.add_argument("--public", action="store_true", help="Make file public")

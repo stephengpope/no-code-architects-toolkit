@@ -124,6 +124,45 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ---
 
+## Quick Start with Makefile
+
+The project includes a Makefile for building, running, and deploying the Docker image.
+
+```bash
+# Show all available commands
+make help
+
+# Build the Docker image
+make build
+
+# Run locally (requires .env file — copy from .env.example)
+make run
+
+# Test the API
+make test
+
+# Stop the container
+make stop
+```
+
+### GCP Deployment (Makefile)
+
+```bash
+# First-time setup: create Artifact Registry repo and authenticate
+make repo
+make auth
+
+# Build, push, and deploy to Cloud Run in one step
+make deploy
+
+# Or override defaults
+make deploy GCP_PROJECT_ID=my-project GCP_REGION=europe-west1
+```
+
+See [GCP Deployment Guide](docs/deploy/DEPLOY_GCP.md) for the full walkthrough.
+
+---
+
 ## Docker Build and Run
 
 ### Build the Docker Image
@@ -260,23 +299,17 @@ If you use the webhook_url, there is no limit to the processing length.
 
 - [Digital Ocean App Platform Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
 
-### Google Cloud RUN Platform
+### Google Cloud Run (Recommended with Makefile)
 
-Sometimes difficult for people to install (especially on Google Business Workspaces), lots of detailed security exceptions.
+The cheapest option with great performance — you only pay while requests are being processed. The included Makefile automates the entire build-push-deploy workflow.
 
-However this is one of the cheapest options with great performance because you're only charged when the NCA Toolkit is processesing a request.
+- **[GCP Deployment Guide (Makefile)](docs/deploy/DEPLOY_GCP.md)** — Build, push, and deploy with `make deploy`
+- [Legacy GCP Console Guide](docs/cloud-installation/gcp.md) — Manual setup via the GCP Console
 
-Outside of that you are not charged.
+#### Notes
 
-#### Imporatnt: Requests exceeding 5+ minutes can be problemactic 
-
-GCP Run will terminate long rununing processes, which can happen when processing larger files (whether you use the webhook_url or not).
-
-However, when your processing times are consistant lower than 5 minutes (e.g. you're only process smaller files), it works great! The performance is also great and as soon as you stop making requests you stop paying.
-
-They also have a GPU option that might be usable for better performance (untested).
-
-- [Google Cloud RUN Platform (GCP) Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/gcp.md) - Deploy the API on Google Cloud Run
+- Requests exceeding ~5 minutes may be terminated by Cloud Run. Use `webhook_url` or configure [Cloud Run Jobs](docs/deploy/DEPLOY_GCP.md#optional-cloud-run-jobs-for-long-running-tasks) for large files.
+- GPU option available but untested.
 
 ### General Docker Instructions
 

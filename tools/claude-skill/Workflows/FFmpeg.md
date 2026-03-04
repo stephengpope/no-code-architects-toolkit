@@ -30,7 +30,7 @@ For local files, upload the file first using the upload endpoint, then use the r
 
 ### Step 3: Present results
 
-Output files are downloaded to the current directory (or `--output-dir` / `-o` path). The local file path(s) are printed to stdout.
+Output files are downloaded to the current directory (or `--output-dir` / `-o` path). The local file path(s) are printed to stdout. Use `--json` for the full API response. Use `--bg` to run without blocking.
 
 ## Notes
 

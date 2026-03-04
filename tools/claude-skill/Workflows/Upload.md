@@ -25,7 +25,7 @@ python3 tools/nca.py upload-gcp --file-url <URL> [--filename <name>] [--public]
 
 ### Step 3: Present results
 
-Returns the upload details including the public URL if `--public` was set.
+Returns the upload details including the public URL if `--public` was set. Use `--json` for the full API response. Use `--bg` to run without blocking.
 
 ## Note on File Upload for Processing
 

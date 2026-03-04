@@ -43,7 +43,7 @@ python tools/nca.py screenshot \
 
 ### Step 4: Return the result
 
-The API returns a cloud URL to the screenshot image. Present this to the user.
+The screenshot image is downloaded to the current directory (or `-o` path). The local file path is printed to stdout. Use `--json` for the full API response. Use `--bg` to run without blocking.
 
 ## Examples
 

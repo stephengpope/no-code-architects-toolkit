@@ -101,6 +101,7 @@ curl -s -X POST http://localhost:8888/notify \
 | `config` | Show current configuration (redacted keys) |
 | `test` | Verify API connectivity |
 | `status` | Check async job status |
+| `wait` | Block until async job completes, then show result |
 
 ## Input Options
 
@@ -115,10 +116,19 @@ These are mutually exclusive — use one or the other.
 
 ## Global Flags
 
+Available on every subcommand:
+
 | Flag | Description |
 |------|-------------|
 | `--json` | Output full JSON response instead of human-readable text |
 | `--output-dir <path>` / `-o <path>` | Directory for downloaded output files (default: current directory) |
+| `--bg` / `--background` | Run in background — returns job ID immediately. Use `status <id>` to check, `wait <id>` to block until done |
+
+## Transcribe-Specific Flags
+
+| Flag | Description |
+|------|-------------|
+| `--output-file <path>` | Write transcription to a file (text by default, JSON if `--json` is also set) |
 
 ## Examples
 
@@ -152,8 +162,27 @@ User: "Convert this video to MP3 and save it to my Downloads folder"
 -> python3 tools/nca.py convert-mp3 --file ~/videos/video.mp4 -o ~/Downloads
 ```
 
+**Transcribe and save to file:**
+```
+User: "Transcribe this and save it to transcript.txt"
+-> python3 tools/nca.py transcribe --file ~/recordings/meeting.mp4 --output-file transcript.txt
+```
+
+**Transcribe and save full JSON to file:**
+```
+User: "Get the full transcription data as JSON"
+-> python3 tools/nca.py transcribe --file ~/recordings/meeting.mp4 --json --output-file result.json
+```
+
 **Screenshot a webpage:**
 ```
 User: "Take a full-page screenshot of https://example.com"
 -> python3 tools/nca.py screenshot --url https://example.com --full-page
+```
+
+**Run a long task in the background:**
+```
+User: "Caption this video but don't block"
+-> python3 tools/nca.py caption --file ~/videos/long-video.mp4 --style karaoke --bg
+-> python3 tools/nca.py wait <job_id>
 ```

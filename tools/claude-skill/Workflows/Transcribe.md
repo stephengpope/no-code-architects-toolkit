@@ -25,6 +25,9 @@ The user provides either:
 | Segments | `--segments` | User wants timestamped segments |
 | Word timestamps | `--word-timestamps` | User wants per-word timing |
 | Words per line | `--words-per-line N` | Control subtitle line length |
+| Output file | `--output-file <path>` | Write transcription to a file instead of stdout |
+| JSON output | `--json` | Get full API response as JSON |
+| Background | `--bg` | Run without blocking (returns job ID) |
 
 ### Step 3: Run the command
 
@@ -36,32 +39,40 @@ python3 tools/nca.py transcribe \
   [--srt] \
   [--segments] \
   [--word-timestamps] \
-  [--words-per-line <N>]
+  [--words-per-line <N>] \
+  [--output-file <path>] \
+  [--json] \
+  [--bg]
 ```
 
 Or with a URL:
 ```bash
 python3 tools/nca.py transcribe \
   --media-url <URL> \
-  [--task transcribe|translate] \
-  [--language <code>] \
-  [--srt] \
-  [--segments] \
-  [--word-timestamps] \
-  [--words-per-line <N>]
+  [options...]
 ```
 
 `--media-url` and `--file` are mutually exclusive. `--file` accepts any path — the CLI uploads it automatically.
 
 ### Step 4: Present results
 
-The transcription text is printed directly to stdout. If `--srt` was requested, SRT content is also printed. Use `--json` for the full API response.
+The transcription text is printed directly to stdout. If `--srt` was requested, SRT content is also printed. Use `--json` for the full API response. Use `--output-file` to write results to a file (writes JSON when combined with `--json`).
 
 ## Examples
 
 **Transcribe a local file:**
 ```bash
 python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3
+```
+
+**Transcribe and save to a file:**
+```bash
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3 --output-file transcript.txt
+```
+
+**Transcribe and save full JSON to a file:**
+```bash
+python3 tools/nca.py transcribe --file ~/recordings/meeting.mp3 --json --output-file result.json
 ```
 
 **Transcribe from URL:**
@@ -77,4 +88,11 @@ python3 tools/nca.py transcribe --file ~/videos/spanish-video.mp4 --task transla
 **Transcribe with word-level timestamps (JSON output):**
 ```bash
 python3 tools/nca.py transcribe --file ~/recordings/interview.wav --word-timestamps --segments --json
+```
+
+**Run in background for long files:**
+```bash
+python3 tools/nca.py transcribe --file ~/recordings/long-meeting.mp3 --bg
+# Returns job ID, then:
+python3 tools/nca.py wait <job_id>
 ```

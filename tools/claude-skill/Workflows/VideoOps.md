@@ -7,7 +7,7 @@ purpose: Video editing operations - trim, cut, split, concatenate, and thumbnail
 
 **Purpose:** Perform video editing tasks including trimming, cutting, splitting, concatenating, and thumbnail extraction.
 
-All video commands accept `--file <path>` (any local path, uploaded automatically) or `--video-url <URL>`. Output files are downloaded to the current directory (use `-o` to change).
+All video commands accept `--file <path>` (any local path, uploaded automatically) or `--video-url <URL>`. Output files are downloaded to the current directory (use `-o` to change). All commands also support `--json` for full JSON output and `--bg` to run without blocking.
 
 ## Command Reference
 

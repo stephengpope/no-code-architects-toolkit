@@ -647,17 +647,19 @@ def cmd_transcribe(args):
 
     # Write transcription to file if --output-file was given
     output_file = getattr(args, "output_file", None)
-    if output_file and not args.json_output:
-        response = result.get("response", {})
-        text = response.get("text", "") if isinstance(response, dict) else str(response)
+    if output_file:
         path = os.path.expanduser(output_file)
         with open(path, "w") as f:
-            f.write(text)
-            # Also write SRT if requested
-            srt = response.get("srt") if isinstance(response, dict) else None
-            if srt:
-                f.write("\n\n--- SRT ---\n\n")
-                f.write(srt)
+            if args.json_output:
+                json.dump(result, f, indent=2)
+            else:
+                response = result.get("response", {})
+                text = response.get("text", "") if isinstance(response, dict) else str(response)
+                f.write(text)
+                srt = response.get("srt") if isinstance(response, dict) else None
+                if srt:
+                    f.write("\n\n--- SRT ---\n\n")
+                    f.write(srt)
         print(path)
         return
 

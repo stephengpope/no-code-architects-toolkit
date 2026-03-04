@@ -38,4 +38,4 @@ python3 tools/nca.py silence \
 
 ### Step 3: Present results
 
-Returns an array of silence intervals with start/end times printed as JSON to stdout. Useful for finding natural cut points or detecting dead air.
+Returns an array of silence intervals with start/end times printed as JSON to stdout. Use `--json` for the full API response envelope. Use `--bg` to run without blocking. Useful for finding natural cut points or detecting dead air.

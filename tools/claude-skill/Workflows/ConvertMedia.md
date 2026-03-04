@@ -31,7 +31,8 @@ python3 tools/nca.py convert \
   --format <target_format> \
   [--video-codec <codec>] \
   [--audio-codec <codec>] \
-  [--video-crf <0-51>]
+  [--video-crf <0-51>] \
+  [-o <output_dir>] [--json] [--bg]
 ```
 
 **MP3 conversion:**
@@ -39,14 +40,15 @@ python3 tools/nca.py convert \
 python3 tools/nca.py convert-mp3 \
   --file <path> \
   [--bitrate 128k|192k|256k|320k] \
-  [--sample-rate <rate>]
+  [--sample-rate <rate>] \
+  [-o <output_dir>] [--json] [--bg]
 ```
 
 `--file` accepts any path — the CLI uploads it automatically. Use `--media-url` instead for URLs.
 
 ### Step 4: Return the result
 
-The output file is downloaded to the current directory (or `--output-dir` / `-o` path). The local file path is printed to stdout.
+The output file is downloaded to the current directory (or `--output-dir` / `-o` path). The local file path is printed to stdout. Use `--json` for the full API response. Use `--bg` to run without blocking.
 
 ## Examples
 

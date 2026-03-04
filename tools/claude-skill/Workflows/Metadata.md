@@ -28,4 +28,4 @@ python3 tools/nca.py metadata --media-url <URL>
 
 ### Step 3: Present results
 
-Returns file size, duration, codec info, resolution, bitrate, and other technical details printed as formatted JSON to stdout.
+Returns file size, duration, codec info, resolution, bitrate, and other technical details printed as formatted JSON to stdout. Use `--json` for the raw API response envelope.

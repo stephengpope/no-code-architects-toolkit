@@ -44,14 +44,15 @@ python3 tools/nca.py caption \
   [--outline-color "#000000"] \
   [--all-caps] \
   [--max-words-per-line 5] \
-  [--language auto]
+  [--language auto] \
+  [-o <output_dir>] [--json] [--bg]
 ```
 
 `--file` accepts any path — the CLI uploads it automatically. Use `--video-url` instead for URLs.
 
 ### Step 4: Return the result
 
-The captioned video is downloaded to the current directory (or `--output-dir` / `-o` path). The local file path is printed to stdout.
+The captioned video is downloaded to the current directory (or `--output-dir` / `-o` path). The local file path is printed to stdout. Use `--json` for the full API response. Use `--bg` to run without blocking (captioning can be slow for long videos).
 
 ## Examples
 

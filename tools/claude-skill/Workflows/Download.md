@@ -18,4 +18,4 @@ python tools/nca.py download --media-url <URL> [--webhook-url <WEBHOOK>]
 
 ### Step 3: Present results
 
-Returns a cloud storage URL where the downloaded media has been saved. This is the BETA endpoint and supports many video/audio platforms.
+The downloaded file is saved to the current directory (or `-o` path). The local file path is printed to stdout. Use `--json` for the full API response. Use `--bg` to run without blocking. This is the BETA endpoint and supports many video/audio platforms.

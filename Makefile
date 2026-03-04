@@ -159,7 +159,8 @@ deploy: push
 		--allow-unauthenticated \
 		--min-instances 0 \
 		--max-instances 5 \
-		--execution-environment gen2
+		--execution-environment gen2 \
+		--use-http2
 	@echo "✅ Deployment complete"
 
 ## Tail Cloud Run logs

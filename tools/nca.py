@@ -150,10 +150,73 @@ def api_request(endpoint, payload=None, method="POST"):
         sys.exit(1)
 
 
-def file_to_uri(local_path):
-    """Convert a local file path to a file:// URI for the container's /data/input mount."""
-    basename = os.path.basename(local_path)
-    return f"file:///data/input/{basename}"
+def is_local_api():
+    """Check if the configured API is running locally (volume mount mode)."""
+    url, _ = get_config()
+    from urllib.parse import urlparse as _urlparse
+    host = _urlparse(url).hostname or ""
+    return host in ("localhost", "127.0.0.1", "0.0.0.0", "::1")
+
+
+def upload_file_to_api(local_path):
+    """Upload a local file to the API via multipart POST, return the cloud URL."""
+    url, key = get_config()
+    full_url = f"{url}/v1/files/upload"
+
+    if not os.path.isfile(local_path):
+        print(f"Error: File not found: {local_path}", file=sys.stderr)
+        sys.exit(1)
+
+    filename = os.path.basename(local_path)
+    boundary = f"----NCABoundary{os.urandom(8).hex()}"
+
+    # Build multipart body manually (zero dependencies)
+    body = bytearray()
+    body.extend(f"--{boundary}\r\n".encode())
+    body.extend(f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode())
+    body.extend(b"Content-Type: application/octet-stream\r\n\r\n")
+    with open(local_path, "rb") as f:
+        body.extend(f.read())
+    body.extend(f"\r\n--{boundary}--\r\n".encode())
+
+    headers = {
+        "X-API-Key": key,
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+    }
+
+    req = urllib.request.Request(full_url, data=bytes(body), headers=headers, method="POST")
+
+    try:
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            result = json.loads(resp.read().decode())
+            cloud_url = result.get("url", "")
+            print(f"  Uploaded {filename} -> {cloud_url}", file=sys.stderr)
+            return cloud_url
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode()
+        print(f"Upload failed (HTTP {e.code}): {error_body}", file=sys.stderr)
+        sys.exit(1)
+    except urllib.error.URLError as e:
+        print(f"Upload failed: {e.reason}", file=sys.stderr)
+        sys.exit(1)
+
+
+def resolve_file(local_path):
+    """Resolve a --file argument to a URL the API can consume.
+
+    Local API:  returns file:///data/input/<basename> (volume mount)
+    Remote API: uploads via /v1/files/upload, returns cloud storage URL
+    """
+    if is_local_api():
+        basename = os.path.basename(local_path)
+        return f"file:///data/input/{basename}"
+    else:
+        return upload_file_to_api(local_path)
+
+
+def resolve_files(local_paths):
+    """Resolve multiple --files arguments."""
+    return [resolve_file(p) for p in local_paths]
 
 
 def translate_output_paths(obj):
@@ -339,7 +402,7 @@ def cmd_status(args):
 
 def cmd_transcribe(args):
     """Transcribe or translate media."""
-    media_url = file_to_uri(args.file) if args.file else args.media_url
+    media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {"media_url": media_url}
     if args.task:
         payload["task"] = args.task
@@ -362,7 +425,7 @@ def cmd_transcribe(args):
 
 def cmd_convert(args):
     """Convert media between formats."""
-    media_url = file_to_uri(args.file) if args.file else args.media_url
+    media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {
         "media_url": media_url,
         "format": args.format,
@@ -382,7 +445,7 @@ def cmd_convert(args):
 
 def cmd_convert_mp3(args):
     """Convert media to MP3."""
-    media_url = file_to_uri(args.file) if args.file else args.media_url
+    media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {"media_url": media_url}
     if args.bitrate:
         payload["bitrate"] = args.bitrate
@@ -397,7 +460,7 @@ def cmd_convert_mp3(args):
 
 def cmd_caption(args):
     """Add captions to a video."""
-    video_url = file_to_uri(args.file) if args.file else args.video_url
+    video_url = resolve_file(args.file) if args.file else args.video_url
     payload = {"video_url": video_url}
     if args.language:
         payload["language"] = args.language
@@ -433,7 +496,7 @@ def cmd_caption(args):
 
 def cmd_video_trim(args):
     """Trim a video."""
-    video_url = file_to_uri(args.file) if args.file else args.video_url
+    video_url = resolve_file(args.file) if args.file else args.video_url
     payload = {"video_url": video_url}
     if args.start:
         payload["start"] = args.start
@@ -448,7 +511,7 @@ def cmd_video_trim(args):
 
 def cmd_video_cut(args):
     """Cut segments from a video."""
-    video_url = file_to_uri(args.file) if args.file else args.video_url
+    video_url = resolve_file(args.file) if args.file else args.video_url
     cuts = []
     for cut_str in args.cuts:
         start, end = cut_str.split("-", 1)
@@ -464,7 +527,7 @@ def cmd_video_cut(args):
 
 def cmd_video_split(args):
     """Split a video into segments."""
-    video_url = file_to_uri(args.file) if args.file else args.video_url
+    video_url = resolve_file(args.file) if args.file else args.video_url
     splits = []
     for split_str in args.splits:
         start, end = split_str.split("-", 1)
@@ -481,7 +544,7 @@ def cmd_video_split(args):
 def cmd_video_concat(args):
     """Concatenate multiple videos."""
     if args.files:
-        video_urls = [{"video_url": file_to_uri(f)} for f in args.files]
+        video_urls = [{"video_url": u} for u in resolve_files(args.files)]
     else:
         video_urls = [{"video_url": url} for url in args.video_urls]
     payload = {"video_urls": video_urls}
@@ -494,7 +557,7 @@ def cmd_video_concat(args):
 
 def cmd_thumbnail(args):
     """Extract a thumbnail from a video."""
-    video_url = file_to_uri(args.file) if args.file else args.video_url
+    video_url = resolve_file(args.file) if args.file else args.video_url
     payload = {"video_url": video_url}
     if args.second is not None:
         payload["second"] = args.second
@@ -531,7 +594,7 @@ def cmd_screenshot(args):
 
 def cmd_metadata(args):
     """Get media file metadata."""
-    media_url = file_to_uri(args.file) if args.file else args.media_url
+    media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {"media_url": media_url}
     result = api_request("/v1/media/metadata", payload)
     print_result(result)
@@ -549,7 +612,7 @@ def cmd_download(args):
 
 def cmd_silence(args):
     """Detect silence in media."""
-    media_url = file_to_uri(args.file) if args.file else args.media_url
+    media_url = resolve_file(args.file) if args.file else args.media_url
     payload = {
         "media_url": media_url,
         "duration": args.duration,

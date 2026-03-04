@@ -160,8 +160,12 @@ def cmd_setup(args):
     profile = getattr(args, "profile", "default")
 
     print("")
-    print("  NCA Toolkit — Setup")
-    print("  " + "─" * 40)
+    print("  NCA Toolkit — Connect to API")
+    print("  " + "─" * 50)
+    print("")
+    print("  This connects your CLI to a running NCA Toolkit API.")
+    print("  You need the URL where it's running and the API key")
+    print("  you configured when deploying it (the API_KEY env var).")
     print("")
 
     # Get URL — default to localhost for local development
@@ -172,6 +176,10 @@ def cmd_setup(args):
     if not default_url:
         default_url = "http://localhost:8080"
 
+    print("  Where is your NCA Toolkit API running?")
+    print("    Local Docker:  http://localhost:8080")
+    print("    Cloud Run:     https://your-service-xxxxx.run.app")
+    print("")
     prompt = f"  API URL [{default_url}]: "
     api_url = input(prompt).strip() or default_url
 
@@ -182,6 +190,16 @@ def cmd_setup(args):
     if not default_key:
         file_config, _ = read_config_file()
         default_key = file_config.get("api_key", "")
+
+    print("")
+    print("  Enter the API key you set as the API_KEY environment")
+    print("  variable when deploying. If you haven't set one yet,")
+    print("  generate one with:")
+    print("")
+    print("    python3 -c \"import secrets; print(secrets.token_urlsafe(32))\"")
+    print("")
+    print("  Then add it as API_KEY in your .env file or Cloud Run config.")
+    print("")
 
     prompt = "  API Key"
     if default_key:

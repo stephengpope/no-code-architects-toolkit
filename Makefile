@@ -2,6 +2,7 @@
 #
 # Usage:
 #   make setup                  - Generate .env file with API key for running the server
+#   make cloud-setup            - One-time GCP project setup (APIs, registry, auth)
 #   make build                  - Build Docker image locally
 #   make up                     - Build and start container
 #   make down                   - Stop and remove container
@@ -118,6 +119,67 @@ down:
 clean: down
 	@echo "🧹 Removing image $(LOCAL_TAG)"
 	-docker rmi $(LOCAL_TAG)
+
+# ─── GCP Project Setup ──────────────────────────────────────────────────────
+
+.PHONY: cloud-setup
+
+## One-time GCP project setup: enable APIs, create Artifact Registry, configure auth
+cloud-setup:
+	@printf "\n"
+	@printf "\033[1;36m  NCA Toolkit — GCP Cloud Setup\033[0m\n"
+	@printf "\033[0;90m  ──────────────────────────────────────────────────\033[0m\n"
+	@printf "  Project:  \033[1;37m$(GCP_PROJECT_ID)\033[0m\n"
+	@printf "  Region:   \033[1;37m$(GCP_REGION)\033[0m\n"
+	@printf "  Registry: \033[1;37m$(GCP_REPO)\033[0m\n"
+	@printf "\n"
+	@echo "🔧 Enabling required GCP APIs..."
+	gcloud services enable \
+		cloudbuild.googleapis.com \
+		run.googleapis.com \
+		artifactregistry.googleapis.com \
+		containerregistry.googleapis.com \
+		--project $(GCP_PROJECT_ID)
+	@echo "✅ APIs enabled"
+	@echo ""
+	@echo "📦 Creating Artifact Registry repository: $(GCP_REPO)"
+	-gcloud artifacts repositories create $(GCP_REPO) \
+		--repository-format=docker \
+		--location=$(GCP_REGION) \
+		--description="NCA Toolkit Docker images" \
+		--project $(GCP_PROJECT_ID) 2>/dev/null \
+		|| echo "  (repository already exists — skipping)"
+	@echo ""
+	@echo "🔑 Granting Cloud Build and Compute service account permissions"
+	$(eval PROJECT_NUMBER := $(shell gcloud projects describe $(GCP_PROJECT_ID) --format="value(projectNumber)"))
+	-gcloud projects add-iam-policy-binding $(GCP_PROJECT_ID) \
+		--member="serviceAccount:$(PROJECT_NUMBER)@cloudbuild.gserviceaccount.com" \
+		--role="roles/artifactregistry.writer" \
+		--quiet >/dev/null 2>&1
+	-gcloud projects add-iam-policy-binding $(GCP_PROJECT_ID) \
+		--member="serviceAccount:$(PROJECT_NUMBER)-compute@developer.gserviceaccount.com" \
+		--role="roles/storage.objectViewer" \
+		--quiet >/dev/null 2>&1
+	-gcloud projects add-iam-policy-binding $(GCP_PROJECT_ID) \
+		--member="serviceAccount:$(PROJECT_NUMBER)-compute@developer.gserviceaccount.com" \
+		--role="roles/logging.logWriter" \
+		--quiet >/dev/null 2>&1
+	-gcloud projects add-iam-policy-binding $(GCP_PROJECT_ID) \
+		--member="serviceAccount:$(PROJECT_NUMBER)-compute@developer.gserviceaccount.com" \
+		--role="roles/artifactregistry.writer" \
+		--quiet >/dev/null 2>&1
+	@echo "✅ IAM configured"
+	@echo ""
+	@echo "🔑 Configuring Docker authentication"
+	gcloud auth configure-docker $(GCP_REGION)-docker.pkg.dev --quiet
+	@echo ""
+	@printf "\033[1;32m  ✅ Cloud setup complete!\033[0m\n"
+	@printf "\n"
+	@printf "  \033[1;33mNext steps:\033[0m\n"
+	@printf "    1. \033[1;32mmake setup\033[0m          Create .env with API key (if not done)\n"
+	@printf "    2. Edit .env with your storage credentials\n"
+	@printf "    3. \033[1;32mmake cloud-deploy\033[0m   Build and deploy to Cloud Run\n"
+	@printf "\n"
 
 # ─── GCP Artifact Registry ───────────────────────────────────────────────────
 
@@ -252,6 +314,7 @@ help:
 	@printf "\n"
 	@printf "  \033[1;33m GCP DEPLOYMENT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"
+	@printf "  \033[1;33mmake cloud-setup\033[0m    One-time GCP project setup (APIs, registry, auth)\n"
 	@printf "  \033[1;34mmake auth\033[0m           Authenticate Docker with Artifact Registry\n"
 	@printf "  \033[1;34mmake repo\033[0m           Create Artifact Registry repo (first time)\n"
 	@printf "  \033[1;34mmake push\033[0m           Build and push image to Artifact Registry\n"

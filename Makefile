@@ -73,10 +73,10 @@ setup:
 connect:
 	@python3 tools/nca.py connect
 
-## Build the Docker image locally
+## Build the Docker image locally (linux/amd64 for Cloud Run compatibility)
 build:
-	@echo "🔨 Building Docker image: $(LOCAL_TAG)"
-	docker build -t $(LOCAL_TAG) .
+	@echo "🔨 Building Docker image: $(LOCAL_TAG) (linux/amd64)"
+	docker build --platform linux/amd64 -t $(LOCAL_TAG) .
 
 ## Start the container locally (requires .env file)
 up: build
@@ -145,9 +145,15 @@ push: build
 
 .PHONY: deploy logs describe
 
-## Build, push, and deploy to Cloud Run
+## Build, push, and deploy to Cloud Run (reads env vars from .env)
 deploy: push
+	@if [ ! -f .env ]; then \
+		echo "❌ .env file not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
 	@echo "🚀 Deploying to Cloud Run: $(CLOUD_RUN_SERVICE)"
+	@# Convert .env to YAML for gcloud --env-vars-file (handles commas in values)
+	@grep -v '^\s*\#' .env | grep -v '^\s*$$' | sed 's/^\([^=]*\)=\(.*\)/\1: "\2"/' > /tmp/nca-env-vars.yaml
 	gcloud run deploy $(CLOUD_RUN_SERVICE) \
 		--image $(REMOTE_IMAGE):latest \
 		--region $(GCP_REGION) \
@@ -160,7 +166,9 @@ deploy: push
 		--min-instances 0 \
 		--max-instances 5 \
 		--execution-environment gen2 \
-		--use-http2
+		--no-use-http2 \
+		--env-vars-file /tmp/nca-env-vars.yaml
+	@rm -f /tmp/nca-env-vars.yaml
 	@echo "✅ Deployment complete"
 
 ## Tail Cloud Run logs

@@ -126,40 +126,80 @@ Each endpoint is supported by robust payload validation and detailed API documen
 
 ## Quick Start with Makefile
 
-The project includes a Makefile for building, running, and deploying the Docker image.
+The project includes a Makefile that handles building, running, testing, and deploying.
 
 ```bash
 # Show all available commands
 make help
-
-# Build the Docker image
-make build
-
-# Run locally (requires .env file — copy from .env.example)
-make run
-
-# Test the API
-make test
-
-# Stop the container
-make stop
 ```
 
-### GCP Deployment (Makefile)
+### Local Development
 
 ```bash
-# First-time setup: create Artifact Registry repo and authenticate
-make repo
-make auth
+# 1. Generate .env with auto-generated API key
+make setup
 
-# Build, push, and deploy to Cloud Run in one step
-make deploy
+# 2. Edit .env to configure your storage provider (S3 or GCP)
 
-# Or override defaults
-make deploy GCP_PROJECT_ID=my-project GCP_REGION=europe-west1
+# 3. Build and run
+make up                # With cloud storage
+make up-local          # Or with local file I/O (no cloud storage needed)
+
+# 4. Test
+make test
+
+# 5. Stop
+make down
 ```
 
-See [GCP Deployment Guide](docs/deploy/DEPLOY_GCP.md) for the full walkthrough.
+### Deploy to Google Cloud Run
+
+```bash
+# 1. Authenticate with GCP
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+
+# 2. Generate .env (if not done) and configure storage credentials
+make setup
+
+# 3. One-time GCP project bootstrap — enables APIs, creates registry, configures IAM
+make cloud-setup
+
+# 4. Build on Cloud Build and deploy to Cloud Run (recommended)
+make cloud-deploy
+
+# 5. Verify the deployment
+make test URL=https://your-service-url.run.app
+
+# Override defaults as needed
+make cloud-deploy GCP_PROJECT_ID=my-project GCP_REGION=europe-west1
+```
+
+There are two deploy paths:
+
+| Command | Build Location | Best For |
+|---------|---------------|----------|
+| `make cloud-deploy` | Cloud Build (GCP) | Apple Silicon Macs, CI/CD, production **(recommended)** |
+| `make deploy` | Local Docker | Linux x86 machines with Docker |
+
+See [GCP Deployment Guide](docs/deploy/DEPLOY_GCP.md) for the full walkthrough, or [What's New](docs/WHATS_NEW.md) for a summary of all additions.
+
+### Upload Local Files for Processing
+
+Upload a file directly to the API for processing (no pre-existing URL needed):
+
+```bash
+# Upload via CLI (auto-detects local files)
+python3 tools/nca.py transcribe --file ./video.mp4
+
+# Or upload via API
+curl -X POST http://localhost:8080/v1/files/upload \
+  -H "X-API-Key: YOUR_KEY" \
+  -F "file=@./video.mp4"
+# Returns: {"url": "https://...", "filename": "video.mp4"}
+```
+
+For fully local processing without cloud storage, use `make up-local` which mounts `./local/input/` and `./local/output/` as volume directories.
 
 ---
 
@@ -299,11 +339,12 @@ If you use the webhook_url, there is no limit to the processing length.
 
 - [Digital Ocean App Platform Installation Guide](https://github.com/stephengpope/no-code-architects-toolkit/blob/main/docs/cloud-installation/do.md) - Deploy the API on Digital Ocean App Platform
 
-### Google Cloud Run (Recommended with Makefile)
+### Google Cloud Run (Recommended)
 
-The cheapest option with great performance — you only pay while requests are being processed. The included Makefile automates the entire build-push-deploy workflow.
+The cheapest option with great performance — you only pay while requests are being processed. The Makefile automates the entire workflow: `make cloud-setup` then `make cloud-deploy`.
 
-- **[GCP Deployment Guide (Makefile)](docs/deploy/DEPLOY_GCP.md)** — Build, push, and deploy with `make deploy`
+- **[GCP Deployment Guide (Makefile)](docs/deploy/DEPLOY_GCP.md)** — Full walkthrough
+- **[What's New](docs/WHATS_NEW.md)** — Summary of Makefile, Cloud Build, file upload, and CLI additions
 - [Legacy GCP Console Guide](docs/cloud-installation/gcp.md) — Manual setup via the GCP Console
 
 #### Notes

@@ -7,7 +7,8 @@
 #   make down                   - Stop and remove container
 #   make connect                - Connect CLI tools to a running API instance
 #   make push                   - Tag and push to Google Artifact Registry
-#   make deploy                 - Build, push, and deploy to Cloud Run
+#   make deploy                 - Build locally, push, and deploy to Cloud Run
+#   make cloud-deploy           - Build on Cloud Build and deploy to Cloud Run
 #   make logs                   - Tail Cloud Run logs
 #
 # Configuration:
@@ -141,7 +142,46 @@ push: build
 	docker tag $(LOCAL_TAG) $(REMOTE_IMAGE):latest
 	docker push $(REMOTE_IMAGE):latest
 
-# ─── Cloud Run Deployment ────────────────────────────────────────────────────
+# ─── Cloud Build (remote builds on GCP) ─────────────────────────────────────
+
+.PHONY: cloud-build cloud-deploy
+
+## Build image remotely with Cloud Build (native amd64, no local Docker needed)
+cloud-build:
+	@echo "☁️  Building on Cloud Build: $(REMOTE_IMAGE)"
+	gcloud builds submit . \
+		--tag $(REMOTE_IMAGE):latest \
+		--region $(GCP_REGION) \
+		--machine-type e2-highcpu-32 \
+		--timeout 1800
+	@echo "✅ Cloud Build complete: $(REMOTE_IMAGE):latest"
+
+## Build on Cloud Build and deploy to Cloud Run
+cloud-deploy: cloud-build
+	@if [ ! -f .env ]; then \
+		echo "❌ .env file not found. Run 'make setup' first."; \
+		exit 1; \
+	fi
+	@echo "🚀 Deploying to Cloud Run: $(CLOUD_RUN_SERVICE)"
+	@grep -v '^\s*\#' .env | grep -v '^\s*$$' | sed 's/^\([^=]*\)=\(.*\)/\1: "\2"/' > /tmp/nca-env-vars.yaml
+	gcloud run deploy $(CLOUD_RUN_SERVICE) \
+		--image $(REMOTE_IMAGE):latest \
+		--region $(GCP_REGION) \
+		--platform managed \
+		--port 8080 \
+		--memory 16Gi \
+		--cpu 4 \
+		--timeout 300 \
+		--allow-unauthenticated \
+		--min-instances 0 \
+		--max-instances 5 \
+		--execution-environment gen2 \
+		--no-use-http2 \
+		--env-vars-file /tmp/nca-env-vars.yaml
+	@rm -f /tmp/nca-env-vars.yaml
+	@echo "✅ Deployment complete"
+
+# ─── Cloud Run Deployment (local build) ─────────────────────────────────────
 
 .PHONY: deploy logs describe
 
@@ -215,7 +255,9 @@ help:
 	@printf "  \033[1;34mmake auth\033[0m           Authenticate Docker with Artifact Registry\n"
 	@printf "  \033[1;34mmake repo\033[0m           Create Artifact Registry repo (first time)\n"
 	@printf "  \033[1;34mmake push\033[0m           Build and push image to Artifact Registry\n"
-	@printf "  \033[1;35mmake deploy\033[0m         Build, push, and deploy to Cloud Run\n"
+	@printf "  \033[1;35mmake deploy\033[0m         Build locally, push, and deploy to Cloud Run\n"
+	@printf "  \033[1;35mmake cloud-deploy\033[0m   Build on Cloud Build and deploy (recommended)\n"
+	@printf "  \033[1;34mmake cloud-build\033[0m    Build image remotely on Cloud Build\n"
 	@printf "  \033[1;34mmake logs\033[0m           Tail Cloud Run logs\n"
 	@printf "  \033[1;34mmake describe\033[0m       Show Cloud Run service details\n"
 	@printf "\n"

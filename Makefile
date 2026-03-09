@@ -213,9 +213,7 @@ cloud-build:
 	@echo "☁️  Building on Cloud Build: $(REMOTE_IMAGE)"
 	gcloud builds submit . \
 		--tag $(REMOTE_IMAGE):latest \
-		--region $(GCP_REGION) \
-		--machine-type e2-highcpu-32 \
-		--timeout 1800
+		--timeout 3600
 	@echo "✅ Cloud Build complete: $(REMOTE_IMAGE):latest"
 
 ## Build on Cloud Build and deploy to Cloud Run
@@ -285,11 +283,22 @@ describe:
 
 .PHONY: test help
 
-## Test the running API (local or remote)
+## Test the running API — usage: make test [URL=https://your-service.run.app]
 test:
-	@echo "🧪 Testing API..."
-	@curl -sf -X GET http://localhost:8080/v1/toolkit/test \
-		-H "X-API-Key: $${API_KEY:-test}" && echo " ✅ API is healthy" || echo " ❌ API not responding"
+	$(eval TEST_URL := $(or $(URL),http://localhost:8080))
+	$(eval TEST_API_KEY := $(or $(API_KEY),$(shell grep '^API_KEY=' .env 2>/dev/null | cut -d= -f2-)))
+	@echo "🧪 Testing API at $(TEST_URL)..."
+	@RESULT=$$(curl -s -w "\n%{http_code}" $(TEST_URL)/v1/toolkit/test \
+		-H "X-API-Key: $(TEST_API_KEY)"); \
+	HTTP_CODE=$$(echo "$$RESULT" | tail -1); \
+	BODY=$$(echo "$$RESULT" | sed '$$d'); \
+	if [ "$$HTTP_CODE" = "200" ]; then \
+		echo " ✅ API is healthy"; \
+		echo " $$BODY"; \
+	else \
+		echo " ❌ HTTP $$HTTP_CODE"; \
+		echo " $$BODY"; \
+	fi
 
 ## Show available make targets
 help:
@@ -310,7 +319,7 @@ help:
 	@printf "  \033[1;32mmake up-local\033[0m       Build and start with local file I/O\n"
 	@printf "  \033[1;32mmake down\033[0m           Stop and remove container\n"
 	@printf "  \033[1;32mmake clean\033[0m          Stop container and remove image\n"
-	@printf "  \033[1;32mmake test\033[0m           Test the running API\n"
+	@printf "  \033[1;32mmake test\033[0m           Test local API (or: make test URL=https://...)\n"
 	@printf "\n"
 	@printf "  \033[1;33m GCP DEPLOYMENT\033[0m\n"
 	@printf "  \033[0;90m─────────────────────────────────────────────────\033[0m\n"

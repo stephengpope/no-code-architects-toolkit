@@ -17,6 +17,7 @@
 
 
 import os
+import shutil
 import logging
 from abc import ABC, abstractmethod
 from services.gcp_toolkit import upload_to_gcs
@@ -86,8 +87,21 @@ class S3CompatibleProvider(CloudStorageProvider):
     def upload_file(self, file_path: str) -> str:
         return upload_to_s3(file_path, self.endpoint_url, self.access_key, self.secret_key, self.bucket_name, self.region)
 
+class LocalStorageProvider(CloudStorageProvider):
+    """Saves output files to a local directory instead of cloud storage."""
+    def __init__(self):
+        self.output_dir = os.getenv('LOCAL_OUTPUT_PATH', '/data/output')
+
+    def upload_file(self, file_path: str) -> str:
+        os.makedirs(self.output_dir, exist_ok=True)
+        filename = os.path.basename(file_path)
+        dest = os.path.join(self.output_dir, filename)
+        shutil.copy2(file_path, dest)
+        logger.info(f"File saved to local output: {dest}")
+        return f"file://{dest}"
+
 def get_storage_provider() -> CloudStorageProvider:
-    
+
     if os.getenv('S3_ENDPOINT_URL'):
 
         if ('digitalocean' in os.getenv('S3_ENDPOINT_URL').lower()):
@@ -97,22 +111,24 @@ def get_storage_provider() -> CloudStorageProvider:
             validate_env_vars('S3')
 
         return S3CompatibleProvider()
-    
+
     if os.getenv('GCP_BUCKET_NAME'):
 
         validate_env_vars('GCP')
         return GCPStorageProvider()
-    
-    raise ValueError(f"No cloud storage settings provided.")
+
+    # Fall back to local file storage when no cloud provider is configured
+    logger.info("No cloud storage configured, using local file storage (/data/output)")
+    return LocalStorageProvider()
 
 def upload_file(file_path: str) -> str:
     provider = get_storage_provider()
     try:
-        logger.info(f"Uploading file to cloud storage: {file_path}")
+        logger.info(f"Uploading file to storage: {file_path}")
         url = provider.upload_file(file_path)
-        logger.info(f"File uploaded successfully: {url}")
+        logger.info(f"File stored successfully: {url}")
         return url
     except Exception as e:
-        logger.error(f"Error uploading file to cloud storage: {e}")
+        logger.error(f"Error storing file: {e}")
         raise
     

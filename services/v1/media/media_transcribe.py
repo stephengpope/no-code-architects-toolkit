@@ -134,7 +134,7 @@ def process_transcribe_media(media_url, task, include_text, include_srt, include
                 with open(text_filename, 'w') as f:
                     f.write(text)
             else:
-                text_file = None
+                text_filename = None
             
             if include_srt is True:
                 srt_filename = os.path.join(LOCAL_STORAGE_PATH, f"{job_id}.srt")

@@ -1,0 +1,164 @@
+# syntax=docker/dockerfile:1.7
+#
+# Multi-stage, CVE-hardened variant of the NCA toolkit Dockerfile.
+#
+# Build:
+#   docker build -f Dockerfile.multistage -t nca-toolkit:secured .
+#
+# Tradeoff vs the default Dockerfile:
+#   - Playwright + Chromium are NOT installed, so the
+#     POST /v1/image/screenshot_webpage endpoint will fail at runtime on this
+#     image. All other endpoints behave identically.
+#   - Compilers and -dev headers live only in the builder stage, not in the
+#     final image — closes a large class of CVEs reported against build tools.
+#
+# CVEs closed vs the single-stage Dockerfile (sample, not exhaustive):
+#   python3.13     — removed (was pulled in by ninja-build into the runtime stage)
+#   jaraco-context — removed (python3 transitive)
+#   nasm           — builder-only
+#   libtheora      — dropped from ffmpeg build (re-add if Theora output needed)
+#   wheel          — pinned at pip layer
+#   nss / cups     — Playwright dropped (see tradeoff above)
+#   gnutls         — ffmpeg built without --enable-gnutls; SRT uses openssl backend
+#
+ARG PYTHON_VERSION=3.10
+
+# =============================================================================
+# Stage 1: BUILDER — compiles ffmpeg stack from source. Discarded after build.
+# =============================================================================
+FROM python:${PYTHON_VERSION}-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates wget git xz-utils tar \
+    build-essential pkg-config autoconf automake libtool \
+    yasm cmake meson ninja-build nasm \
+    libssl-dev libvpx-dev libx264-dev libx265-dev libnuma-dev \
+    libmp3lame-dev libopus-dev libvorbis-dev libspeex-dev \
+    libfreetype6-dev libfontconfig1-dev \
+    libaom-dev libdav1d-dev librav1e-dev libsvtav1enc-dev \
+    libzimg-dev libwebp-dev \
+    libfribidi-dev libharfbuzz-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+# --- SRT --------------------------------------------------------------------
+# openssl backend so libgnutls28-dev is not needed (gnutls removed entirely).
+RUN git clone https://github.com/Haivision/srt.git \
+ && cd srt && mkdir build && cd build \
+ && cmake .. -DUSE_ENCLIB=openssl && make -j$(nproc) && make install \
+ && cd ../.. && rm -rf srt
+
+# --- SVT-AV1 ---------------------------------------------------------------
+RUN git clone https://gitlab.com/AOMediaCodec/SVT-AV1.git \
+ && cd SVT-AV1 && git checkout v0.9.0 && cd Build \
+ && cmake .. && make -j$(nproc) && make install \
+ && cd ../.. && rm -rf SVT-AV1
+
+# --- libvmaf ----------------------------------------------------------------
+RUN git clone https://github.com/Netflix/vmaf.git \
+ && cd vmaf/libvmaf \
+ && meson build --buildtype release \
+ && ninja -C build && ninja -C build install \
+ && cd ../.. && rm -rf vmaf && ldconfig
+
+# --- fdk-aac ----------------------------------------------------------------
+RUN git clone https://github.com/mstorsjo/fdk-aac \
+ && cd fdk-aac && autoreconf -fiv \
+ && ./configure && make -j$(nproc) && make install \
+ && cd .. && rm -rf fdk-aac
+
+# --- libunibreak (enables ASS_FEATURE_WRAP_UNICODE in libass) ---------------
+RUN git clone https://github.com/adah1972/libunibreak.git \
+ && cd libunibreak && ./autogen.sh && ./configure \
+ && make -j$(nproc) && make install && ldconfig \
+ && cd .. && rm -rf libunibreak
+
+# --- libass -----------------------------------------------------------------
+RUN git clone https://github.com/libass/libass.git \
+ && cd libass && autoreconf -i \
+ && ./configure --enable-libunibreak \
+ && make -j$(nproc) && make install && ldconfig \
+ && cd .. && rm -rf libass
+
+# --- FFmpeg -----------------------------------------------------------------
+# --enable-libtheora intentionally omitted. Re-add only if Theora output needed.
+RUN git clone https://git.ffmpeg.org/ffmpeg.git ffmpeg \
+ && cd ffmpeg && git checkout n8.1.1 \
+ && PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/local/lib/pkgconfig" \
+    CFLAGS="-I/usr/include/freetype2" \
+    LDFLAGS="-L/usr/lib/x86_64-linux-gnu" \
+    ./configure --prefix=/usr/local \
+        --enable-gpl --enable-pthreads \
+        --enable-libaom --enable-libdav1d --enable-librav1e --enable-libsvtav1 \
+        --enable-libvmaf --enable-libzimg \
+        --enable-libx264 --enable-libx265 --enable-libvpx --enable-libwebp \
+        --enable-libmp3lame --enable-libopus --enable-libvorbis --enable-libspeex \
+        --enable-libass --enable-libfreetype --enable-libharfbuzz --enable-fontconfig \
+        --enable-libsrt \
+        --enable-filter=drawtext \
+        --extra-cflags="-I/usr/include/freetype2 -I/usr/include/libpng16 -I/usr/include" \
+        --extra-ldflags="-L/usr/lib/x86_64-linux-gnu -lfreetype -lfontconfig" \
+ && make -j$(nproc) && make install \
+ && cd .. && rm -rf ffmpeg
+
+# =============================================================================
+# Stage 2: RUNTIME — what actually ships. No compilers, no python3.13.
+# =============================================================================
+FROM python:${PYTHON_VERSION}-slim AS runtime
+
+# Runtime shared libs only. NO -dev packages, NO build tools, NO ninja-build
+# (which was dragging python3.13 + python3-jaraco.* into the previous image).
+# Package names verified against Debian trixie (deb13). t64 suffix is the
+# time_t-64 transition rename — must be honored or apt will fail.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates xz-utils \
+    fonts-liberation fontconfig \
+    libssl3t64 libvpx9 libx264-164 libx265-215 libnuma1 \
+    libmp3lame0 libopus0 libvorbis0a libvorbisenc2 libspeex1 \
+    libfreetype6 libfontconfig1 \
+    libaom3 libdav1d7 librav1e0.7 libsvtav1enc2 \
+    libzimg2 libwebp7 libwebpmux3 \
+    libfribidi0 libharfbuzz0b \
+ && apt-get -y upgrade \
+ && rm -rf /var/lib/apt/lists/* \
+ && apt-get -y autoremove
+
+# Bring over compiled artifacts only.
+COPY --from=builder /usr/local/bin/ffmpeg  /usr/local/bin/ffmpeg
+COPY --from=builder /usr/local/bin/ffprobe /usr/local/bin/ffprobe
+COPY --from=builder /usr/local/lib/        /usr/local/lib/
+RUN ldconfig
+
+ENV PATH="/usr/local/bin:${PATH}"
+
+COPY ./fonts /usr/share/fonts/custom
+RUN fc-cache -f -v
+
+WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir --retries 10 --timeout 300 -r requirements.txt \
+ && pip install --no-cache-dir --retries 10 --timeout 300 \
+        "wheel>=0.46.2" "setuptools>=80.0" "jaraco.context>=6.1.0" \
+ && pip install --no-cache-dir --retries 10 --timeout 300 jsonschema
+
+RUN useradd -m appuser && chown appuser:appuser /app
+USER appuser
+
+COPY --chown=appuser:appuser . .
+
+EXPOSE 8080
+ENV PYTHONUNBUFFERED=1
+
+RUN echo '#!/bin/bash\n\
+gunicorn --bind 0.0.0.0:8080 \
+    --workers ${GUNICORN_WORKERS:-2} \
+    --timeout ${GUNICORN_TIMEOUT:-300} \
+    --worker-class sync \
+    --keep-alive 80 \
+    --config gunicorn.conf.py \
+    app:app' > /app/run_gunicorn.sh \
+ && chmod +x /app/run_gunicorn.sh
+
+CMD ["/app/run_gunicorn.sh"]
